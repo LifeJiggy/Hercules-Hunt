@@ -1,0 +1,826 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '=== chain-builder hook system initialized ===' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Exploit chain builder active. Model: claude-sonnet-4-6. Input: validated bug A. Output: chain A->B->C with proof.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Supported chain patterns: 1) IDOR->auth bypass, 2) SSRF->cloud metadata, 3) XSS->ATO, 4) open redirect->OAuth theft, 5) S3->bundle->secret->OAuth, 6) prompt injection->IDOR, 7) subdomain takeover->OAuth.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Each chain step must have: request (curl), response, screenshot, and impact explanation. Partial chains with evidence are reportable.' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Output schema: chain/{bugA_id}_{bugB_id}.json -- contains: steps[], full_request_chain, impact_statement, cvss_estimate, remediation.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Chain building session started. Target: <target>. Bug A: <bug_id>. Mode: <pattern>. Logging to audit.jsonl.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Remember: Chain validity = Bug A proof x Step B proof x Step C proof. All steps required, all evidence required.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Prohibited: Theoretical chains, assumed chains, unverified chains, chains without independent evidence per step.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Affects: All reported chains with 3+ verified steps can upgrade CVSS from High to Critical. Claim only verified chains.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Chain output directory: ./chains/. Each chain gets its own subdir: ./chains/{bugA_bugB}/ with evidence files.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Chains with 3+ verified steps can upgrade from High to Critical. Document each step independently before combining.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Never claim chains without proof. Every link in the chain must have its own evidence. Impact-first reporting only.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] NDA reminder: Redact all secrets before external sharing. Chain evidence can contain: API keys, tokens, internal hosts, credentials.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Verification gate: Run /validator on each chain step BEFORE combining. A chain is only as strong as its weakest verified step.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Chain upgrade policy: 2 verified steps = High CVSS. 3+ verified steps = Critical CVSS. Partial chains = report as-is with evidence.' -ForegroundColor Green"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Evidence retention: Keep raw chain evidence (curl commands + responses) unredacted locally. Redact only for external submission.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Collaboration note: Chain building may require multiple recon sessions. Use chain/{bugA_id}_v2.json for iteration.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Multi-target chains: If chain spans multiple subdomains/APIs, document each target scope and authorisation boundaries separately.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[CHAIN PRE] Verifying Bug A is validated before attempting to chain. Run /validator on Bug A first.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[CHAIN PRE] Initialising chain step tracking. Create ./chains/{bugA_bugB}/ directory and steps.json if not exists.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'idor|IDOR|user_id|account_id|document_id|order_id|patient_id|invoice_id|ticket_id|message_id|comment_id|file_id|folder_id|project_id|workspace_id|tenant_id|org_id|team_id|group_id|contact_id|lead_id|deal_id|opportunity_id|case_id|incident_id|request_id|task_id|bug_id|note_id|post_id|article_id|page_id|site_id|domain_id|subscription_id|plan_id|payment_id|transaction_id|refund_id|coupon_id|promo_id|reward_id|badge_id|achievement_id|level_id|rank_id|score_id|point_id|credit_id|wallet_id|balance_id') { Write-Host '[CHAIN PRE] IDOR bug interaction. Chain candidate: IDOR->auth bypass (elevate IDOR\\'d account) or IDOR->SSRF (access internal via IDOR).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'ssrf|SSRF|gopher|burp.*collab|interact.sh|oast|dnslog|canarytokens|requestbin|webhook.site|hookbin|pipedream|requestcatcher|interact|burp|collaborator|oob|out.of.band') { Write-Host '[CHAIN PRE] SSRF bug interaction. Chain candidate: SSRF->cloud metadata (AWS/GCP/Azure IMDS) or SSRF->internal service access.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'xss|XSS|alert\\(|onerror=|javascript:|data:text/html|prompt\\('')|onload=|onclick=|onmouseover|svg.*onload|script.*src|javascript.*alert|document\\.cookie|document\\.location|window\\.open') { Write-Host '[CHAIN PRE] XSS bug interaction. Chain candidate: XSS->ATO (session hijack via cookie steal) or XSS->admin takeover.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'open.redirect|redirect=|next=|return=|callback=|oauth|sso|saml|idp|identity.provider|assertion|authorization.*code|auth.*code|grant.*type') { Write-Host '[CHAIN PRE] Open redirect/OAuth interaction. Chain candidate: open redirect->OAuth token theft (redirect_uri manipulation).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 's3|bucket|storage|blob|gcs|azure.blob|alibaba.oss|list-objects|public|acl|bucket-policy|presigned|getObject|putObject') { Write-Host '[CHAIN PRE] Cloud storage interaction. Chain candidate: S3 bucket->bundle download->secret extraction->OAuth token re-use.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'subdomain|takeover|ns|cname|tXT|unrecognized|heroku|github|zendesk|shopify|fastly|netlify|vercel|aws|azure|gcp|cloudfront|s3.amazonaws|herokuapp|github.io|pages.dev|azurewebsites|cloudfront.net') { Write-Host '[CHAIN PRE] Subdomain takeover interaction. Chain candidate: subdomain takeover->host phishing page->OAuth credential harvest.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'prompt.injection|llm|ai|gpt|claude|langchain|system.prompt|instruction|jailbreak|dan|you.are.now|ignore.previous|act.as|pretend.to.be') { Write-Host '[CHAIN PRE] LLM interaction detected. Chain candidate: prompt injection->IDOR (manipulate AI to leak other user data).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'jwt|token|oauth|access_token|refresh_token|id_token|bearer|session|cookie|apikey|api.key|x-api-key|x-auth-token|authorization') { Write-Host '[CHAIN PRE] Token interaction. Chain candidate: any vuln -> token hijack -> full account takeover. Capture token in evidence.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'admin|privilege|escalat|role|is_admin|isSuperAdmin|scope|permission|staff|moderator|superuser|root|sudo|elevated|manage|manage_') { Write-Host '[CHAIN PRE] Privilege-related interaction. Verify current privilege level before testing escalation steps.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'curl|httpie|burp|zaproxy|postwoman|hoppscotch|insomnia|postman|mitmproxy|fiddler|charles|wireshark|ngrep|tcpdump|netcat|ncat|socat|telnet|nc|webhook|request|send|fetch|get|post|put|patch|delete|head|options') { Write-Host '[CHAIN PRE] HTTP request tool detected. Ensure ALL hop requests in chain are logged. Capture full redirect chain.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'Turbo|intruder|concurrent|parallel|race|throttle|delay|replay|repeat|loop|batch|bulk|async|thread|goroutine|multiprocess|farm|cluster') { Write-Host '[CHAIN PRE] Race condition tool detected. Race conditions can serve as chain links (e.g., race->reset->ATO).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nuclei|nmap|masscan|zmap|shodan|censys|subfinder|amass|findomain|assetfinder|subbuster|sublist3r|altdns|permutator|dnsgen| dnscan|dnsx|httpx|naabu|katana|gospider|gau|wayback|urlfinder|paramspider|arjun|x8|ffuf|feroxbuster|dirsearch|gobuster|dirb|dirbuster|wfuzz|ffuf') { Write-Host '[CHAIN PRE] Recon tool detected. Use this as Bug A discovery phase. Move to chaining only after Bug A is validated.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'python|node|ruby|perl|php|golang|bash|shell|script|automation|bot|crawler|spider|scanner|fuzzer|bruteforce|brute') { Write-Host '[CHAIN PRE] Custom script detected. Ensure script logs are saved as chain evidence (stdout, stderr, exit code).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'sql|injection|union|select|insert|update|delete|drop|truncate|alter|create|exec|xp_|sp_|benchmark|sleep|waitfor|pg_sleep|SLEEP|RANDOMBLOB|ctid|schema|information_schema') { Write-Host '[CHAIN PRE] SQLi interaction. Chain candidate: SQLi->admin access->reset password->ATO, or SQLi->file write->RCE->cloud metadata.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'command.injection|rce|os.command|shell_exec|exec\\(|system\\(|passthru|popen|proc_open|shell_exec|backticks|\`|eval\\(|assert\\(|preg_replace.*e|create_function') { Write-Host '[CHAIN PRE] RCE interaction detected. Chain candidate: RCE->cloud metadata->IAM credentials->AWS takeover.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'file.upload|upload|multipart|form-data|Content-Disposition|filename|\.php|\.asp|\.aspx|\.jsp|\.py|\.pl|\.rb|\.cgi|\.sh|\.exe|\.dll|\.so|\.dylib') { Write-Host '[CHAIN PRE] File upload interaction detected. Chain candidate: upload shell->RCE->cloud metadata->takeover, or upload->path traversal->config steal.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'deserial|unserialize|pickle|marshal|yaml\.load|yaml\.unsafe|ObjectInputStream|readObject|JSON.loads|xml.etree|defusedxml| unserialize|phar|zip://|phar://|expect://|input://|data://|php://filter|php://input') { Write-Host '[CHAIN PRE] Deserialization interaction. Chain candidate: deserialization->RCE->cloud metadata->IAM takeover.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "Write-Host '[CHAIN PRE] File read detected. Check if file contains secrets (env, config, credentials, keys). Chain candidate: LFI->secret read->OAuth->takeover.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match '/etc/passwd|/etc/shadow|/proc/|/sys/|C:\\windows|C:\\winnt|\.env|config\.json|credentials|secrets|id_rsa|\.ssh|authorized_keys|known_hosts|web\.config|appsettings|\.yml|\.yaml|application\.properties|config\.php|wp-config') { Write-Host '[CHAIN PRE] Sensitive file read. Log full file path and contents. Check for chain value: tokens, keys, internal URLs, credentials.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Glob",
+      "command": "Write-Host '[CHAIN PRE] File discovery. Map discovered files to chain value: API keys, hardcoded URLs, version info, debug endpoints, backup files.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Grep",
+      "command": "Write-Host '[CHAIN PRE] Content search. Matched patterns may indicate chain-relevant code: hardcoded secrets, API endpoints, internal URLs, feature flags.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "WebFetch",
+      "command": "Write-Host '[CHAIN PRE] Web fetch. Capture target URL, response headers, and body as evidence. Document auth state during fetch (logged in/out/admin).' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "WebFetch",
+      "command": "if ($lastCommand -match 'metadata|internal|localhost|127\.0\.0\.1|169\.254|169\.254\.169\.254|metadata\.google|100\.100\.100\.200|metadata\.azure') { Write-Host '[CHAIN PRE] Web fetch to internal/metadata endpoint. Chain candidate: SSRF via fetch->cloud metadata->credential extract.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[CHAIN POST] Reviewing chain step output for evidence completeness (request, response, screenshot, impact).' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '200.*success|302.*redirect|Location:|Authorization|Bearer|Set-Cookie|session') { Write-Host '[CHAIN POST] Chain step successful. Capture full response headers and body. Document exact status code.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'interact.sh|burpcollab|oast|dnslog|canarytokens|requestbin|collaborator') { Write-Host '[CHAIN POST] OOB interaction confirmed for chain step. Log full OOB request details for evidence.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'session|token|cookie|password|secret|key|credential|authorization') { Write-Host '[CHAIN POST] Sensitive data captured in chain step. Redact from external reports. Store securely in chain evidence files.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'admin|root|privileged|elevated|role.*change|scope.*change|permission.*grant') { Write-Host '[CHAIN POST] Privilege escalation achieved in chain step. Document original vs escalated state clearly.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'access.*denied|403|401|forbidden|unauthorized') { Write-Host '[CHAIN POST] Chain step returned auth error. Verify if this is expected (success condition) or blocked by security control.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'user_data|account|profile|email|phone|address|ssn|payment|financial|health') { Write-Host '[CHAIN POST] Sensitive user data accessed in chain. Quantify data scope: records affected? PII classification?' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'download|export|backup|bundle|archive|zip|tar|dump|snapshot') { Write-Host '[CHAIN POST] Bulk data exfil step confirmed. Document data volume, format, and sensitivity classification.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'internal|localhost|127\.0\.0\.1|10\\.|172\\.|192\.168|metadata|metadata.google|169\.254') { Write-Host '[CHAIN POST] Internal/cloud metadata access achieved. Document service: AWS IMDS, GCE metadata, Azure IMDS.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'xss|alert|injected|script|javascript|payload.*executed') { Write-Host '[CHAIN POST] XSS step executed in chain. Capture payload, execution context (reflected/stored/DOM), and victim context.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'error|exception|stack|trace|timeout|connection refused|waf|block') { Write-Host '[CHAIN POST] Chain step failed or blocked. Document failure mode. Can this be bypassed or is it a security control?' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'database|mysql|postgres|mongodb|redis|elasticsearch|mssql|oracle|sqlserver|query|SELECT|INSERT|UPDATE|DELETE|FROM|WHERE') { Write-Host '[CHAIN POST] Database interaction in chain step. Capture query, database type, and data exfiltrated. Chain candidate: SQLi->data dump->chain.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'repo|github|gitlab|bitbucket|svn|version|commit|push|pull|branch|merge|clone') { Write-Host '[CHAIN POST] Version control interaction. Chain candidate: clone private repo->extract secrets->token reuse. Log repo URL and commits accessed.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'email|smtp|smtps|imap|pop3|sendgrid|mailgun|ses|postmark|mailchimp|newsletter') { Write-Host '[CHAIN POST] Email interaction in chain. Document: email provider, sender/recipient, content, attachment. Chain candidate: access->email->ATO.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'payment|stripe|paypal|braintree|square|checkout|invoice|transaction|charge|refund|subscription|billing|card|cc|credit.card|visa|mastercard|amex') { Write-Host '[CHAIN POST] Payment system interaction. Document: payment provider, amount, transaction ID. Chain candidate: pay->refund->financial impact.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'log|audit|event|history|access.log|error.log|debug|trace|verbose|monitoring|observability|datadog|newrelic|splunk|elastic|cloudwatch|sentry|rollbar') { Write-Host '[CHAIN POST] Log/monitoring access in chain. Check if logs contain sensitive data. Chain value: tokens, PII, internal architecture.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'function|lambda|azure.function|cloud.function|serverless|faas|edge|worker|service.worker') { Write-Host '[CHAIN POST] Serverless function access. Document: runtime env, secrets, IAM role. Chain candidate: fn access->secrets->cloud takeover.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'kubernetes|k8s|kubectl|pod|container|docker|namespace|secret|configmap|serviceaccount|cluster|node|ingress|helm|rancher|eks|gke|aks') { Write-Host '[CHAIN POST] Kubernetes interaction. Document: namespace, pod, secrets accessed. Chain candidate: k8s access->secrets->container escape->host.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'docker|container|image|registry|ecr|gcr|acr|dockerhub|quay|harbor|jfrog|artifactory') { Write-Host '[CHAIN POST] Container registry interaction. Document: registry, image name, tags. Chain candidate: registry access->pull private image->secrets.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'ci|cd|pipeline|workflow|action|github.actions|gitlab.ci|jenkins|circleci|travis|buildkite|azure.pipelines|bitbucket.pipelines') { Write-Host '[CHAIN POST] CI/CD interaction. Document: workflow file, secrets exposed. Chain candidate: pipeline access->secrets->cloud resources.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Read",
+      "command": "Write-Host '[CHAIN POST] File read completed. Check for sensitive data in response. Apply chain value assessment for discovered content.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Read",
+      "command": "if ($lastOutput -match 'password|passwd|secret|token|key|credential|api_key|apikey|private_key|BEGIN.*PRIVATE|BEGIN.*RSA|BEGIN.*EC|ssh-rsa|ssh-ed25519|access_key|secret_key|session_key|auth_token') { Write-Host '[CHAIN POST] CRITICAL: Credential material read from file. Chain candidate: LFI->credential->account takeover. Secure evidence storage required.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Write",
+      "command": "if ($lastOutput -match 'created|written|success|saved|1024|2048|successfully') { Write-Host '[CHAIN POST] File write confirmed. Document: target file, content written. Chain candidate: write shell->RCE->takeover.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Edit",
+      "command": "if ($lastOutput -match 'updated|modified|changed|replaced|applied|patch') { Write-Host '[CHAIN POST] File modification confirmed. Document: target file, diff applied. Chain candidate: code injection->RCE->lateral movement.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Glob",
+      "command": "Write-Host '[CHAIN POST] File discovery complete. Map discovered files to chain value. Track: discovery_method, files_found, sensitive_files.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Grep",
+      "command": "Write-Host '[CHAIN POST] Content search complete. Document: search_regex, matches_found, sensitive_matches. Evaluate for chain value.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "WebFetch",
+      "command": "Write-Host '[CHAIN POST] Web fetch complete. Save: URL, response_headers, response_body, status_code, auth_context. Check for auth bypass, unauthorized data access.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "WebFetch",
+      "command": "if ($lastOutput -match '401|403|forbidden|unauthorized|access.denied') { Write-Host '[CHAIN POST] Fetch returned auth error. Document: target_resource, error_response. Compare to authenticated fetch for diff.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain-building methodology: Step A (validated bug) -> Step B (escalation movement) -> Step C (impact maximization).' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] IDOR chain pattern: IDOR on /api/users/{id} -> access admin account -> extract API token -> access admin endpoints.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF chain pattern: SSRF on /api/proxy -> access AWS IMDS (169.254.169.254) -> extract IAM role credentials -> access AWS resources.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] XSS chain pattern: XSS on profile page -> steal admin session token -> CSRF to change admin password -> full ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Redirect chain pattern: Open redirect on /redirect -> manipulate OAuth redirect_uri -> steal authorization code -> exchange for token.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] S3 chain pattern: Public S3 bucket -> source bundle download -> extract secrets/config -> token reuse -> cloud takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Subdomain takeover chain pattern: Subdomain CNAME to dead SaaS -> host phishing page -> harvest OAuth credentials -> account takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Prompt injection chain pattern: LLM endpoint accepts prompt -> inject IDOR instruction -> leak other user data from AI knowledge base.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Evidence checklist per step: (1) HTTP request, (2) HTTP response with status code, (3) Screenshot/video, (4) Data extraction proof, (5) Impact statement.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] CVSS boost: Each verified chain step adds +0.5 to CVSS base score. 2-step chain: High->Critical. 3-step chain: Critical+.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SQLi->RCE chain pattern: SQLi with file output -> write webshell -> RCE -> cloud metadata -> AWS takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] LFI->RCE chain pattern: LFI with log poisoning -> log trigger -> RCE -> reverse shell -> lateral movement.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Deserial->RCE chain pattern: Deserialization gadget chain -> pop calc/RCE -> cloud metadata -> IAM creds -> full cloud takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] File upload->RCE chain pattern: Unrestricted file upload -> web shell -> RCE -> SSRF->cloud metadata->IAM->takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Race condition chain pattern: Race condition on password reset -> reset admin password -> ATO -> access all accounts.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] CSRF chain pattern: CSRF on email change -> change victim email -> password reset -> full account takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Business logic chain pattern: Discount abuse -> negative price -> zero-dollar purchase -> financial impact -> return policy abuse.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Auth bypass chain pattern: Auth bypass on /admin -> extract user list -> reset all passwords -> mass account takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] OAuth misconfiguration chain pattern: OAuth redirect_uri validation bypass -> steal auth code -> exchange for token -> ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] GraphQL chain pattern: Introspection->schema dump->IDOR endpoints->admin query->data exfil->full database dump.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] REST API chain pattern: API key leak via IDOR -> enumerate all API keys -> access partner API -> extract all customer data.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] GraphQL batching chain pattern: Batch IDOR->enumerate all objects->extract PII->bulk export->mass data breach.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Prototype pollution chain pattern: Prototype pollution via merge->pollute __proto__-> gadget chain-> RCE->cloud takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Cache poisoning chain pattern: Cache key manipulation->poison cache->serve malicious JS->admin XSS->ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] HTTP request smuggling chain pattern: CL.TE smuggling->desync->admin access->cache poison->account takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] JWT chain pattern: JWT algorithm none->forged token->admin access->data exfil->persistent access via new token.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] JWT kid injection chain pattern: JWT kid header injection->file read->key disclosure->HMAC forgery->admin access.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SAML chain pattern: SAML assertion modification->change email->password reset->ATO by verified account.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] WAF bypass chain pattern: WAF bypass on SQLi->extract data->use extracted data to bypass 2FA->ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Rate limit bypass chain pattern: Rate limit bypass->brute force OTP->bypass 2FA->ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Clickjacking chain pattern: Clickjacking on settings->toggle security settings->disable 2FA->ATO via password spray.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] CORS chain pattern: CORS misconfiguration->cross-origin token theft->ATO via victims access token.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] CRLF injection chain pattern: CRLF injection in email headers->email header injection->phishing via target domain->credential harvest.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Path traversal chain pattern: Path traversal->LFI->/etc/passwd->/proc/self/environ->RCE via log poisoning.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] XXE chain pattern: XXE->read local files->/etc/shadow or config->extract credentials->internal access.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Redis chain pattern: SSRF->Redis via gopher->write SSH key->SSH into server->container escape->host RCE.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Postgres chain pattern: SSRF->Postgres COPY->write file->RCE->cloud metadata->IAM creds->takeover.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->MongoDB chain pattern: SSRF->MongoDB shell command execution->cron job spawn->reverse shell->cloud metadata.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Memcached chain pattern: SSRF->Memcached stats->sensitive keys->cache poisoning->session hijack.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Elasticsearch chain pattern: SSRF->Elasticsearch query->extract PII from .security index->role escalation.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Varnish chain pattern: SSRF->Varnish admin->purge/inject->cache poisoning->serves malicious JS->admin XSS.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->FastCGI chain pattern: SSRF->FastCGI/FCGI->PHP-FPM->remote code execution->host compromise.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->AWS metadata chain pattern: SSRF->169.254.169.254->IAM role creds->S3 access->confidential data exfil.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->GCP metadata chain pattern: SSRF->metadata.google.internal->service account token->Cloud SQL access->data breach.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Azure metadata chain pattern: SSRF->169.254.169.254->IMDS token->Key Vault->secrets->full tenant access.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Alibaba OSS chain pattern: SSRF->Alibaba metadata->RAM credentials->OSS bucket->backup download->data breach.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] SSRF->Oracle Cloud metadata chain pattern: SSRF->metadata.oraclecloud.com->instance creds->Object Storage->data exfil.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Upgrading evidence: After completing chain, run /validator on chain finding. Use /report-writer for final report generation.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain naming convention: chain/{bugAId}_to_{bugBId}_{timestamp}.json. Use ISO 8601 timestamps: YYYYMMDDTHHMMSSZ.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain filing checklist: (1) steps.json with all step evidence, (2) requests/ dir with curl files, (3) responses/ dir with response files, (4) screenshots/ dir with images, (5) chain.json with summary.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Cross-reference chain to: original_bug_report.md, recon_output.json, validator_results.json for audit trail.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Impact statement template: [Actor] can [Action] via [Step A] -> [Step B] -> [Step C], resulting in [Impact]. Affected: [scope].' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Remediation template: Fix Step A: [fix]. Fix Step B: [fix]. Fix Step C: [fix]. Defense in depth: [additional controls].' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[CHAIN STOP] Chain building complete. Verify: Bug A validated? Each chain step has independent evidence? Chain impact demonstrated? Evidence sanitized?' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[CHAIN STOP] Next: /validator for chain finding, then /report-writer with chain evidence package.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[CHAIN STOP] Chain session ended. Audit log written to audit.jsonl. Verify chain output in ./chains/ directory.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[CHAIN STOP] Reminder: Chains without full evidence will be downgraded or rejected by validator. Never submit partial chains.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Advanced chain patterns loaded. Extended tool matching: Read, Write, Edit, Glob, Grep, WebFetch hooks active.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Extended PreToolUse coverage: LFI, SQLi, RCE, file upload, deserialization, container, k8s paths enabled.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Extended PostToolUse coverage: response analysis for 15+ sensitive data patterns active.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[CHAIN] Extended PromptSend: 30+ chain pattern templates injected into context for chain methodology guidance.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Time-boxing reminder: Max 10 min per chain step. If blocked, document blocker and move to alternative path.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Chain depth guidance: Prefer 3-step chains over 2-step. Each step must be independently verifiable.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Bug bounty platform nuances: HackerOne rewards impact. Bugcrowd rewards reproducibility. Intigriti rewards creativity. Immunefi rewards severity.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[CHAIN] Scope violation reminder: Do not chain out of scope bugs. All chain steps must be in-scope targets.' -ForegroundColor Red"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'ssh|scp|sftp|rsync|telnet|rlogin|rsh|ftp|sftp|tftp|netcat|ncat|socat|plink|putty|bitvise|mobaxterm|xshell|xmanager') { Write-Host '[CHAIN PRE] Remote access tool detected. Document: target host, port, protocol. Chain value: shell access->data exfil->lateral movement.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'snapshot|volume|mount|ebs|persistent|pv|pvc|storageclass|gluster|ceph|nfs|iscsi') { Write-Host '[CHAIN PRE] Storage/volume interaction. Chain candidate: volume access->snapshot->data exfil->PII breach. Document volume name and mount path.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'secret|vault|keyvault|secretsmanager|keyring|passwordsafe|keeper|1password|bitwarden|lastpass') { Write-Host '[CHAIN PRE] Secrets manager interaction. Document: secret name, value (redacted), access method. Chain candidate: secret->credential->impersonation.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'queue|sqs|kafka|rabbit|activemq|redis|celery|rq|bull|mq|event|pubsub|topic|subscription') { Write-Host '[CHAIN PRE] Message queue/broker interaction. Document: queue name, messages accessed. Chain candidate: read queue->credential leak->ATO.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'dns|tls|certificate|ca|pki|letsencrypt|acme|dnsmasq|bind|powerdns|cloudflare|route53|gcloud.dns|azure.dns') { Write-Host '[CHAIN PRE] DNS/TLS interaction. Chain candidate: DNS takeover->host phishing. Certificate access->private key->MITM.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'backup|snapshot|replica|replication|failover|disaster.recovery|dr|restore|mv|cp|rsync|tar|zip|7z|rar') { Write-Host '[CHAIN PRE] Backup/replication interaction. Chain candidate: backup access->data dump->PII/secret exfil. Document backup location and retention.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'api|endpoint|route|path|url|uri|graphql|rest|soap|grpc|webhook|hook|webhook|callback') { Write-Host '[CHAIN PRE] API interaction. Document: endpoint, method, headers, body. Chain candidate: API abuse->data exfil->follow-up attack.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'session|active|logged|login|auth|authenticated|token|cookie|bearer|jwt|session_id|connect.sid|PHPSESSID|JSESSIONID') { Write-Host '[CHAIN PRE] Session interaction. Document: session token type, lifetime, scope. Chain candidate: session hijack->ATO->full access.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'password|passwd|pass|secret|hash|bcrypt|argon|scrypt|pbkdf2|md5|sha1|sha256|sha512|crypt|encrypt') { Write-Host '[CHAIN PRE] Credential/hash interaction. Document: hash type, salt presence. Chain candidate: hash crack->password reuse->ATO on other systems.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'mfa|2fa|totp|otp|hotp|webauthn|u2f|fido|sms.*code|email.*code|authenticator|duo|okta|authy|google.authenticator') { Write-Host '[CHAIN PRE] MFA/2FA interaction. Document: MFA type, bypass method. Chain candidate: bypass 2FA->ATO->persistent access.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match '.env|\.env\.local|\.env\.dev|\.env\.prod|\.env\.staging|config\.env|environment|dotenv') { Write-Host '[CHAIN PRE] ENV file read. HIGH CHAIN VALUE. Check for: API keys, database URLs, JWT secrets, cloud credentials, third-party tokens.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match 'composer\.json|package\.json|requirements\.txt|Gemfile|go\.mod|pom\.xml|build\.gradle|Cargo\.toml|package-lock|yarn\.lock|Pipfile|poetry\.lock') { Write-Host '[CHAIN PRE] Dependency file read. Check for: outdated packages with known CVEs, internal package URLs, devDependencies secrets.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match 'Dockerfile|docker-compose|\.dockerignore|Containerfile|Buildah|Podman|nerdctl|containerd') { Write-Host '[CHAIN PRE] Container config read. Check for: base image, exposed ports, secrets in ENV, volume mounts, privileged mode, host network.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match '\.git|\.gitignore|HEAD|config|packed-refs|objects|refs|logs|index|shallow|description|info|hooks') { Write-Host '[CHAIN PRE] Git repository access. Check for: previous commits with secrets, git history sensitive data, .git/config credentials.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Read",
+      "command": "if ($lastCommand -match 'htaccess|\.htaccess|htpasswd|web\.config|nginx\.conf|apache2\.conf|httpd\.conf|lighttpd\.conf|caddy\.conf|traefik\.yml|ingress\.yml') { Write-Host '[CHAIN PRE] Web server config read. Check for: basic auth creds, IP whitelist, proxy_pass to internal services, secret paths.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Grep",
+      "command": "if ($lastCommand -match 'AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z-_]{35}|sk_live_[0-9a-zA-Z]{24,}|sk_test_[0-9a-zA-Z]{24,}|ghp_[0-9a-zA-Z]{36}|github_pat_[0-9a-zA-Z]{22}_|xox[baprs]-|-----BEGIN (RSA|DSA|EC|OPENSSH|PGP)') { Write-Host '[CHAIN PRE] HIGH: Hardcoded secret pattern matched. Document secret type, location, scope. CRITICAL chain value.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Grep",
+      "command": "if ($lastCommand -match 'mongodb(\+srv)?://|postgres(ql)?://|mysql://|mariadb://|redis://|amqp://|mqtt://|kafka://|elasticsearch://|rabbitmq://|memcache://|memcached://|couchdb://|couchbase://') { Write-Host '[CHAIN PRE] Database connection string matched. Document: DB type, host, credentials (redacted). Chain value: connect->exfil->data breach.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Write",
+      "command": "if ($lastCommand -match '\.php|\.asp|\.aspx|\.jsp|\.py|\.pl|\.rb|\.cgi|\.sh|\.bash|\.zsh|\.fish|\.bat|\.cmd|\.ps1|\.psm1|\.psd1') { Write-Host '[CHAIN PRE] Code file write detected. Check if web-accessible. Chain candidate: upload shell->RCE->takeover.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Edit",
+      "command": "if ($lastCommand -match '\.env|config|settings|application|app|database|credentials|secrets|auth|users|permissions|roles|admins|staff|payment|stripe|paypal') { Write-Host '[CHAIN PRE] Config file edit detected. Chain candidate: config tampering->auth bypass->privilege escalation.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'sudo|su\s|doas|pkexec|runas|Invoke-Expression|iex|Start-Process|New-Object|System\.Diagnostics|Process::Start') { Write-Host '[CHAIN POST] Privilege escalation or code execution context in output. Document exact command and resulting privileges.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'root|wheel|admin|administrator|sudoers|sudo group|0:0|uid=0|gid=0') { Write-Host '[CHAIN POST] ROOT/ADMIN access achieved. This is a Significant chain milestone. Document: access method, persistence options.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'crontab|cron|at\s|systemd|timer|schedule|launchd|task scheduler|schtasks') { Write-Host '[CHAIN POST] Scheduler/task interaction. Document: job name, command, schedule. Chain value: persistence, delayed execution, privilege.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'cipher|aes|rsa|ecc|des|3des|blowfish|chacha|poly1305|hmac|sha256|md5|bcrypt|scrypt|argon2|pbkdf2|jwt|jwe|jws|encrypt|decrypt') { Write-Host '[CHAIN POST] Cryptographic operation in chain step. Document: algorithm, key source, plaintext/ciphertext. Chain value: key theft->decrypt->data.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'container|docker|podman|lxc|lxd|runc|crun|containerd|kata|gvisor|firecracker|namespace|cgroup') { Write-Host '[CHAIN POST] Container/runtime interaction. Document: runtime type, escape method. Chain candidate: container escape->host access->cloud metadata.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'network|vpc|vnet|subnet|route|gateway|nat|firewall|security.group|nsg|acl|network.policy|calico|cilium|weave') { Write-Host '[CHAIN POST] Network config interaction. Document: network segment, ACL rules, exposed services. Chain value: lateral movement->internal services.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'iam|role|policy|permission|arn|aws_iam|serviceaccount|rbac|clusterrole|clusterrolebinding|serviceaccount|workload.identity') { Write-Host '[CHAIN POST] IAM/permissions interaction. Document: role ARN, attached policies, effective permissions. Chain value: overprivileged role->escalation->cloud takeover.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'lambda|function|invoke|runtime|handler|layer|alias|version|qualifier|arn:aws:lambda') { Write-Host '[CHAIN POST] Lambda/serverless interaction. Document: function ARN, runtime, environment variables. Chain value: env vars->secrets->cloud access.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'kms|key|encrypt|decrypt|generate_data_key|seal|unseal|vault transit|public|certificate manager|tls') { Write-Host '[CHAIN POST] KMS/encryption service interaction. Document: key ID, key policy, access level. Chain risk: key misuse->decrypt->data breach.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'sns|sqs|s3|event|trigger|rule|gateway|api.gateway|apigateway|alb|elb|nlb|cloudfront|route53|cloudfront') { Write-Host '[CHAIN POST] AWS service interaction. Document: service name, ARN, event type. Chain value: privilege escalation->service abuse->cloud takeover.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Glob",
+      "command": "if ($lastOutput -match '.env|\.env|\.pem|\.key|\.p12|\.pfx|\.jks|\.keystore|\.truststore|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.txt|\.log|\.bak|\.old|\.swp|\.tmp|\.cache') { Write-Host '[CHAIN POST] Sensitive file extension found via Glob. Verify permissions and content. Chain value: credential->lateral movement.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Grep",
+      "command": "if ($lastOutput -match 'password|passwd|pass|secret|token|key|credential|api_key|apikey|private_key|BEGIN.*PRIVATE|BEGIN.*RSA|secret_key|access_key') { Write-Host '[CHAIN POST] Credential pattern in grep results. Document: credential type, context, usage. CRITICAL for chain: secret->impersonation.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Write",
+      "command": "if ($lastOutput -match '\.json|\.xml|\.yaml|\.yml|\.toml|\.ini|\.cfg|\.conf|\.config') { Write-Host '[CHAIN POST] Config file written. Check: is this file loaded by system? Does it override security settings? Chain value: config poison->bypass.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Read",
+      "command": "Write-Host '[CHAIN POST] File read completed. Categorize: (a) code, (b) config, (c) credential, (d) data, (e) log. Assign chain probability to each category.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain validation checklist: (1) Bug A has /validator PASS, (2) Each step has curl+response+impact, (3) Chain logic is sound, (4) Impact is quantified, (5) Remediation is specific.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Bug B identification: For each chain step, identify: what new capability does this step grant? What is the intermediate state?' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Bug C (impact max) identification: What is the final blast radius? How many users/systems? Financial/sensitive data volume?' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Evidence packaging: For each chain finding, produce: (1) summary.md, (2) steps.json, (3) evidence.zip (curl files, screenshots, responses).' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Partial chain reporting: Even partial chains (A->B only) are reportable if both steps have independent evidence. Note: partial chain = no CVSS upgrade.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain correlation: Cross-reference chain steps with recon data (nuclei, httpx, gospider). Reuse recon evidence as chain step proof.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Multi-vector chains: Chains can combine different bug types (e.g., IDOR->SSRF->RCE). Document each vector type separately.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] State management: Track chain state in chain/state.json. Fields: current_step, steps_completed, evidence_status, chain_status (active/paused/completed/failed).' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Failure recovery: If a chain step fails, document the failure. Try alternative vector. If all paths blocked, report partial chain with null result evidence.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Time-boxing enforcement: Chain step max 10 min. If no progress in 5 min, pivot. Document pivot reason in chain log.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Collaboration mode: Chain building may span sessions. Use chain/v2, chain/v3 naming for iterations. Merge on completion.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Parallel chain testing: Test multiple chain hypotheses in parallel. Track each independently. Combine successful chains.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Chain hygiene: Deduplicate requests across chain steps. Remove redundant probes. Keep chain focused on shortest viable path to impact.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Reporting hints: HackerOne - attach chain.json. Bugcrowd - attach evidence.zip. Intigriti - attach steps.json. Immunefi - attach full chain documentation.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CHAIN CTX] Legal note: Only chain bugs in-scope. Obtain written authorisation for active testing. Document scope boundaries in chain report.' -ForegroundColor DarkGray"
+    }
+  ]
+}

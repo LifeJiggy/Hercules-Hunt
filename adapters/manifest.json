@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json.schemastore.org/opencode-plugin.json",
+  "name": "jiggy-2026-adapters",
+  "version": "1.0.0",
+  "description": "Portable adapter map for Jiggy-2026 bug bounty system across all 18+ agentic CLIs.",
+  "author": "Jiggy",
+  "license": "MIT",
+  "supportedTargets": [
+    "codex",
+    "claude-code",
+    "opencode",
+    "kilocode",
+    "kimi-code",
+    "hermes-agent",
+    "aider",
+    "gemini-cli",
+    "goose",
+    "cursor",
+    "windsurf",
+    "cline",
+    "roo-code",
+    "continue",
+    "zed",
+    "sourcegraph-cody",
+    "github-copilot",
+    "jetbrains-ai"
+  ],
+  "components": {
+    "agents": {
+      "path": "agents/",
+      "description": "17 AI agent definitions (recon, p1-warrior, chain-builder, js-analysis, report-writer, validator, autopilot, token-auditor, web3-auditor, exploit-researcher, network-analyst, redteam-planner, reverse-engineer, security-reviewer, ai-researcher, recon-ranker, js-deobfuscation)",
+      "count": 17
+    },
+    "rules": {
+      "path": "rules/",
+      "description": "13 always-active behavioral guardrails (hunting, reporting, recon, scope, chain-rules, evidence, mindset, js-analysis, js-deobfuscation, auth-testing, api-testing, mobile-testing, windows-workflow)",
+      "count": 13
+    },
+    "tools": {
+      "path": "tools/",
+      "description": "8 executable hunting tools (curl-hunter, js-analyzer, powershell-lib, python-hunter, recon-toolkit, fuzzer-toolkit, evidence-toolkit, jiggy)",
+      "count": 8
+    },
+    "skills": {
+      "path": "SKILL.md + sub-skill dirs",
+      "description": "Claude Code skill definitions (root SKILL.md, bug-bounty, security-arsenal, triage-validation, report-writing)"
+    },
+    "config": {
+      "path": "CLAUDE.md + plugin.json + AGENTS.md + opencode.json",
+      "description": "Universal config files for all platforms"
+    },
+    "hooks": {
+      "path": "hooks/ + .claude/",
+      "description": "Session lifecycle hooks and Claude Code settings"
+    },
+    "mcp": {
+      "path": "mcp/",
+      "description": "MCP client configurations (Burp Suite, Caido, HackerOne)"
+    }
+  },
+  "platforms": {
+    "codex": {
+      "install_path": "~/.codex/plugins/jiggy-2026/",
+      "entry": "plugin.json",
+      "format": "plugin.json + skill files"
+    },
+    "claude-code": {
+      "install_path": "~/.claude/",
+      "entry": ".claude/settings.json",
+      "format": "skills/ + agents/ + rules/ + hooks/"
+    },
+    "opencode": {
+      "install_path": "~/.config/opencode/jiggy-2026/",
+      "entry": "opencode.json + AGENTS.md",
+      "format": "opencode.json + AGENTS.md agent registry"
+    },
+    "kilocode": {
+      "install_path": "~/.config/kilocode/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "agent instruction files"
+    },
+    "kimi-code": {
+      "install_path": "~/.config/kimi-code/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "agent instruction files"
+    },
+    "hermes-agent": {
+      "install_path": "~/.config/hermes-agent/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "agent instruction files"
+    },
+    "aider": {
+      "install_path": "~/.aider/jiggy-2026/",
+      "entry": ".aider.rules.md",
+      "format": "rules file + instructions"
+    },
+    "gemini-cli": {
+      "install_path": "~/.config/gemini-cli/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "context file"
+    },
+    "goose": {
+      "install_path": "~/.config/goose/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "recipe/instruction files"
+    },
+    "cursor": {
+      "install_path": ".cursor/rules/jiggy-2026/ (project-level)",
+      "entry": "rules/*.md",
+      "format": "project rules"
+    },
+    "windsurf": {
+      "install_path": ".windsurf/rules/jiggy-2026/ (project-level)",
+      "entry": "rules/*.md",
+      "format": "workspace rules"
+    },
+    "cline": {
+      "install_path": "~/.config/cline/jiggy-2026/",
+      "entry": ".clinerules",
+      "format": "custom instructions"
+    },
+    "roo-code": {
+      "install_path": "~/.config/roo-code/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "modes and rules"
+    },
+    "continue": {
+      "install_path": "~/.continue/jiggy-2026/",
+      "entry": "config.json",
+      "format": "assistant context"
+    },
+    "zed": {
+      "install_path": "~/.config/zed/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "agent instruction context"
+    },
+    "sourcegraph-cody": {
+      "install_path": "~/.config/sourcegraph-cody/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "custom commands/context"
+    },
+    "github-copilot": {
+      "install_path": "~/.config/github-copilot/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "repository instructions"
+    },
+    "jetbrains-ai": {
+      "install_path": "~/.config/JetBrains/jiggy-2026/",
+      "entry": "CLAUDE.md",
+      "format": "project guideline context"
+    }
+  },
+  "installer": {
+    "script": "scripts/jiggy-adapter.py",
+    "preview": "python scripts/jiggy-adapter.py --target all --dry-run",
+    "applyOne": "python scripts/jiggy-adapter.py --target claude-code --apply",
+    "applyAll": "python scripts/jiggy-adapter.py --target all --apply",
+    "listTargets": "python scripts/jiggy-adapter.py --list-targets",
+    "componentInstall": "python scripts/jiggy-adapter.py --target all --component skills --apply",
+    "stagedInstall": "python scripts/jiggy-adapter.py --target all --target-root ./adapter-preview --apply",
+    "customHome": "python scripts/jiggy-adapter.py --target claude-code --home ~/custom-home --apply"
+  },
+  "compatibility": {
+    "os": ["windows", "macos", "linux"],
+    "python": "3.8+",
+    "runtime": ["powershell 5.1+", "curl.exe"]
+  }
+}

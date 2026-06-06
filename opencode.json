@@ -1,0 +1,151 @@
+{
+  "$schema": "https://opencode.ai/schemas/config.json",
+  "name": "jiggy-2026",
+  "version": "1.0.0",
+  "description": "Comprehensive bug bounty hunting skill system — recon, vulnerability hunting, chaining, reporting",
+  "agent_settings": {
+    "default_subagent": "explore",
+    "max_tool_rounds": 50
+  },
+  "agents": {
+    "recon-agent": {
+      "description": "Subdomain enumeration and live host discovery specialist. Runs passive/active subdomain enum, URL crawling, tech fingerprinting.",
+      "subagent_type": "explore",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/recon-agent.md"
+    },
+    "p1-warrior": {
+      "description": "Priority-1 systematic bug hunter. Tests IDOR, SSRF, XSS, auth bypass, mass assignment, business logic across P1 targets.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/p1-warrior.md"
+    },
+    "chain-builder": {
+      "description": "Exploit chain builder. Takes bug A and finds B/C to chain for higher severity. Covers IDOR, SSRF, XSS, OAuth, JWT chains.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/chain-builder.md"
+    },
+    "js-analysis": {
+      "description": "JavaScript bundle analysis. Extracts hidden endpoints, API keys, secrets, feature flags, cloud credentials from JS.",
+      "subagent_type": "explore",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/js-analysis.md"
+    },
+    "js-deobfuscation": {
+      "description": "Reverse minified/obfuscated JS bundles. Handles webpack, array obfuscation, string encoding, control flow obfuscation.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/js-deobfuscation.md"
+    },
+    "report-writer": {
+      "description": "Professional bug bounty report generator. HackerOne, Bugcrowd, Intigriti, Immunefi formats. Impact-first writing.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/report-writer.md"
+    },
+    "validator": {
+      "description": "7-Question Gate finding validator. Kills weak/theoretical findings fast. Prevents N/A submissions.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/validator.md"
+    },
+    "autopilot": {
+      "description": "Autonomous hunt loop. Full cycle: scope → recon → rank → hunt → validate → report. Configurable paranoid/normal/yolo modes.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/autopilot.md"
+    },
+    "token-auditor": {
+      "description": "Meme coin and token security auditor. Checks hidden mint, honeypot, fee manipulation, LP drain, fake renounce. EVM + Solana.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/token-auditor.md"
+    },
+    "web3-auditor": {
+      "description": "Smart contract security auditor. 10 bug classes: accounting desync, access control, reentrancy, oracle manipulation.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/web3-auditor.md"
+    },
+    "exploit-researcher": {
+      "description": "CVE research, patch diffing, exploit development, mitigation bypass. Researches known and unknown vulnerabilities.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/exploit-researcher.md"
+    },
+    "network-analyst": {
+      "description": "Packet analysis, protocol dissection, IDS/IPS rules, firewall auditing, traffic correlation, C2 detection.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/network-analyst.md"
+    },
+    "redteam-planner": {
+      "description": "Red team engagement planner. Attack paths, C2 infrastructure, persistence, OPSEC, MITRE ATT&CK mapping.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/redteam-planner.md"
+    },
+    "reverse-engineer": {
+      "description": "Binary analysis, disassembly, decompilation, firmware extraction, protocol RE. IDA/Ghidra/Frida/angr.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/reverse-engineer.md"
+    },
+    "security-reviewer": {
+      "description": "Code audit against OWASP Top 10, CWE Top 25. Language-specific patterns for JS, Python, Ruby, Java, C#, Go.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/security-reviewer.md"
+    },
+    "ai-researcher": {
+      "description": "LLM security testing, prompt injection, model architecture, training optimization, safety alignment.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep", "WebFetch"],
+      "file": "agents/ai-researcher.md"
+    },
+    "recon-ranker": {
+      "description": "Attack surface ranking and prioritization. Scores endpoints by IDOR likelihood, API surface, tech stack match, feature age.",
+      "subagent_type": "general",
+      "tools": ["Bash", "Read", "Write", "Glob", "Grep"],
+      "file": "agents/recon-ranker.md"
+    }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(powershell -ExecutionPolicy Bypass -File tools/*.ps1 *)",
+      "Bash(python tools/*.py *)",
+      "Bash(curl.exe *)",
+      "Bash(Select-String *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-Content *)"
+    ],
+    "deny": [
+      "Bash(*rm * -Recurse -Force*)",
+      "Bash(*Remove-Item * -Recurse*)",
+      "Bash(*format * -Force*)",
+      "Bash(*del /F /S*)"
+    ],
+    "ask": [
+      "Bash(*invoke-webrequest *)",
+      "Bash(*wget *)"
+    ]
+  },
+  "rules": [
+    { "name": "hunting", "path": "rules/hunting.md", "description": "Hunting methodology and discipline" },
+    { "name": "reporting", "path": "rules/reporting.md", "description": "Report quality and submission rules" },
+    { "name": "scope", "path": "rules/scope.md", "description": "Scope management and verification" },
+    { "name": "chain", "path": "rules/chain-rules.md", "description": "Vulnerability chaining rules" },
+    { "name": "evidence", "path": "rules/evidence.md", "description": "Evidence collection and PoC hygiene" },
+    { "name": "mindset", "path": "rules/mindset.md", "description": "Operator psychology and strategy" },
+    { "name": "auth-testing", "path": "rules/auth-testing.md", "description": "Authentication bypass testing" },
+    { "name": "api-testing", "path": "rules/api-testing.md", "description": "API fuzzing and methodology" }
+  ],
+  "tools_config": {
+    "python_hunter": "python tools/python-hunter.py",
+    "powershell_prefix": "powershell -ExecutionPolicy Bypass -File",
+    "recon": "tools/recon-toolkit.ps1",
+    "curl_hunter": "tools/curl-hunter.ps1",
+    "fuzzer": "tools/fuzzer-toolkit.ps1"
+  }
+}

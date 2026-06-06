@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "name": "Jiggy-2026 Bug Bounty System",
+  "hooks": {
+    "PreToolUse": [],
+    "PostToolUse": [],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Write-Host 'Jiggy-2026 Bug Bounty System loaded. 17 agents, 13 rules, 7 tools available.' -ForegroundColor Cyan",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "SessionStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "Write-Host 'Session ended. Run /pickup to resume later. Save findings in findings/.' -ForegroundColor Yellow",
+            "timeout": 5,
+            "async": true
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "[ -f tools/memory_gc.py ] && python -m tools.memory_gc --rotate >$null 2>&1 || $true",
+            "timeout": 30,
+            "async": true
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(powershell -ExecutionPolicy Bypass -File *)",
+      "Bash(python *)",
+      "Bash(curl.exe *)",
+      "Bash(Select-String *)",
+      "Bash(Get-ChildItem *)",
+      "Bash(Get-Content *)",
+      "Bash(New-Item *)",
+      "Bash(Set-Location *)"
+    ],
+    "deny": [
+      "Bash(Remove-Item * -Recurse *)",
+      "Bash(Stop-Process *)",
+      "Bash(Format-Volume *)",
+      "Bash(Clear-Content *)"
+    ],
+    "ask": [
+      "Bash(*net user *)",
+      "Bash(*Add-Type *)",
+      "Bash(*Register-ScheduledTask *)"
+    ]
+  },
+  "skills": {
+    "dirs": [
+      "skills/",
+      "agents/",
+      "rules/"
+    ]
+  },
+  "agent_defaults": {
+    "model": "claude-sonnet-4-6",
+    "max_tokens": 8192
+  }
+}

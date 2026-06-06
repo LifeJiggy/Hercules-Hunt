@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
+  "name": "jiggy-2026",
+  "version": "1.0.0",
+  "description": "Comprehensive bug bounty hunting skill system — recon, vulnerability hunting, chaining, reporting. Compatible with Claude Code, OpenCode, Codex CLI, and any agentic coding CLI.",
+  "author": "Jiggy",
+  "license": "MIT",
+  "keywords": [
+    "bug-bounty",
+    "security",
+    "penetration-testing",
+    "vulnerability-hunting",
+    "recon",
+    "idor",
+    "ssrf",
+    "xss",
+    "sqli",
+    "jwt",
+    "oauth",
+    "saml",
+    "web3",
+    "smart-contract-audit",
+    "meme-coin",
+    "token-audit",
+    "deobfuscation",
+    "js-analysis",
+    "windows-hunting",
+    "powershell",
+    "curl"
+  ],
+  "categories": [
+    "security",
+    "bug-bounty",
+    "recon",
+    "vulnerability-assessment"
+  ],
+  "platforms": {
+    "claude-code": {
+      "settings": ".claude/settings.json",
+      "hooks": "hooks/hooks.json",
+      "skills_dir": "skills/",
+      "commands_dir": "commands/",
+      "agents_dir": "agents/"
+    },
+    "opencode": {
+      "config": "opencode.json",
+      "agents_file": "AGENTS.md"
+    },
+    "codex-cli": {
+      "context_file": "CLAUDE.md"
+    },
+    "generic": {
+      "tools_dir": "tools/",
+      "rules_dir": "rules/"
+    }
+  },
+  "entry_points": {
+    "powershell": "tools/jiggy.ps1",
+    "python": "tools/jiggy.py"
+  },
+  "install": {
+    "windows": "powershell -ExecutionPolicy Bypass -File install.ps1",
+    "linux": "bash install.sh",
+    "macos": "bash install.sh"
+  },
+  "dependencies": {
+    "runtime": ["powershell 5.1+", "python 3.8+", "curl.exe"],
+    "optional": ["Burp Suite", "node.js", "git"]
+  },
+  "skills": [
+    {
+      "id": "recon-agent",
+      "name": "Recon Agent",
+      "description": "Subdomain enumeration, live host discovery, URL crawling, technology fingerprinting. Use for initial recon on new targets.",
+      "path": "agents/recon-agent.md"
+    },
+    {
+      "id": "p1-warrior",
+      "name": "P1-Warrior",
+      "description": "Priority-1 systematic bug hunter. Tests IDOR, SSRF, XSS, auth bypass, mass assignment, business logic across P1 targets.",
+      "path": "agents/p1-warrior.md"
+    },
+    {
+      "id": "chain-builder",
+      "name": "Chain Builder",
+      "description": "Exploit chain builder. Takes bug A and finds B and C to chain for higher severity. Covers IDOR, SSRF, XSS, OAuth, JWT chains.",
+      "path": "agents/chain-builder.md"
+    },
+    {
+      "id": "js-analysis",
+      "name": "JS Analysis",
+      "description": "JavaScript bundle analysis. Extracts hidden endpoints, API keys, secrets, feature flags, cloud credentials, OAuth tokens from JS.",
+      "path": "agents/js-analysis.md"
+    },
+    {
+      "id": "js-deobfuscation",
+      "name": "JS Deobfuscation",
+      "description": "Reverse minified/obfuscated JS bundles. Handles webpack, array obfuscation, string encoding, control flow obfuscation.",
+      "path": "agents/js-deobfuscation.md"
+    },
+    {
+      "id": "report-writer",
+      "name": "Report Writer",
+      "description": "Professional bug bounty report generator. HackerOne, Bugcrowd, Intigriti, Immunefi formats. Impact-first writing, CVSS 4.0.",
+      "path": "agents/report-writer.md"
+    },
+    {
+      "id": "validator",
+      "name": "Validator",
+      "description": "7-Question Gate finding validator. Kills weak/theoretical findings fast. Prevents N/A submissions.",
+      "path": "agents/validator.md"
+    },
+    {
+      "id": "autopilot",
+      "name": "Autopilot",
+      "description": "Autonomous hunt loop. Full cycle: scope → recon → rank → hunt → validate → report. Configurable paranoid/normal/yolo modes.",
+      "path": "agents/autopilot.md"
+    },
+    {
+      "id": "token-auditor",
+      "name": "Token Auditor",
+      "description": "Meme coin and token security auditor. Checks hidden mint, honeypot, fee manipulation, LP drain, fake renounce. EVM + Solana.",
+      "path": "agents/token-auditor.md"
+    },
+    {
+      "id": "web3-auditor",
+      "name": "Web3 Auditor",
+      "description": "Smart contract security auditor. 10 bug classes: accounting desync, access control, reentrancy, oracle manipulation, etc.",
+      "path": "agents/web3-auditor.md"
+    },
+    {
+      "id": "exploit-researcher",
+      "name": "Exploit Researcher",
+      "description": "CVE research, patch diffing, exploit development, mitigation bypass. Researches known and unknown vulnerabilities.",
+      "path": "agents/exploit-researcher.md"
+    },
+    {
+      "id": "network-analyst",
+      "name": "Network Analyst",
+      "description": "Packet analysis, protocol dissection, IDS/IPS rules, firewall auditing, traffic correlation, C2 detection.",
+      "path": "agents/network-analyst.md"
+    },
+    {
+      "id": "redteam-planner",
+      "name": "Red Team Planner",
+      "description": "Red team engagement planner. Attack paths, C2 infrastructure, persistence, OPSEC, MITRE ATT&CK mapping.",
+      "path": "agents/redteam-planner.md"
+    },
+    {
+      "id": "reverse-engineer",
+      "name": "Reverse Engineer",
+      "description": "Binary analysis, disassembly, decompilation, firmware extraction, protocol reverse engineering. IDA/Ghidra/Frida/angr.",
+      "path": "agents/reverse-engineer.md"
+    },
+    {
+      "id": "security-reviewer",
+      "name": "Security Reviewer",
+      "description": "Code audit against OWASP Top 10, CWE Top 25. Language-specific patterns for JS, Python, Ruby, Java, C#, Go.",
+      "path": "agents/security-reviewer.md"
+    },
+    {
+      "id": "ai-researcher",
+      "name": "AI Researcher",
+      "description": "LLM security testing, prompt injection, model architecture analysis, training optimization, safety alignment.",
+      "path": "agents/ai-researcher.md"
+    },
+    {
+      "id": "recon-ranker",
+      "name": "Recon Ranker",
+      "description": "Attack surface ranking and prioritization. Scores endpoints by IDOR likelihood, API surface, tech stack match, feature age.",
+      "path": "agents/recon-ranker.md"
+    }
+  ],
+  "rules": [
+    { "id": "hunting", "path": "rules/hunting.md", "description": "Hunting methodology and discipline" },
+    { "id": "reporting", "path": "rules/reporting.md", "description": "Report quality and submission rules" },
+    { "id": "scope", "path": "rules/scope.md", "description": "Scope management and verification" },
+    { "id": "recon", "path": "rules/recon.md", "description": "Reconnaissance discipline" },
+    { "id": "chain-rules", "path": "rules/chain-rules.md", "description": "Vulnerability chaining rules" },
+    { "id": "evidence", "path": "rules/evidence.md", "description": "Evidence collection and PoC hygiene" },
+    { "id": "mindset", "path": "rules/mindset.md", "description": "Operator psychology and strategy" },
+    { "id": "js-analysis-rules", "path": "rules/js-analysis.md", "description": "JavaScript analysis rules" },
+    { "id": "js-deobfuscation-rules", "path": "rules/js-deobfuscation.md", "description": "JS deobfuscation methodology" },
+    { "id": "auth-testing", "path": "rules/auth-testing.md", "description": "Authentication bypass testing" },
+    { "id": "api-testing", "path": "rules/api-testing.md", "description": "API fuzzing and methodology" },
+    { "id": "mobile-testing", "path": "rules/mobile-testing.md", "description": "Mobile app security testing" },
+    { "id": "windows-workflow", "path": "rules/windows-workflow.md", "description": "Windows-specific hunting" }
+  ],
+  "tools": [
+    { "name": "curl-hunter.ps1", "path": "tools/curl-hunter.ps1", "description": "curl.exe master toolkit" },
+    { "name": "js-analyzer.ps1", "path": "tools/js-analyzer.ps1", "description": "JS bundle analysis toolkit" },
+    { "name": "powershell-lib.ps1", "path": "tools/powershell-lib.ps1", "description": "PowerShell one-liner library" },
+    { "name": "python-hunter.py", "path": "tools/python-hunter.py", "description": "Python hunting toolkit" },
+    { "name": "recon-toolkit.ps1", "path": "tools/recon-toolkit.ps1", "description": "Recon automation pipeline" },
+    { "name": "fuzzer-toolkit.ps1", "path": "tools/fuzzer-toolkit.ps1", "description": "HTTP fuzzing toolkit" },
+    { "name": "evidence-toolkit.ps1", "path": "tools/evidence-toolkit.ps1", "description": "Evidence capture and sanitization" }
+  ]
+}

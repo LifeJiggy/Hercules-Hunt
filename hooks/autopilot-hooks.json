@@ -1,0 +1,525 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '=== autopilot hook system initialized ===' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Autonomous hunt loop agent active. Model: claude-sonnet-4-6. Full cycle: scope -> recon -> rank -> hunt -> validate -> report.' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Operational modes: --paranoid (approval at each step), --normal (agent-level checkpoints), --yolo (fully autonomous, high-risk).' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] All HTTP requests logged to audit.jsonl. Every command, timestamp, target, agent, and outcome recorded.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Checkpoint frequency by mode: paranoid = every step (10-20 min), normal = per-phase (30-60 min), yolo = per-bug-class (2-3 min).' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Integration map: recon-agent -> recon-ranker -> p1-warrior -> validator -> report-writer. chain-builder, js-analysis, js-deobfuscation triggered on demand by p1-warrior.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] State management: state/ directory stores progress.json (phase, target, findings count, timestamp). Resume from last checkpoint on restart.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Safety guardrails: (1) scope enforcement mandatory, (2) rate limits auto-applied, (3) DoS disabled by default, (4) PII redaction required, (5) secrets sanitized before output.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Failure recovery: if agent fails or times out, autopilot retries up to 3 times with backoff, then escalates to nearest checkpoint for user input.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Phase budget allocation: Phase-1 (scope+recon+ranker) = 35% of total time, Phase-2 (hunt) = 45%, Phase-3 (validate+report) = 20%. Rebalance when target complexity exceeds baseline.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] State machine: IDLE -> SCOPING -> RECON -> RANKING -> HUNTING -> VALIDATING -> REPORTING -> COMPLETE. Each transition logged and checkpointed.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Error recovery protocol: transient errors (timeout, rate limit) -> exponential backoff retry (1s, 2s, 4s). Persistent errors -> checkpoint -> notify user. Fatal errors -> abort with forensic dump.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Retry policy: max 3 retries per agent invocation. Retry conditions: HTTP 429, 502, 503, 504, connection timeout, DNS resolution failure. Non-retryable: 400, 401, 403, 404 with auth context.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Credential hygiene protocol: all credentials stored in findings/confidential/ (gitignored). Never log raw credentials. API keys rotated after each hunt session. Test accounts disabled within 24 hours of session end.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Burner account policy: dedicated burner accounts created per target domain. Account properties tracked: username, email, creation timestamp, associated target, status (active/deprecated).' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Rate limit enforcement: httpx max 150 req/min, nuclei max 50 req/min, katana max 30 req/min, amass passive only. Burp/Manual = unlimited but time-boxed.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Knowledge base location: state/knowledge/. Subdirectories: patterns/ (bug patterns), iocs/ (indicators of compromise), tools/ (tool effectiveness scores), credentials/ (hashed credential history).' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] CLI argument parsing: --target (required), --mode (paranoid/normal/yolo), --resume-from (checkpoint ID), --time-budget (minutes), --bug-classes (comma list), --dry-run.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Parallel execution limits: max 3 concurrent bash commands. Priority queue: recon tools > hunter tools > cleanup tools. Exhaustion policy: FIFO with agent-aware reordering.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Tool permission matrix: Read (always), Write (state mgmt only), Bash (rate-limited), WebFetch (recon-only), WebSearch (passive recon only). Edit requires Paranoid mode approval.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Scope file format: scope.json. Required fields: program_name, in_scope_domains, in_scope_ips, in_scope_cidrs, out_of_scope_wildcards, authorized_test_types, waf_override, contact_email.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] WAF detection protocol: if WAF detected (403 patterns, CAPTCHA, rate limit at <10 req), automatically rotate: (1) request headers, (2) timing/delay, (3) tool/technique, (4) proxy if configured.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Safe harbor compliance: all activities confined to in-scope assets. OOS detection triggers immediate halt. User notified within 60 seconds of OOS breach detection.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Findings storage: findings/ directory per target. Structure: confirmed/, potential/, discarded/, confidential/ (encrypted), evidence/ (screenshots, HAR files, raw responses).' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Report format templates: HackerOne (markdown), Bugcrowd (markdown), Intigriti (JSON), Immunefi (markdown). Template auto-selected from hunt mode. Validator output feeds template directly.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[AUTOPILOT] Token/session finding handling: JWTs, session cookies, CSRF tokens detected = immediate validation, scope check, token refresh required before reuse. Auth tokens stored in findings/confidential/encrypted/.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[AUTOPILOT] WARNING: --yolo mode runs exploits without confirmation. Use ONLY with explicit written authorization and time-boxed engagements.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[AUTOPILOT] ALL findings must pass the 7-Question Gate (validator agent) before submission. No theoretical findings.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[AUTOPILOT] NOTICE: Autopilot does NOT submit reports automatically in any mode. Submission always requires explicit user command to prevent accidental submissions.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[AUTOPILOT] NOTICE: All destructive operations ( DELETE, DROP, TRUNCATE ) require --force flag in paranoid mode only. All other modes block by default.' -ForegroundColor Red"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[AUTO PRE] Autopilot orchestration check: verifying phase alignment and state consistency before executing tool.' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'state.*json|progress.*json|checkpoint|resume|autopilot.*state') { Write-Host '[AUTO PRE] State management operation detected. Verify checkpoint file exists and is not corrupted.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'scope|target|in.scope|out.scope|cidr|domain|wildcard') { Write-Host '[AUTO PRE] Scope validation operation detected. All targets must be confirmed in-scope before proceeding.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'subfinder|amass|httpx|katana|naabu|nuclei|dnsx') { Write-Host '[AUTO PRE] Recon tool launch detected (recon-agent phase). Rate limits will be auto-applied: httpx -rl 150, nuclei -rl 50.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'rank|prioritize|score|sorted|p1.*target|attack.surface') { Write-Host '[AUTO PRE] Recon-ranker phase detected. Input: recon output. Output: ranked_targets.json. Processing top 20 targets.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'idor|ssrf|xss|auth|sqlmap|burp|curl.*api|token|password') { Write-Host '[AUTO PRE] P1-Warrior hunt phase detected. Time-box: 10 min per bug class. Evidence capture mandatory before moving to next class.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'validator|7.question|gate|PASS|KILL|DOWNGRADE|CHAIN') { Write-Host '[AUTO PRE] Validator phase detected. Each finding must pass 7-Question Gate. KILL threshold: any question = false.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'report|CVSS|HackerOne|Bugcrowd|Intigriti|Immunefi|write.*finding') { Write-Host '[AUTO PRE] Report-writer phase detected. Format: impact-first, CVSS 4.0, no theoretical language. Map to program template format.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'chain|idor.*auth|ssrf.*cloud|xss.*ato|redirect.*oauth|subdomain.*takeover') { Write-Host '[AUTO PRE] Chain-builder phase triggered by p1-warrior finding. Each chain step requires independent evidence.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'js|bundle|deobfuscat|linkfinder|secretfinder|source.?map|puppeteer|playwright') { Write-Host '[AUTO PRE] JS analysis phase triggered. Running: JS discovery -> download -> static scan -> DOM extraction -> secret extraction.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'code|repo|audit|semgrep|bandit|sast|owasp|owasp.*top|CWE|security') { Write-Host '[AUTO PRE] Security-reviewer phase triggered. Running: trust boundary analysis + data flow tracing + language-specific pattern checks.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'audit.*jsonl|log|append|timestamp|agent|command') { Write-Host '[AUTO PRE] Audit log write detected. All autopilot operations append to audit.jsonl. Verify log write succeeded.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nmap|sqlmap|hydra|medusa|metasploit|msfconsole|msfvenom|exploit|payload.*reverse') { Write-Host '[AUTO SAFETY] Aggressive/exploit tool detected. Autopilot SAFETY CHECK: verify authorization scope file before proceeding. Block if unauthorized.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'rm.*-rf|del.*/s|format|DROP|TRUNCATE|DROP TABLE|DELETE FROM') { Write-Host '[AUTO SAFETY] Destructive/data-modifying command detected. Autopilot BLOCKED. Data-impact operations require explicit user approval.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'progress.json|state.json|checkpoint.*save|checkpoint.*load') { Write-Host '[AUTO PRE] State file read/write detected. Autopilot uses flock-based locking. Concurrent writes to progress.json = race condition risk.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'scope.*check|in.scope.*verify|out.scope.*check|boundary.*check') { Write-Host '[AUTO PRE] Scope boundary verification command detected. Match target against scope.json CIDR/domain/ip lists. Halt on mismatch.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'recon-agent|recon.*agent|recon-phase|start.*recon') { Write-Host '[AUTO PRE] Recon-agent invocation detected. Autopilot launching: subdomain enum, live host discovery, tech fingerprinting, nuclei template scan. Budget: 35 min.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'p1-warrior|p1.*warrior|warrior.*phase|hunt.*phase') { Write-Host '[AUTO PRE] P1-Warrior invocation detected. Time-box: 10 min per bug class. Bug class rotation order: IDOR -> SSRF -> XSS -> Auth Bypass -> Mass Assignment -> Business Logic.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'validator.*invoke|run.*validator|validator.*agent|gate.*check') { Write-Host '[AUTO PRE] Validator invocation detected. Running 7-Question Gate. PASS = report ready. KILL = discard. DOWNGRADE = reassess. CHAIN REQUIRED = invoke chain-builder.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'report-writer|write.*report|generate.*report|report.*agent') { Write-Host '[AUTO PRE] Report-writer invocation detected. Format: impact-first prose, CVSS 4.0 scoring, no could potentially language. Template selected per program.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'chain-builder|chain.*builder|build.*chain|escalate.*finding') { Write-Host '[AUTO PRE] Chain-builder invocation detected. Building exploit chain: Bug A -> Bug B -> Bug C. Each link requires independent evidence. Validation at each chain step.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'js-analysis|js.*analysis|analyze.*bundle|js.*secrets|js.*endpoints') { Write-Host '[AUTO PRE] JS-analysis invocation detected. Workflow: bundle download -> string extraction -> secret/endpoint extraction -> DOM crawling -> source map analysis.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'js-deobfuscat|deobfuscat|reverse.*engineering.*js|unpack.*bundle') { Write-Host '[AUTO PRE] JS-deobfuscation invocation detected. Analyzer: webpack/rspack bundle parsing, obfuscated string decoding, eval unwrapping, VM emulation if needed.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'security-reviewer|security.*review|code.*review|owasp.*review') { Write-Host '[AUTO PRE] Security-reviewer invocation detected. Scope: OWASP Top 10 + CWE Top 25 + language-specific patterns + trust boundary + data flow analysis.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'exploit-researcher|cve.*research|poc.*fetch|exploit.*db|nvd') { Write-Host '[AUTO PRE] Exploit-researcher invocation detected. Sources: NVD API, GitHub Advisories, Exploit-DB, CISA KEV. Output: CVE list with PoC availability status.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'audit.*write|write.*audit|log.*finding|jsonl.*append') { Write-Host '[AUTO PRE] Audit log write detected. Appending to audit.jsonl. Format: {timestamp, phase, agent, tool, target, outcome, duration_ms, error_count}.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'rotate.*credential|credential.*rotation|key.*rotation|token.*invalidate') { Write-Host '[AUTO PRE] Credential rotation command detected. Rotate all: API keys, test accounts, OAuth tokens, temporary credentials. Log to findings/confidential/rotation_history.json.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'knowledge.*base|kb.*update|state/knowledge|pattern.*learn') { Write-Host '[AUTO PRE] Knowledge base update detected. Updating: patterns/ (bug signatures), iocs/ (fingerprints), tools/ (effectiveness scores). Persist after each confirmed finding.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'error.*handling|retry|backoff|fallback|circuit.*breaker') { Write-Host '[AUTO PRE] Error handling/retry logic invoked. Policy: 3 retries, exponential backoff (1s/2s/4s), then escalate to checkpoint. Circuit breaker after 5 consecutive failures.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'checkpoint.*trigger|save.*checkpoint|autopilot.*pause|autopilot.*checkpoint') { Write-Host '[AUTO PRE] Checkpoint trigger detected. Saving state/progress.json + audit.jsonl + findings cache. Checkpoint ID: {timestamp}-{phase}-{target_hash}.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'resume.*checkpoint|--resume|continue.*from|restore.*state') { Write-Host '[AUTO PRE] Resume from checkpoint detected. Loading state/progress.json. Validating checkpoint integrity (checksum match). Resuming from last recorded phase.' -ForegroundColor Cyan }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'token.*rotation|session.*refresh|auth.*renew|reauth') { Write-Host '[AUTO PRE] Token/session refresh detected. Refreshing auth credentials before continuing authenticated attack surface. Token stored in encrypted findings/confidential/.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'integration.*map|agent.*map|workflow.*map|orchestrator') { Write-Host '[AUTO PRE] Integration map update detected. Agent dependency graph: recon-agent(standalone) -> ranker(after recon) -> warrior(after ranker) -> validator(after each finding) -> reporter(after valid findings).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'performance.*metric|metric.*track|time.*log|throughput') { Write-Host '[AUTO PRE] Performance metrics logging detected. Tracking: phase duration, tool success rate, false positive rate, bug-class iteration time, time-to-confirmed-bug.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[AUTO POST] Autopilot post-tool check: phase status, error count, target scope compliance, next-step decision.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'phase.*complete|phase.*done|PHASE.*COMPLETE|finished|completed') { Write-Host '[AUTO POST] Phase complete detected. Autopilot advancing to next phase. Check state/progress.json for next task.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'error|exception|timeout|failed|404|500|503|connection refused|rate.limit') { Write-Host '[AUTO POST] Error detected in agent output. Autopilot will retry (attempt counter logged). If retry fails, checkpoint for user review.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'PASS|KILL|DOWNGRADE|CHAIN REQUIRED') { Write-Host '[AUTO POST] Validator result received. PASS -> proceed to report. KILL -> discard finding, continue hunting. DOWNGRADE -> re-assess severity. CHAIN REQUIRED -> invoke chain-builder.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'critical|high|medium|low|informational|confirmed|reproducible') { Write-Host '[AUTO POST] Finding classification received. Critical/High/M-critical or higher = immediate report to program. Medium = evidence consolidated. Low = batch if relevant.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'subdomain|endpoint|api|url|live.*host') { Write-Host '[AUTO POST] Recon output detected. Feeding to recon-ranker for prioritization before hunter deployment.' -ForegroundColor Cyan }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'secret|password|token|key|credential|api.key|aws|gcloud') { Write-Host '[AUTO POST] Secret detected. Immediate action: (1) Redact in output, (2) Store in findings/confidential/, (3) Flag for validator, (4) Recommend rotation to target.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'in.scope|out.scope|unauthorized|off.scope') { Write-Host '[AUTO POST] Scope compliance warning. If out-of-scope target accessed: STOP, isolate activity, notify user, document incident.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'auth.bypass|idor|ssrf|xss|sql.injection|deserialization|rce|privilege.escalation') { Write-Host '[AUTO POST] Potential finding detected. Routes to: (1) validator for 7-Question Gate, (2) evidence capture, (3) chain-builder for escalation potential.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'checkpoint|pause|user.*input|approval|confirm') { Write-Host '[AUTO POST] Autopilot checkpoint reached. Waiting for user confirmation or direction before resuming.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'token|session.id|jwt|bearer|cookie|csrf.*token|access.*token|refresh.*token') { Write-Host '[AUTO POST] Token/session artifact detected. Value redacted. Stored in findings/confidential/. Auth surface analysis warranted. Rotate after session.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'payment|credit.card|ssn|pii|dni|passport|bank.*account|financial') { Write-Host '[AUTO POST] Payment/PII data detected. CRITICAL: immediately isolate, document scope of access, (1) do NOT exfiltrate, (2) notify program, (3) preserve evidence in findings/confidential/.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'gcp|aws|azure|metadata|169.254|metadata.google.internal|imds|cloud.*secret|lambda.*env|iam.*role') { Write-Host '[AUTO POST] Cloud metadata finding detected. Verify IMDS access, determine cloud provider, map to privilege escalation path. Flag immediately for chain-builder escalation.' -ForegroundColor Cyan }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'race|TOCTOU|concurrent|thread|parallel.*request|double.*fetch|time.*of.*check') { Write-Host '[AUTO POST] Race condition detected. Evidence capture: (1) concurrent request trace, (2) timing logs with millisecond precision, (3) before/after state diff. Requires multiple successful reproductions for validator.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'sql.*injection|nosql.*injection|mongodb.*inject|ldap.*inject|graphql.*inject|orm.*inject') { Write-Host '[AUTO POST] Injection finding detected. Capture: (1) payload used, (2) database type, (3) affected parameters, (4) data extracted (redacted), (5) DB user context. Route to chain-builder if privilege escalation possible.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'checkpoint.*saved|checkpoint.*restored|state.*synced|knowledge.*updated') { Write-Host '[AUTO POST] Internal autopilot system operation confirmed. State consistency maintained. Continuing current phase without interruption.' -ForegroundColor DarkGreen }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'waf.*detected|403.*rate|captcha|challenge|bot.*protection|cloudflare.*block') { Write-Host '[AUTO POST] WAF/bot protection detected. Rotating: (1) user-agent, (2) request timing, (3) technique (passive -> active FO), (4) protocol (HTTP/1.1 -> HTTP/2).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'authorization.*required|scope.*file.*missing|scope.*undefined|target.*not.*in.*scope') { Write-Host '[AUTO POST] Authorization/scope configuration error. HALTING. Autopilot requires valid scope.json before ANY tool invocation. User must provide scope file.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'proof.of.concept|poc|exploit.*success|payload.*success|vulnerability.*confirmed') { Write-Host '[AUTO POST] PoC/vulnerability confirmation detected. Capturing: request/response pair, timing, payload, affected parameter. Evidence saved to findings/evidence/. Routing to validator.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] State file: state/progress.json tracks current phase, target, findings_count, errors, last_checkpoint_time.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Audit log: audit.jsonl entries every 30 seconds + on every tool call + phase transition. Format: {timestamp, phase, agent, tool, target, outcome, error_count}.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Decision tree: recon complete -> ranker -> top 20 to hunter -> hunter tests with 7QGate -> valid findings to report-writer -> submit via official program channel -> rotate credentials.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Parallel execution rules: recon-agent runs standalone, recon-ranker after recon, p1-warrior after ranker, all other agents triggered as needed by hunter.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Time budget: Phase 1 (recon+rank) = 30-45 min, Phase 2 (hunt) = 2-4 hours, Phase 3 (validate+report) = 30 min. Adjust per target complexity.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Finding quality metrics tracked: (1) pass rate on 7QGate, (2) false positive rate, (3) average time-to-confirmed-bug, (4) chaining success rate, (5) payout per hour invested.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Scope enforcement: every tool call cross-referenced against scope.json. scope.json format: {in_scope: [domains, IPs, ranges], out_of_scope: [wildcards, exclusions], authorized_test_types: [list], max_rate: [RPM], do_not_test: [list]}.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Credential rotation reminder: after each authenticated hunt session, rotate: API keys for tested accounts, test accounts created, temporary credentials issued, OAuth tokens acquired.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Burner account hygiene: create dedicated test accounts, do not use personal/primary accounts, track account lifecycle (created -> tested -> disabled).' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Escalation triggers: (1) 3 consecutive timeouts = pause, (2) 10 errors from WAF = rotate technique, (3) scope confusion = halt and review, (4) potential data exfil = isolate and report.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Integration map: recon-agent produces raw_targets.json, recon-ranker produces ranked_targets.json, p1-warrior produces findings/, validator gates findings, report-writer produces reports/.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Autopilot mode state machine context: current_mode=$mode, current_phase=$phase, phase_start=$timestamp, budget_remaining=$budget_minutes, findings_this_phase=$count, errors_this_phase=$errors.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Rate limit context: httpx_active=$httpx_rpm, nuclei_active=$nuclei_rpm, katana_active=$katana_rpm. Current active tool: $tool_name. Requests in last 60s: $request_count.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Findings summary context: total=$total, confirmed=$confirmed, discarded=$discarded, pending_validator=$pending, chained=$chained, reported=$reported. Session ROI: $payout / $time_hours = $roi_per_hour.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] WAF status context: waf_detected=$bool, waf_type=$type, rotation_count=$count, last_successful_technique=$technique. If WAF active, prefer passive recon and manual verification.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Credential inventory context: active_accounts=$count, credentials_stored_encrypted=$count, credentials_rotated_this_session=$count, pending_rotation=$count. Reminder: rotate all before session end.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Scope cache context: scope_last_loaded=$timestamp, scope_version=$version, in_scope_targets_count=$count, warnings=$warning_count. If scope_changed flag set, re-validate all targets before next tool call.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Retry/backoff context: current_retry_count=$count, max_retries=3, backoff_delay_ms=$delay, last_error_type=$type. If retry_count >= 3, escalate to checkpoint. Track in audit.jsonl.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Agent health context: recon-agent last_status=$status, p1-warrior last_status=$status, validator last_status=$status, report-writer last_status=$status. Failed agents get max 3 retry attempts before escalation.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Chain-builder context: chains_in_progress=$count, chains_completed=$count, max_chain_length=3. Each chain must have: (1) primary bug, (2) amplification step, (3) privilege escalation or data access proof.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Parallel tool context: active_bash_jobs=$count, max_concurrent=3, queue_depth=$count, estimated_wait_seconds=$eta. Jobs prioritized: recon > recon-ranker > hunter > validator.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Error budget context: errors_this_phase=$count, max_errors_before_checkpoint=10, waf_block_count=$count, provisioned_action=[continue|rotate_technique|escalate]. WAF blocks > 10/hour = mandatory technique rotation.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Token hygiene context: tokens_collected=$count, tokens_expired=$count, tokens_needing_rotation=$count, auth_zones_mapped=$count. All bearer tokens stored encrypted in findings/confidential/tokens.enc.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AUTO CTX] Bug class budget context: idor_minutes_used=$used/$budget, ssrf_minutes_used=$used/$budget, xss_minutes_used=$used/$budget, auth_minutes_used=$used/$budget. When budget exhausted, rotate to next class.' -ForegroundColor DarkGreen"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Autonomous hunt loop ending. Final checklist: (1) state/progress.json saved, (2) audit.jsonl complete, (3) all findings validated, (4) reports submitted, (5) credentials rotated, (6) knowledge base updated.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Post-session: review audit.jsonl for optimization. Update state/knowledge/ with patterns learned. Plan next target for next session.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Hunter performance metrics logged: findings count, valid:invalid ratio, time per phase, bugs chained, payout forecast. Use for session retrospective.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Credential cleanup: rotating all test accounts. Disabling burner accounts. Invalidating temporary tokens. Logging rotation events to audit.jsonl.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Knowledge base persistence: saving learned patterns to state/knowledge/patterns/, tool effectiveness to state/knowledge/tools/, IOCs to state/knowledge/iocs/. Enabling faster recon next session.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Safety audit complete: no OOS events, no PII exfiltration, no unauthorized access. Safe harbor compliance maintained. Summary written to audit.jsonl.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Next session prep: recon-ranker cached targets can be reused if same program. Progress saved at state/progress.json. Resume with: autopilot --resume-from <checkpoint_id>.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Final security sweep: verifying no secrets in stdout buffer. Audit.jsonl integrity check (checksum). All findings/ paths verified gitignored. Session closed cleanly.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Session forensic data preserved: audit.jsonl, findings/, state/progress.json, state/knowledge/. Retain per program retention policy. Do not delete until explicitly confirmed by user.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Autopilot shutdown sequence complete. All background processes terminated. File handles closed. State flushed to disk. Ready for next invocation.' -ForegroundColor Green"
+    }
+  ]
+}

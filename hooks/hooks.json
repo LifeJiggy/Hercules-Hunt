@@ -1,0 +1,333 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "Write-Host 'Jiggy-2026 loaded. Run /recon <target> to start.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host 'Agents available: recon-agent, recon-ranker, p1-warrior, chain-builder, js-analysis, js-deobfuscation, report-writer, validator, autopilot, exploit-researcher, network-analyst, redteam-planner, reverse-engineer, security-reviewer, ai-researcher, token-auditor, web3-auditor' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStop",
+      "command": "Write-Host 'Session ended. Checklist: findings saved? scope verified? evidence captured? Next: /validate then /report.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host 'Hunt complete. Remember to: 1) Capture evidence 2) Run 7-Question Gate 3) Write report 4) Rotate credentials' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SCOPE CHECK] Always verify scope before testing. Check in-scope domains/IPs/ranges in scope.json.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[LEGAL] Only test targets explicitly in scope. Out-of-scope = stop immediately. Report to program owner.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[ENV CHECK] Ensure your environment is ready: nuclei, subfinder, httpx, katana, nuclei-templates installed and updated.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[ENV CHECK] Verify burpsuite or Zap proxy configured. Ensure callback server (interact.sh, burp collab) is running if doing SSRF tests.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[ENV CHECK] Confirm nuclei-templates updated: nuclei -update-templates. Use Enterprise templates if available.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SAFETY] DoS/Stress testing defaults to NO. Only run with explicit program authorization and rate limits configured.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SAFETY] Social engineering and physical access are OUT OF SCOPE by default. Check program policy.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[EVIDENCE] All findings MUST have: request (curl), response, screenshot/screencast, and impact statement before reporting.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[EVIDENCE] Save raw output to findings/raw/. Sanitize PII from all external-facing reports.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[REPORTING] Ready for report-writer agent when bug confirmed. CVSS 4.0 format required.' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[VALIDATE] Always run /validator before report. The 7-Question Gate must be passed for every finding.' -ForegroundColor Green"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[PRE-TOOL] Verifying target scope and tool safety before executing command...' -ForegroundColor DarkYellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nmap|nikto|sqlmap|hydra|medusa|dirbuster|gobuster|wfuzz|ffuf|feroxbuster') { Write-Host '[WARNING] Aggressive scanner detected. Verify target is in scope. Apply rate limits: -rl 50 to -rl 150.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'exploit|shellcode|payload|reverse.tcp|nc.*-e|netcat.*-e|bash.*-i') { Write-Host '[CRITICAL] Exploit/RCE command detected. STOP. No shell access without explicit written authorization.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'curl.*\\|.*sh|wget.*\\|.*sh|curl.*\\|.*bash|wget.*\\|.*bash') { Write-Host '[CRITICAL] Remote code execution pattern detected (curl|sh). Abort immediately.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'rm -rf |rmdir /s|del /f|format') { Write-Host '[CRITICAL] Destructive command detected. NEVER delete or modify target data. Data impact = critical finding.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'subfinder|amass|assetfinder|findomain|dnsx') { Write-Host '[RECON] Subdomain/DNS enumeration tool running. Ensure target domain is in scope. Respect program rate limits.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'httpx|gobuster.*dir|ffuf|feroxbuster|dirsearch') { Write-Host '[RECON] HTTP probing/directory brute-force detected. Limit to depth 3 and common extensions. In-scope URLs only.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'katana|gospider|hakrawler|waybackurls|urlfinder') { Write-Host '[RECON] URL crawler starting. Set depth limits (-d 3). Respect robots.txt if program requires.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nuclei') { Write-Host '[SCAN] Nuclei scanning. Using default templates. Custom templates must be reviewed against scope.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'naabu|masscan') { Write-Host '[SCAN] Port scanner running. Authorize full port range scan. Default: top 1000 ports. Log scan start time.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'curl.*\\-X|httpie.*PUT|httpie.*DELETE|httpie.*PATCH') { Write-Host '[HUNT] HTTP method override detected. Verify endpoint supports this method. Document original method.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'Burp|burp|zaproxy|owasp.zap|postwoman|hoppscotch') { Write-Host '[HUNT] Proxy/intercept tool active. Ensure proxy logging is enabled for evidence capture.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'sqlmap|nosqlmap|commix|tplmap|xsstrike|xsser') { Write-Host '[HUNT] Injection scanner detected. Verify in-scope endpoint. Save raw DB output for evidence.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'ssrf|gopher|burp.*collab|interact.sh|oast|dnslog|canarytokens|requestbin') { Write-Host '[HUNT] SSRF/OOB interaction test. Confirm callback server (interact.sh/burp collab) is running first.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'idor|user_id|account_id|order_id|document_id|patient_id|invoice_id') { Write-Host '[HUNT] IDOR test detected. Use two accounts (attacker + victim) and log both IDs.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'jwt|jsonwebtoken|eyJ[A-Z]|Bearer|Authorization.*Bearer') { Write-Host '[HUNT] JWT token interaction. Check: alg:none, weak secret, kid injection, kID SSRF to sign token internally.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'graphql|gql|\\/graphql|introspection') { Write-Host '[HUNT] GraphQL interaction. Test introspection (query { __schema }) then field-level authorization.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'file.upload|multipart|form-data|Content-Type.*multipart') { Write-Host '[HUNT] File upload interaction. Check: extension bypass, content-type bypass, XXE via SVG, SSRF via metadata.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'forgot.password|reset.password|otp|2fa|mfa|totp|magic.link|passwordless') { Write-Host '[HUNT] Authentication flow interaction. Capture OTP/magic link. Test for bypass (OTP reuse, brute, null session).' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'race.condition|TOCTOU|turbo.*intruder|concurrent.*request') { Write-Host '[HUNT] Race condition test detected. Ensure multi-threaded tool configured. Log request timestamps precisely.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'cors|Access-Control|Origin|origin.*header') { Write-Host '[HUNT] CORS interaction detected. Test: origin reflection, null origin, subdomain trust, HTTPS->HTTP downgrade.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 's3|aws|storage|bucket|blob|gcs|azure.blob|alibaba.oss') { Write-Host '[HUNT] Cloud storage interaction. Check bucket ACLs, listing, public read/write, path traversal on bucket name.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'shodan|censys|censys.*search|zoomeye|fofa|hunter') { Write-Host '[RECON] External search engine query. Log query terms and results. Do not probe non-in-scope assets found.' -ForegroundColor DarkGray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[POST-TOOL] Reviewing output for scope compliance, leak indicators, and finding candidates.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'subdomain|\\[\\+\\].*found|\\[\\+\\].*subdomain|\\[TXT\\]|\\[A\\]') { Write-Host '[RECON RESULT] Subdomain enumeration output detected. Verify count and store in findings/subdomains_raw.txt.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'live.*host|status.*200|status.*301|status.*302|httpx') { Write-Host '[RECON RESULT] Live hosts found. Store in findings/live_hosts.txt. Feed into attack surface ranking.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'tech|fingerprint|wappalyzer|whatweb|builtwith|Powered by|X-Powered-By|X-Generator') { Write-Host '[RECON RESULT] Tech stack identified. Document in findings/tech_stack.json for context-specific attacks.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'endpoint|api|graphql|swagger|openapi|\\/api\\/|\\/v[0-9]') { Write-Host '[RECON RESULT] API endpoints discovered. Deduplicate and prioritize in findings/api_endpoints.txt.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'nuclei|template.*matched|matched.*template|\\[medium\\]|\\[high\\]|\\[critical\\]') { Write-Host '[SCAN RESULT] Nuclei findings detected. Categorize by severity. High/Critical = immediate validation.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'secret|password|api.key|token|aws|gcloud|azure|private.key|-----BEGIN|private_key|slack|github|heroku') { Write-Host '[SECRET FOUND] Credential or secret potential leak found. Document and report responsibly. Do not publish raw secret.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '(\\d+\\.){3}\\d+|::[0-9a-fA-F]+') { Write-Host '[RECON RESULT] IP addresses found. Validate all IPs against scope CIDRs before testing.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'CVE-\\d{4}-\\d{4,7}') { Write-Host '[VULN] CVE reference found. Cross-reference with exploit-db, metasploit, and nuclei for public exploits.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '200.*admin|200.*root|200.*config|200.*debug|200.*internal') { Write-Host '[FINDING] Sensitive endpoint accessible without auth. Verify before reporting as auth bypass.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '401|403|404|405|501|502|503') { Write-Host '[ENUM] Non-200 status codes provide reconnaissance. 401/403=exists, 404/405=behavior hints.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'error|exception|traceback|stack.*trace|SQLSTATE|ORA-|FATAL|WARN') { Write-Host '[LEAK] Error/traceback in output. Check for info disclosure, SQL injection, or path traversal clues.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Access-Control-Allow|CORS|\\*|null|reflect') { Write-Host '[FINDING] CORS header behavior detected. Check for origin reflection, null origin, or wildcard misconfigurations.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Set-Cookie|sessionid|PHPSESSID|JSESSIONID|connect.sid|remember_me') { Write-Host '[ENUM] Session cookie identified. Check Secure, HttpOnly, SameSite, and SessionFixation risk.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'jwt|eyJ|Header:|Payload:|Signature:|alg:none|kid:|exp:|nbf:') { Write-Host '[HUNT] JWT token observed. Capture full token. Test decoding on jwt.io. Check none alg, weak secret, kid injection.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Password|Confirm|current_password|new_password|change.*pass') { Write-Host '[HUNT] Password form found. Check for CSRF, IDOR on change endpoint, and password policy enforcement.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'upload|file|document|image|avatar|attachment') { Write-Host '[HUNT] File upload feature detected. Map all file types, size limits, path structure. Look for XXE, SSRF via exif/metadata.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'forgot|reset|magic|otp|verify.*code|2fa|mfa|totp|backup.*code') { Write-Host '[HUNT] Authentication flow detected. Map full flow. Check for OTP brute, timing attack, null session, or reuse.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CONTEXT] Building hunting context from previous findings for focused testing.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] Recon-Ranker: prioritize output by IDOR likelihood, API surface, nuclei findings, and tech stack.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] P1-Warrior: receiving ranked attack surface. Bug classes: IDOR -> SSRF -> XSS -> Auth Bypass -> Mass Assignment -> Business Logic.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] Report-Writer: preparing CVSS 4.0 report template with impact-first structure.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] Validator: running 7-Question Gate on each confirmed finding before report submission.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] Chain-Builder: evaluating chaining opportunities — IDOR -> data exfil, SSRF -> cloud metadata, XSS -> ATO.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] JS-Analysis / JS-Deobfuscation: passing URL seeds for browser automation and bundle inspection.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[AGENT SYNC] Autopilot: this is the orchestration layer. All agent inputs/outputs flow through here.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[CONTEXT] Audit log written to audit.jsonl every 30 seconds. Include command, timestamp, target, agent, outcome.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[NOTIFY] New Jiggy-2026 agent session initialized. Check agents/ directory for agent-specific tooling.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[NOTIFY] Remember: No DoS testing without written permission. Test in staging when available.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[NOTIFY] PII handling: Redact names, emails, phone, addresses from reports. Pseudonymize where possible.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[NOTIFY] Responsible disclosure: Submit findings through official program channels. Do not publicize before patch.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[NOTIFY] Scope compliance reminder: Non-disclosure of non-scoped data found during testing.' -ForegroundColor Red"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[STOP] Session ending. Verify: 1) findings saved 2) scope verified 3) evidence captured 4) secrets sanitized 5) audit log complete.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[STOP] Post-session: rotate credentials, update knowledge base in output/knowledge/, plan next session.' -ForegroundColor Green"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+# Sensitive data
+*.env
+*.env.local
+secrets/
+tokens/
+credentials/
+
+# OS files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+
+# Node
+node_modules/
+
+# Logs
+*.log
+
+# Session data (secrets in evidential materials)
+context/*.json

@@ -1,0 +1,226 @@
+{
+  "hooks": [
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '=== security-reviewer hook system initialized ===' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Deep security audit agent active. Model: claude-opus-4-6. Covers: OWASP Top 10, CWE Top 25, language-specific patterns.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Supported languages: JavaScript, TypeScript, Python, Ruby, Java, C#, Go, PHP, Kotlin, Swift, Rust, Solidity, Move.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Analysis focus: (1) Trust boundary & data flow, (2) AuthN/AuthZ, (3) Injection vectors, (4) Cryptography misuse, (5) Deserialization, (6) SSRF paths, (7) Business logic flaws.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Audit modes: (1) Full repo scan (slow, comprehensive), (2) Targeted file review (fast, focused), (3) PR/diff review (incremental), (4) Architecture diagram review (design-time).' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Output schema: security_audit/{audit_id}.json — contains: findings[], trust_boundaries[], data_flow_diagram, summary_metrics, recommendations[].' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Finding severity: CRITICAL (RCE, SQLi, auth bypass), HIGH (SSRF, IDOR, XSS stored), MEDIUM (XSS reflected, CSRF, info leak), LOW (security misconfig, missing headers), INFO (best practice).' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Language-specific checklists loaded: see rules/security-reviewer-{lang}.md for each language pattern guide.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SECURITY-REVIEWER] Scope: black-box (runtime behavior) + white-box (source code) combined for maximum coverage.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SECURITY-REVIEWER] Trust boundary rule: every public-facing input is a potential attack surface. Trace data flow from input to sink.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SECURITY-REVIEWER] Business logic is the #1 area where automated scanners fail. Manual review required for auth flows, state changes, and financial operations.' -ForegroundColor Red"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[SEC-REV PRE] Verifying target files/directories are within project scope before reading.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'cat|type|Get-Content|Read|head|tail|less|more') { Write-Host '[SEC-REV PRE] File read detected. Scanning for security anti-patterns in: auth, crypto, SQL, XSS, SSRF, deserialization, access control.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'grep|rg|Select-String|findstr|egrep|ack') { Write-Host '[SEC-REV PRE] Pattern search in files. Checking for dangerous functions and insecure patterns across codebase.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'semgrep|bandit|brakeman|gosec|spotbugs|findsecbugs|eslint.*security|tflint|tfsec|checkov') { Write-Host '[SEC-REV PRE] SAST tool detected. Running automated pattern checks. Supplement with manual review for business logic bugs.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'npm audit|pip audit|bundle audit|govulncheck|osv-scanner|snyk|dependabot') { Write-Host '[SEC-REV PRE] Dependency vulnerability scan detected. Results feed into overall risk assessment.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'docker|Dockerfile|docker-compose|k8s|kubernetes|helm|terraform|pulumi') { Write-Host '[SEC-REV PRE] Infrastructure-as-code/config detected. Check for: privileged containers, public S3, open security groups, hardcoded secrets.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'curl|httpie|burp|zaproxy|postman|insomnia|hoppscotch') { Write-Host '[SEC-REV PRE] Runtime/black-box test detected. Ensure test requests are logged for evidence trail.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[SEC-REV POST] Reviewing security analysis results and compiling finding entries.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'sql|SQL|query|execute|prepare|raw|fromString|eval|exec') { Write-Host '[SQLi] Potential SQL injection vector found. Check: (1) parameterized queries used, (2) ORM safe, (3) input validated, (4) least privilege DB user.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'innerHTML|outerHTML|document\\.write|v-html|dangerouslySetInnerHTML|\\.html\\(|render.*html') { Write-Host '[XSS] DOM XSS sink detected. Trace data source: user input? API response? Assess encoding at source and sink.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'exec\\(|spawn\\(|system\\(|popen\\(|shell_exec\\(|passthru\\(|Runtime\\.getRuntime|ProcessBuilder|subprocess\\.call|os\\.system|child_process') { Write-Host '[RCE] Command execution vector found. CRITICAL if user input reaches these functions without sanitization.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'pickle\\.loads|yaml\\.load|ObjectInputStream|readObject|deserialize|unserialize|json_decode.*\$|XMLDecoder') { Write-Host '[DESER] Unsafe deserialization detected. CRITICAL if attacker-controlled data reaches these functions.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'http://|https://|urlopen|requests\\.get|requests\\.post|fetch\\(|axios|http\\.get|client\\.get|urllib') { Write-Host '[SSRF] HTTP request function found. Check: (1) URL source validated, (2) SSRF blocklist (metadata IPs, localhost), (3) redirect following disabled or validated.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'file_get_contents|readFile|open\\(|FileReader|fs\\.read|path\\.join|os\\.path|include\\(|require\\(|import') { Write-Host '[LFI/PATH] File operation detected. Check: (1) path traversal blocked, (2) user input sanitized, (3) chroot/jail enforced, (4) symlink safe.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'MD5|SHA1|DES|RC4|ECB|CBC.*no.*IV|static.*salt| SECRET_KEY.*=|PRIVATE_KEY.*=') { Write-Host '[CRYPTO] Weak or insecure cryptography found. Flag for: algorithm, key management, mode of operation, IV handling.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'password|passwd|pwd|secret|api_key|token|BEGIN RSA|BEGIN EC|sk_live|ghp_|AKIA') { Write-Host '[SECRET] Hardcoded credential found. CRITICAL in production code. Move to environment variables or secret manager.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'isAdmin|is_admin|isSuperAdmin|role.*=|permission|canAccess|hasRole|\.admin|\.root|privileged') { Write-Host '[AUTHZ] Access control logic found. Verify: (1) server-side enforcement, (2) every endpoint checked, (3) role hierarchy not bypassable.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'router\\.get|router\\.post|app\\.get|app\\.post|@GetMapping|@PostMapping|path\\(|url\\(|route\\(|@Route') { Write-Host '[ENDPOINT] API endpoint defined. Check: (1) authentication middleware attached, (2) authorization check, (3) input validation, (4) rate limiting.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'jwt|jsonwebtoken|encode|decode|sign|verify|alg.*none|kid|exp|nbf|HS256|RS256') { Write-Host '[JWT] JWT handling found. Check: (1) algorithm validation, (2) secret/key rotation, (3) expiration enforced, (4) audience/issuer validated.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'redirect|Location:|open.redirect|next=|return=|callback=|external') { Write-Host '[REDIRECT] Open redirect vector found. CRITICAL if user-controlled. Check: (1) allowlist used, (2) relative allowed, (3) protocol validated.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'CORS|Access-Control|Origin|allow_origins|CORS.*\\*|Access-Control-Allow-Origin.*\\*') { Write-Host '[CORS] CORS configuration found. HIGH if wildcard with credentials. Check: (1) origin allowlist, (2) no wildcard with credentials, (3) subdomain trust reviewed.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'upload|multipart|form-data|move_uploaded_file|FileUpload|MultipartFile|@RequestParam.*file') { Write-Host '[UPLOAD] File upload handler found. Check: (1) extension allowlist, (2) MIME validation server-side, (3) storage outside web root, (4) max size enforced.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'xsrf|csrf|X-CSRF|csrf_token|CsrfToken|VerifyCsrfToken|X-XSRF') { Write-Host '[CSRF] CSRF token found. Check: (1) token required on all state-changing requests, (2) SameSite cookie set, (3) token not in URL (referrer leak).' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'forgot|reset|otp|2fa|mfa|totp|magic.*link|passwordless|verify.*code') { Write-Host '[AUTH FLOW] Authentication flow found. Check: (1) rate limiting, (2) token entropy, (3) brute force protection, (4) timing-safe comparison, (5) session invalidation on reset.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'log\\(|console\\.log|logger\\.|print\\(|System\\.out|debugger|trace|info\\(|warn\\(|error\\(') { Write-Host '[INFO LEAK] Logging statements found. Check: (1) secrets not logged, (2) PII not logged, (3) log level appropriate for prod, (4) log injection prevented.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'race|concurrent|thread|synchronized|lock|mutex|atomic|compareAndSwap|synchronized') { Write-Host '[RACE] Concurrency control found. Check: (1) TOCTOU conditions, (2) atomic operations for critical sections, (3) idempotency for financial ops.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] OWASP Top 10 2021 mapping: (1) Broken Access Control, (2) Cryptographic Failures, (3) Injection, (4) Insecure Design, (5) Security Misconfig, (6) Vulnerable Components, (7) Auth Failures, (8) Data Integrity Failures, (9) Logging Failures, (10) SSRF.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] CWE Top 25 priority: CWE-787 (Out-of-bounds Write), CWE-79 (XSS), CWE-89 (SQLi), CWE-20 (Improper Input Validation), CWE-78 (OS Command Injection), CWE-416 (Use After Free), CWE-22 (Path Traversal), CWE-352 (CSRF).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Python checks: SQLAlchemy raw SQL, eval/exec, pickle, subprocess, Jinja2 SSTI, Django template injection, Flask debug mode, PyYAML load.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] JavaScript/TypeScript checks: innerHTML, eval, Function constructor, prototype pollution (__proto__, constructor), prototype chain manipulation, Node.js child_process.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Java checks: ObjectInputStream, Runtime.exec, PreparedStatement vs Statement, Spring spel injection, JNDI lookups, Struts OGNL.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Go checks: os/exec, sql with string interpolation, template injection, path traversal with http.Dir, yaml.Unmarshal vs yaml.UnmarshalWithContext.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] C# checks: dynamic compilation, Process.Start with user input, SQL with string concat, deserialization with BinaryFormatter, path traversal.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] PHP checks: eval(), system(), exec(), unserialize(), extract(), include with user input, register_globals, extract($_GET).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Solidity checks: reentrancy, delegatecall, tx.origin, integer overflow/underflow, unchecked blocks, access control on critical functions, front-running.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Rust checks: unsafe blocks, FFI boundary validation, memory safety at unsafe boundaries, format! with user input, deserialization with serde untagged.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] Audit complete. Verify: all code paths traced? trust boundaries documented? findings prioritized? remediation guidance provided?' -ForegroundColor Red"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] Next: /validator for each finding, then /report-writer with audit package (code snippets, PoC, impact).' -ForegroundColor Green"
+    }
+  ]
+}
