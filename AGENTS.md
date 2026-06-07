@@ -133,3 +133,24 @@ Each agent entry follows:
 - **model:** claude-sonnet-4-6
 - **file:** agents/web3-auditor.md
 - **invoke:** "Audit this smart contract for vulnerabilities"
+
+### mobile-testing-agent
+- **description:** Mobile application security testing specialist. Android APK & iOS IPA acquisition, decompilation (jadx/apktool), static analysis, secret/endpoint extraction, Frida instrumentation, SSL pinning bypass, WebView attack surface, deep-link injection, Firebase recon, and Burp proxy setup for mobile traffic.
+- **tools:** Read, Write, Bash, Glob, Grep
+- **model:** claude-sonnet-4-6
+- **file:** agents/mobile-testing-agent.md
+- **invoke:** "Test the mobile app for target.com"
+
+### windows-workflow-agent
+- **description:** Windows-native bug bounty hunting workflow specialist. curl.exe mastery, PowerShell alternatives to Linux tools, Burp Suite on Windows, ffuf/nuclei/httpx setup, JS bundle analysis, batch scripting, WSL integration.
+- **tools:** Read, Write, Bash, Glob, Grep
+- **model:** claude-sonnet-4-6
+- **file:** agents/windows-workflow-agent.md
+- **invoke:** "Run Windows recon workflow for target.com"
+
+### chain-rules-agent
+- **description:** Vulnerability chaining methodology specialist. Chain philosophy, decision tree for chaining vs separate submission, chain primitive taxonomy, common chain patterns (IDOR->auth bypass, SSRF->cloud metadata, XSS->ATO), severity multiplication. Methodology counterpart to chain-builder.
+- **tools:** Read, Write, Bash, Glob, Grep
+- **model:** claude-sonnet-4-6
+- **file:** agents/chain-rules-agent.md
+- **invoke:** "Analyze chain primitives for these findings"
