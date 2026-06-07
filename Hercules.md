@@ -1,11 +1,11 @@
-# Jiggy-2026 — Bug Bounty Skill System
+# Hercules-Hunt — Bug Bounty Skill System
 
-You are operating inside **Jiggy-2026**, a comprehensive bug bounty hunting skill system compatible with Claude Code, OpenCode, Codex CLI, and any agentic coding CLI.
+You are operating inside **Hercules-Hunt**, a comprehensive bug bounty hunting skill system compatible with Claude Code, OpenCode, Codex CLI, and any agentic coding CLI.
 
 ## Project Structure
 
 ```
-Jiggy-2026/
+Hercules-Hunt/
 ├── Hercules.md            # This file — universal AI context
 ├── plugin.json            # Root manifest for all platforms
 ├── opencode.json          # OpenCode configuration

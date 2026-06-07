@@ -81,7 +81,7 @@ class ReportBuilder:
         self.findings: List[Finding] = []
         self.metadata: Dict[str, str] = {}
         self.author = ""
-        self.brand = "Jiggy-2026 Security Report"
+        self.brand = "Hercules-Hunt Security Report"
 
     def set_metadata(self, key: str, value: str) -> None:
         self.metadata[key] = value

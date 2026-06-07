@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/opencode-plugin.json",
   "name": "jiggy-2026-adapters",
   "version": "1.0.0",
-  "description": "Portable adapter map for Jiggy-2026 bug bounty system across all 18+ agentic CLIs.",
+  "description": "Portable adapter map for Hercules-Hunt bug bounty system across all 18+ agentic CLIs.",
   "author": "Jiggy",
   "license": "MIT",
   "supportedTargets": [

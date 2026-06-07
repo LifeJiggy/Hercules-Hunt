@@ -1,0 +1,16 @@
+{
+  "targets": [],
+  "current_target": null,
+  "target_template": {
+    "domain": "",
+    "program": "HackerOne",
+    "program_url": "",
+    "status": "active",
+    "scope": [],
+    "wildcards": [],
+    "exclusions": [],
+    "tech_stack": {},
+    "accounts": [],
+    "notes": ""
+  }
+}

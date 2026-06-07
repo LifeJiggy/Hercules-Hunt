@@ -1,0 +1,120 @@
+{
+  "python": {
+    "hunter_base_dir": "tools\\python",
+    "hunter_modules": {
+      "rce_hunter.py": {
+        "enabled": true,
+        "default_cmd": "id",
+        "timeout": 15,
+        "payloads": [
+          "id",
+          "whoami",
+          "hostname",
+          "cat /etc/passwd",
+          "dir"
+        ]
+      },
+      "sqli_hunter.py": {
+        "enabled": true,
+        "timeout": 15,
+        "sleep_payload": 5,
+        "test_endpoints": [
+          "login",
+          "search",
+          "api/users",
+          "api/items"
+        ]
+      },
+      "idor_hunter.py": {
+        "enabled": true,
+        "default_range": 50,
+        "timeout": 15,
+        "sequential_ids": true,
+        "uuid_tests": true,
+        "hash_tests": true,
+        "wildcard_tests": true
+      },
+      "auth_hunter.py": {
+        "enabled": true,
+        "timeout": 15,
+        "jwt_tests": true,
+        "password_reset_tests": true,
+        "mfa_tests": true,
+        "rate_limit_tests": true,
+        "session_tests": true
+      },
+      "ssrf_hunter.py": {
+        "enabled": true,
+        "timeout": 15,
+        "default_param": "url",
+        "test_cloud_metadata": true,
+        "test_localhost": true,
+        "test_port_scan": true,
+        "test_gopher": false,
+        "collaborator_prefix": "jiggy-test"
+      },
+      "xxe_hunter.py": {
+        "enabled": true,
+        "timeout": 15,
+        "test_classic": true,
+        "test_oob": true,
+        "test_error": true,
+        "test_svg": true,
+        "test_soap": true,
+        "test_docx": false,
+        "collaborator_domain": "burpcollaborator.net"
+      },
+      "file_upload_hunter.py": {
+        "enabled": true,
+        "timeout": 20,
+        "test_webshell": true,
+        "test_double_ext": true,
+        "test_magic_spoof": true,
+        "test_htaccess": false,
+        "test_svg_xss": true,
+        "test_zip_slip": false,
+        "test_polyglot": true
+      },
+      "secret_scanner.py": {
+        "enabled": true,
+        "entropy_threshold": 4.5,
+        "target_dirs": [
+          ".",
+          "tools/python"
+        ]
+      },
+      "payload_generator.py": {
+        "enabled": true,
+        "default_type": "xss",
+        "encoding_variants": true,
+        "include_polyglots": true
+      },
+      "network_utils.py": {
+        "enabled": true,
+        "port_scan_threads": 50,
+        "port_scan_timeout": 2,
+        "default_ports": [
+          80,
+          443,
+          8080,
+          8443,
+          22,
+          3306,
+          5432,
+          6379,
+          9200,
+          27017
+        ]
+      }
+    }
+  },
+  "powershell": {
+    "tool_base_dir": "tools\\powershell",
+    "tools": {
+      "powershell-lib.ps1": { "enabled": true },
+      "recon-toolkit.ps1": { "enabled": true },
+      "curl-hunter.ps1": { "enabled": true },
+      "js-analyzer.ps1": { "enabled": true }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 ---
 name: storage-credentials-vault
-description: Test account and credential management vault for Jiggy-2026. Stores test accounts, session tokens, API keys, and access credentials for all bug bounty targets. Includes account provisioning workflows, rotation policies, token hygiene, and scope restrictions.
+description: Test account and credential management vault for Hercules-Hunt. Stores test accounts, session tokens, API keys, and access credentials for all bug bounty targets. Includes account provisioning workflows, rotation policies, token hygiene, and scope restrictions.
 ---
 
 # Credentials Vault

@@ -1,6 +1,6 @@
-# Jiggy-2026 Universal Adapter Targets
+# Hercules-Hunt Universal Adapter Targets
 
-The Jiggy-2026 Bug Bounty System can be installed into 18+ agentic coding CLI
+The Hercules-Hunt Bug Bounty System can be installed into 18+ agentic coding CLI
 environments. Each target uses a specific install path and file layout.
 
 | # | Target | Install Path | Entry Point | Strategy |
@@ -26,7 +26,7 @@ environments. Each target uses a specific install path and file layout.
 
 ## Common Payload
 
-Every adapter installs the same core Jiggy-2026 components, preserving relative
+Every adapter installs the same core Hercules-Hunt components, preserving relative
 paths from the repository root:
 
 ### Agents (17 files)

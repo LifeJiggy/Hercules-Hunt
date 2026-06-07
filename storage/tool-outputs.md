@@ -1,6 +1,6 @@
 ---
 name: storage-tool-outputs
-description: Raw tool output storage and indexing for Jiggy-2026. Every command run, every scan output, every discovery from tooling is recorded here. Organized by tool category with summaries, raw output references, and cross-links to leads and findings.
+description: Raw tool output storage and indexing for Hercules-Hunt. Every command run, every scan output, every discovery from tooling is recorded here. Organized by tool category with summaries, raw output references, and cross-links to leads and findings.
 ---
 
 # Tool Outputs

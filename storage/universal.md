@@ -1,11 +1,11 @@
 ---
 name: storage-universal
-description: Universal storage architecture and index for Jiggy-2026. Defines the complete storage structure — how evidence, findings, credentials, tool outputs, session logs, and configuration backups are organized, named, searched, cross-referenced, and maintained across all targets and sessions.
+description: Universal storage architecture and index for Hercules-Hunt. Defines the complete storage structure — how evidence, findings, credentials, tool outputs, session logs, and configuration backups are organized, named, searched, cross-referenced, and maintained across all targets and sessions.
 ---
 
 # Universal Storage Architecture
 
-This file defines the complete storage system for Jiggy-2026. Every file created during recon, hunting, validation, reporting, and submission has a defined home in this structure. Consistent storage discipline ensures nothing is lost and everything is findable.
+This file defines the complete storage system for Hercules-Hunt. Every file created during recon, hunting, validation, reporting, and submission has a defined home in this structure. Consistent storage discipline ensures nothing is lost and everything is findable.
 
 ---
 

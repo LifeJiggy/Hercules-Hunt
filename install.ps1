@@ -1,4 +1,4 @@
-# Jiggy-2026 Installer for Windows
+# Hercules-Hunt Installer for Windows
 param(
     [switch]$DryRun,
     [switch]$Uninstall,
@@ -9,7 +9,7 @@ $JiggyRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
 
 function Write-Banner {
     Write-Host "`n╔══════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║     Jiggy-2026 Bug Bounty System     ║" -ForegroundColor Cyan
+    Write-Host "║     Hercules-Hunt Bug Bounty System     ║" -ForegroundColor Cyan
     Write-Host "║     Version 1.0.0                     ║" -ForegroundColor Cyan
     Write-Host "╚══════════════════════════════════════╝`n" -ForegroundColor Cyan
 }
@@ -36,7 +36,7 @@ function Install-Main {
     $ruleCount = (Get-ChildItem "$JiggyRoot\rules\*.md" | Measure-Object).Count
     $toolCount = (Get-ChildItem "$JiggyRoot\tools\*.ps1", "$JiggyRoot\tools\*.py" | Measure-Object).Count
 
-    Write-Host "`nJiggy-2026 Resources:" -ForegroundColor Cyan
+    Write-Host "`nHercules-Hunt Resources:" -ForegroundColor Cyan
     Write-Host "  Agents: $agentCount" -ForegroundColor Green
     Write-Host "  Rules:  $ruleCount" -ForegroundColor Green
     Write-Host "  Tools:  $toolCount" -ForegroundColor Green
@@ -71,8 +71,8 @@ function Install-Main {
     Copy-Item "$JiggyRoot\.claude\settings.json" "$InstallDir\.claude\settings.json" -Force
 
     # Profile setup
-    $profileLine = "`n# Jiggy-2026`n. `"$JiggyRoot\tools\powershell\powershell-lib.ps1`"`n. `"$JiggyRoot\tools\powershell\curl-hunter.ps1`"`n"
-    $alreadyAdded = Select-String -Path $PROFILE -Pattern "Jiggy-2026" -SimpleMatch -Quiet -ErrorAction SilentlyContinue
+    $profileLine = "`n# Hercules-Hunt`n. `"$JiggyRoot\tools\powershell\powershell-lib.ps1`"`n. `"$JiggyRoot\tools\powershell\curl-hunter.ps1`"`n"
+    $alreadyAdded = Select-String -Path $PROFILE -Pattern "Hercules-Hunt" -SimpleMatch -Quiet -ErrorAction SilentlyContinue
     if (-not $alreadyAdded) {
         Add-Content -Path $PROFILE -Value $profileLine
         Write-Host "  [OK] Added to PowerShell profile" -ForegroundColor Green
@@ -89,7 +89,7 @@ function Install-Main {
 function Uninstall-Main {
     Write-Banner
     Write-Host "Removing profile entries..." -ForegroundColor Yellow
-    $newContent = Get-Content $PROFILE | Where-Object { $_ -notmatch "Jiggy-2026" }
+    $newContent = Get-Content $PROFILE | Where-Object { $_ -notmatch "Hercules-Hunt" }
     $newContent | Set-Content $PROFILE
     Write-Host "[OK] Removed from profile" -ForegroundColor Green
 }

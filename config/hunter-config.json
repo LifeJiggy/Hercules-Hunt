@@ -1,0 +1,60 @@
+{
+  "hunter": {
+    "default_timeout": 15,
+    "max_threads": 10,
+    "max_retries": 2,
+    "retry_delay": 1.0,
+    "verify_ssl": false,
+    "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "rate_limit_delay_ms": 100,
+    "follow_redirects": true,
+    "max_redirects": 5
+  },
+  "recon": {
+    "subfinder_threads": 10,
+    "httpx_threads": 20,
+    "dns_resolvers": [
+      "1.1.1.1",
+      "8.8.8.8",
+      "8.8.4.4"
+    ],
+    "wayback_depth": 500,
+    "dir_fuzz_extensions": [
+      ".php",
+      ".asp",
+      ".aspx",
+      ".jsp",
+      ".json",
+      ".xml",
+      ".txt",
+      ".bak",
+      ".old",
+      ".git",
+      ".env"
+    ]
+  },
+  "output": {
+    "report_dir": "reports",
+    "findings_dir": "findings",
+    "evidence_dir": "evidence",
+    "screenshots_dir": "screenshots",
+    "export_formats": [
+      "json",
+      "csv",
+      "html"
+    ],
+    "hunter_output_file": "seamless_hunter_results.json"
+  },
+  "logs": {
+    "enabled": true,
+    "log_dir": "logs",
+    "log_level": "INFO",
+    "max_log_size_mb": 50,
+    "keep_days": 30
+  },
+  "checkpoint": {
+    "enabled": true,
+    "checkpoint_dir": "checkpoints",
+    "auto_save_interval_mins": 5
+  }
+}

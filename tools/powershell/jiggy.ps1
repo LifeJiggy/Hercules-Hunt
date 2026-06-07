@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# Jiggy-2026 CLI — Bug Bounty Tool Launcher
+# Hercules-Hunt CLI — Bug Bounty Tool Launcher
 # Usage: .\jiggy.ps1 <command> [options]
 
 param(
@@ -19,7 +19,7 @@ $JiggyRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition | Split-Path 
 
 function Show-Help {
     Write-Host @"
-Jiggy-2026 Bug Bounty CLI
+Hercules-Hunt Bug Bounty CLI
 Usage: .\jiggy.ps1 <command> [options]
 
 Commands:
@@ -97,7 +97,7 @@ function Invoke-SecretScan {
 }
 
 function Show-Tools {
-    Write-Host "`nJiggy-2026 Tools:" -ForegroundColor Cyan
+    Write-Host "`nHercules-Hunt Tools:" -ForegroundColor Cyan
     Get-ChildItem "$JiggyRoot\tools\*.ps1", "$JiggyRoot\tools\*.py" | ForEach-Object {
         $name = $_.BaseName
         $type = if ($_.Extension -eq '.py') { 'Python' } else { 'PowerShell' }

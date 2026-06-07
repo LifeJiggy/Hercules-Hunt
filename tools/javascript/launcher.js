@@ -14,7 +14,7 @@ function color(text, code = 36) { return `\x1b[${code}m${text}\x1b[0m`; }
 
 const menu = `
 ${color('╔══════════════════════════════════════════════╗', 35)}
-${color('║    Jiggy-2026 Client-Side Hunting Toolkit    ║', 35)}
+${color('║    Hercules-Hunt Client-Side Hunting Toolkit    ║', 35)}
 ${color('╚══════════════════════════════════════════════╝', 35)}
 
 ${color('── General Tools ──', 37)}

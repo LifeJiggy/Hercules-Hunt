@@ -1,11 +1,11 @@
 ---
 name: memory-universal
-description: Universal memory context for Jiggy-2026. Master memory index — the persistent brain that survives between sessions, across tool restarts, and between different AI coding CLIs. Tracks every target, session, discovery, lead, lesson, and cross-hunt state in one centralized index.
+description: Universal memory context for Hercules-Hunt. Master memory index — the persistent brain that survives between sessions, across tool restarts, and between different AI coding CLIs. Tracks every target, session, discovery, lead, lesson, and cross-hunt state in one centralized index.
 ---
 
 # Universal Memory Context
 
-This file is the persistent memory backbone of Jiggy-2026. It is the first file loaded in every session and the last file updated when a session ends. Every tool, agent, and skill relies on this index to know what has been done, what is being worked on, and what should happen next.
+This file is the persistent memory backbone of Hercules-Hunt. It is the first file loaded in every session and the last file updated when a session ends. Every tool, agent, and skill relies on this index to know what has been done, what is being worked on, and what should happen next.
 
 ---
 

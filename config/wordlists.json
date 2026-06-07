@@ -1,0 +1,97 @@
+{
+  "directories": {
+    "default": {
+      "path": "wordlists",
+      "description": "Default wordlist directory"
+    }
+  },
+  "wordlists": {
+    "discovery": {
+      "dir_small": {
+        "path": "wordlists/discovery/small.txt",
+        "description": "Small directory wordlist (1000 entries)",
+        "source": "dirsearch",
+        "size_hint": 1000
+      },
+      "dir_medium": {
+        "path": "wordlists/discovery/medium.txt",
+        "description": "Medium directory wordlist (5000 entries)",
+        "source": "raft",
+        "size_hint": 5000
+      },
+      "dir_large": {
+        "path": "wordlists/discovery/large.txt",
+        "description": "Large directory wordlist (20000 entries)",
+        "source": "raft",
+        "size_hint": 20000
+      },
+      "subdomains": {
+        "path": "wordlists/discovery/subdomains.txt",
+        "description": "Subdomain brute-force wordlist",
+        "source": "subfinder",
+        "size_hint": 10000
+      }
+    },
+    "passwords": {
+      "default": {
+        "path": "wordlists/passwords/common.txt",
+        "description": "Common passwords wordlist",
+        "source": "secLists",
+        "size_hint": 10000
+      },
+      "weak_jwt": {
+        "path": "wordlists/passwords/jwt_secrets.txt",
+        "description": "Common JWT secrets for HMAC cracking",
+        "source": "custom",
+        "size_hint": 20
+      }
+    },
+    "payloads": {
+      "xss": {
+        "path": "wordlists/payloads/xss.txt",
+        "description": "XSS payload variants",
+        "source": "payload_generator.py",
+        "size_hint": 500
+      },
+      "sqli": {
+        "path": "wordlists/payloads/sqli.txt",
+        "description": "SQL injection payload variants",
+        "source": "payload_generator.py",
+        "size_hint": 500
+      },
+      "ssrf": {
+        "path": "wordlists/payloads/ssrf.txt",
+        "description": "SSRF target URLs",
+        "source": "payload_generator.py",
+        "size_hint": 200
+      }
+    },
+    "custom": {
+      "endpoints": {
+        "path": "wordlists/custom/endpoints.txt",
+        "description": "Custom discovered endpoints",
+        "source": "manual"
+      },
+      "params": {
+        "path": "wordlists/custom/params.txt",
+        "description": "URL parameter names",
+        "source": "manual"
+      }
+    }
+  },
+  "generator_modules": {
+    "payload_generator.py": {
+      "path": "tools\\python\\payload_generator.py",
+      "generates": [
+        "xss",
+        "sqli",
+        "ssrf",
+        "xxe",
+        "lfi",
+        "cmdi",
+        "ssti",
+        "nosqli"
+      ]
+    }
+  }
+}

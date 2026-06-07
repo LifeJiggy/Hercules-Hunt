@@ -1,0 +1,122 @@
+{
+  "profiles": {
+    "fast": {
+      "name": "Fast Scan",
+      "description": "Quick scan — minimal checks, high speed. Use for initial recon.",
+      "timeouts": {
+        "request": 10,
+        "scan": 300
+      },
+      "threads": 20,
+      "rate_delay_ms": 0,
+      "retries": 0,
+      "checklist": [
+        "idor_url_path",
+        "ssrf_cloud_metadata",
+        "xxe_classic",
+        "jwt_alg_none",
+        "sqli_error",
+        "rce_basic_cmdi",
+        "file_php_webshell"
+      ]
+    },
+    "deep": {
+      "name": "Deep Scan",
+      "description": "Thorough scan — all checks, heavy payloads, longer timeouts.",
+      "timeouts": {
+        "request": 30,
+        "scan": 3600
+      },
+      "threads": 5,
+      "rate_delay_ms": 200,
+      "retries": 3,
+      "checklist": [
+        "idor_uuid",
+        "idor_sequential",
+        "idor_wildcard",
+        "idor_mass_assignment",
+        "ssrf_localhost_variants",
+        "ssrf_dns_rebinding",
+        "ssrf_gopher",
+        "ssrf_imdsv2",
+        "xxe_oob",
+        "xxe_error",
+        "xxe_svg",
+        "xxe_soap",
+        "xxe_encoding",
+        "xxe_docx",
+        "jwt_weak_secret",
+        "jwt_kid_injection",
+        "jwt_jwk_injection",
+        "auth_rate_limit",
+        "auth_otp_brute",
+        "auth_session_fixation",
+        "auth_bypass_headers",
+        "auth_csrf",
+        "sqli_time_blind",
+        "sqli_union",
+        "sqli_nosqli",
+        "sqli_json",
+        "rce_ssti_all",
+        "rce_deserialization",
+        "rce_blind_timing",
+        "rce_oob",
+        "file_double_ext",
+        "file_magic_spoof",
+        "file_htaccess",
+        "file_svg_xss",
+        "file_docx_xxe",
+        "file_zip_slip",
+        "file_null_byte",
+        "file_polyglot",
+        "file_mime_bypass"
+      ]
+    },
+    "stealth": {
+      "name": "Stealth Scan",
+      "description": "Low-and-slow — minimal requests, long delays, no aggressive payloads.",
+      "timeouts": {
+        "request": 20,
+        "scan": 7200
+      },
+      "threads": 1,
+      "rate_delay_ms": 3000,
+      "retries": 1,
+      "checklist": [
+        "idor_url_path",
+        "ssrf_cloud_metadata",
+        "xxe_classic",
+        "jwt_alg_none",
+        "sqli_error",
+        "auth_rate_limit",
+        "file_svg_xss"
+      ],
+      "headers": {
+        "X-Forwarded-For": "127.0.0.1"
+      }
+    },
+    "paranoid": {
+      "name": "Paranoid Scan",
+      "description": "Read-only verification only. No writes, no mutations, no signups.",
+      "timeouts": {
+        "request": 30,
+        "scan": 1800
+      },
+      "threads": 2,
+      "rate_delay_ms": 1000,
+      "retries": 0,
+      "checklist": [
+        "idor_lookup",
+        "ssrf_dns_callback",
+        "ssrf_blind",
+        "ssrf_cloud_metadata",
+        "xxe_oob"
+      ],
+      "read_only": true,
+      "no_writes": true,
+      "no_signups": true,
+      "no_password_changes": true
+    }
+  },
+  "default_profile": "deep"
+}

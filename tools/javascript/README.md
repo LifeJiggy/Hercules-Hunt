@@ -1,4 +1,4 @@
-# Jiggy-2026 JavaScript Client-Side Hunting Toolkit
+# Hercules-Hunt JavaScript Client-Side Hunting Toolkit
 
 P1 warrior tools for browser control, client-side tracing, and hunting critical/high severity bugs.
 

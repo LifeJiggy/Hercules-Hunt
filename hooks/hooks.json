@@ -2,7 +2,7 @@
   "hooks": [
     {
       "event": "SessionStart",
-      "command": "Write-Host 'Jiggy-2026 loaded. Run /recon <target> to start.' -ForegroundColor Cyan"
+      "command": "Write-Host 'Hercules-Hunt loaded. Run /recon <target> to start.' -ForegroundColor Cyan"
     },
     {
       "event": "SessionStart",
@@ -303,7 +303,7 @@
     },
     {
       "event": "Notification",
-      "command": "Write-Host '[NOTIFY] New Jiggy-2026 agent session initialized. Check agents/ directory for agent-specific tooling.' -ForegroundColor Cyan"
+      "command": "Write-Host '[NOTIFY] New Hercules-Hunt agent session initialized. Check agents/ directory for agent-specific tooling.' -ForegroundColor Cyan"
     },
     {
       "event": "Notification",

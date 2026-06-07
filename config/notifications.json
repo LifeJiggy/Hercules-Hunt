@@ -1,0 +1,51 @@
+{
+  "slack": {
+    "enabled": false,
+    "webhook_url": "",
+    "channel": "#hunt-findings",
+    "notify_on": [
+      "finding_high",
+      "finding_critical",
+      "scan_complete",
+      "error"
+    ]
+  },
+  "discord": {
+    "enabled": false,
+    "webhook_url": "",
+    "username": "HuntBot",
+    "avatar_url": "",
+    "notify_on": [
+      "finding_critical",
+      "finding_high"
+    ]
+  },
+  "email": {
+    "enabled": false,
+    "smtp_server": "",
+    "smtp_port": 587,
+    "smtp_user": "",
+    "smtp_pass": "",
+    "to_addresses": [],
+    "from_address": "hunter@jiggy.local",
+    "notify_on": [
+      "scan_complete",
+      "error"
+    ]
+  },
+  "webhook": {
+    "enabled": false,
+    "url": "",
+    "method": "POST",
+    "content_type": "application/json"
+  },
+  "local": {
+    "log_file": "logs\\notifications.log",
+    "console_output": true
+  },
+  "finding_filters": {
+    "minimum_severity": "medium",
+    "only_new": true,
+    "unique_only": true
+  }
+}

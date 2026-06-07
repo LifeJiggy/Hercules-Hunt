@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Jiggy-2026 Python Vulnerability Hunting Toolkit
+Hercules-Hunt Python Vulnerability Hunting Toolkit
 
 Package containing 17 specialized vulnerability-hunting modules,
 each with 20+ detection methods for top bug classes.

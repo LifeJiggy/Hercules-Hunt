@@ -1,6 +1,6 @@
 ---
 name: session-state
-description: Live hunt session state tracker for Jiggy-2026. Records step-by-step progress, endpoint queue, time tracking, test results matrix, hypothesis tracking, What-If experiment log, and next actions. Updated every heartbeat and at every phase transition.
+description: Live hunt session state tracker for Hercules-Hunt. Records step-by-step progress, endpoint queue, time tracking, test results matrix, hypothesis tracking, What-If experiment log, and next actions. Updated every heartbeat and at every phase transition.
 ---
 
 # Session State

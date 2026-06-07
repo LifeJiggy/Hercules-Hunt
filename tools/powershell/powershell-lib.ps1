@@ -9,7 +9,7 @@
     encoding, crypto, recon, wordlist, output, and session management.
 
 .NOTES
-    Author  : Jiggy-2026 Toolchain
+    Author  : Hercules-Hunt Toolchain
     Version : 1.0.0
     Requires: PowerShell 5.1+, Windows OS
     Safety  : This script uses Invoke-WebRequest, Test-NetConnection, and
@@ -2413,7 +2413,7 @@ function Get-BBLibVersion {
     [PSCustomObject]@{
         Name    = 'PowerShell Bug Bounty Library'
         Version = '1.0.0'
-        Author  = 'Jiggy-2026 Toolchain'
+        Author  = 'Hercules-Hunt Toolchain'
         PSVersion = $PSVersionTable.PSVersion.ToString()
         Functions = @(
                     'Set-BBProxy', 'Clear-BBProxy', 'New-BBWebSession', 'Invoke-BBRequest',

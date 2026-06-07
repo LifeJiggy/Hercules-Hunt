@@ -1,11 +1,11 @@
 ---
 name: memory-persistence
-description: Session persistence and state management for Jiggy-2026 memory. Defines how hunt state survives between sessions, across tool restarts, and between different AI coding CLIs. Covers save/restore protocols, conflict resolution, data retention, garbage collection, backup/recovery, and cross-platform persistence strategies.
+description: Session persistence and state management for Hercules-Hunt memory. Defines how hunt state survives between sessions, across tool restarts, and between different AI coding CLIs. Covers save/restore protocols, conflict resolution, data retention, garbage collection, backup/recovery, and cross-platform persistence strategies.
 ---
 
 # Memory Persistence
 
-This file defines how Jiggy-2026 memory persists between sessions. Without persistence, every session starts from zero — no target knowledge, no findings, no lessons. This file is the rulebook for keeping memory alive across time, tools, and platforms.
+This file defines how Hercules-Hunt memory persists between sessions. Without persistence, every session starts from zero — no target knowledge, no findings, no lessons. This file is the rulebook for keeping memory alive across time, tools, and platforms.
 
 ---
 
@@ -422,7 +422,7 @@ For multi-machine setups: sync memory/ via Dropbox, Google Drive, or Syncthing.
 
 ## 11. File Locking Strategy
 
-Since Jiggy-2026 runs in single-user, single-process mode, explicit file locking is not required. However, to prevent corruption:
+Since Hercules-Hunt runs in single-user, single-process mode, explicit file locking is not required. However, to prevent corruption:
 
 ### Write Protocol
 1. Read current file content

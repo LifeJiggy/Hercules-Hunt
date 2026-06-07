@@ -1,6 +1,6 @@
 ---
 name: memory-discoveries
-description: Lead and discovery pipeline for Jiggy-2026. Tracks every interesting finding, partial exploit, suspicious endpoint, and chain opportunity from initial observation through validation, reporting, or kill. Every finding starts here before it becomes a report.
+description: Lead and discovery pipeline for Hercules-Hunt. Tracks every interesting finding, partial exploit, suspicious endpoint, and chain opportunity from initial observation through validation, reporting, or kill. Every finding starts here before it becomes a report.
 ---
 
 # Discoveries & Leads Pipeline

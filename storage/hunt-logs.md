@@ -1,6 +1,6 @@
 ---
 name: storage-hunt-logs
-description: Session execution logs and activity timelines for Jiggy-2026. Records every hunting session in detail — endpoints tested, results observed, time spent, tools used, hypotheses tested, and findings discovered. Session timelines are the raw material for reports and lessons learned.
+description: Session execution logs and activity timelines for Hercules-Hunt. Records every hunting session in detail — endpoints tested, results observed, time spent, tools used, hypotheses tested, and findings discovered. Session timelines are the raw material for reports and lessons learned.
 ---
 
 # Hunt Logs

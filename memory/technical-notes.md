@@ -1,6 +1,6 @@
 ---
 name: memory-technical-notes
-description: Deep technical research and architecture notes for Jiggy-2026. Covers tech stack deep dives, framework-specific vulnerabilities, endpoint patterns, auth mechanism analysis, API structure documentation, WAF/bypass techniques, infrastructure notes, and protocol-level observations.
+description: Deep technical research and architecture notes for Hercules-Hunt. Covers tech stack deep dives, framework-specific vulnerabilities, endpoint patterns, auth mechanism analysis, API structure documentation, WAF/bypass techniques, infrastructure notes, and protocol-level observations.
 ---
 
 # Technical Notes

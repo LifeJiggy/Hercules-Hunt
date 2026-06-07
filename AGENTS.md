@@ -1,4 +1,4 @@
-# Jiggy-2026 Agent Registry
+# Hercules-Hunt Agent Registry
 
 This file registers all agents for OpenCode and other agentic CLI tools that use AGENTS.md format.
 

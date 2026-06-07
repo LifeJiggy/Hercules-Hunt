@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Jiggy-2026 Universal Adapter Installer — install across 18+ agentic CLIs.
+"""Hercules-Hunt Universal Adapter Installer — install across 18+ agentic CLIs.
 
-Installs the Jiggy-2026 bug bounty system (agents, rules, tools, skills,
+Installs the Hercules-Hunt bug bounty system (agents, rules, tools, skills,
 config, hooks, MCP configs) into any agentic coding CLI or IDE assistant.
 
 Usage:
@@ -506,7 +506,7 @@ def main() -> int:
         return 0
 
     if args.list_targets:
-        print(f"Jiggy-2026 supports {len(TARGETS)} agentic CLI targets:\n")
+        print(f"Hercules-Hunt supports {len(TARGETS)} agentic CLI targets:\n")
         for t in TARGETS:
             base = target_base(t, home_dir())
             print(f"  {t:<18} -> {base}")

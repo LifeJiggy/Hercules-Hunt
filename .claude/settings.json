@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "name": "Jiggy-2026 Bug Bounty System",
+  "name": "Hercules-Hunt Bug Bounty System",
   "hooks": {
     "PreToolUse": [],
     "PostToolUse": [],
@@ -9,7 +9,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "Write-Host 'Jiggy-2026 Bug Bounty System loaded. 17 agents, 13 rules, 7 tools available.' -ForegroundColor Cyan",
+            "command": "Write-Host 'Hercules-Hunt Bug Bounty System loaded. 17 agents, 13 rules, 7 tools available.' -ForegroundColor Cyan",
             "timeout": 5,
             "async": true
           }

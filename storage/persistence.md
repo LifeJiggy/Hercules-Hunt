@@ -1,11 +1,11 @@
 ---
 name: storage-persistence
-description: Storage data lifecycle, retention policies, backup/recovery, archival procedures, and cross-session persistence for Jiggy-2026 storage layer. Governs every byte stored: when it's created, how long it lives, when it's archived, and when it's deleted.
+description: Storage data lifecycle, retention policies, backup/recovery, archival procedures, and cross-session persistence for Hercules-Hunt storage layer. Governs every byte stored: when it's created, how long it lives, when it's archived, and when it's deleted.
 ---
 
 # Storage Persistence & Data Lifecycle
 
-This file defines the complete data lifecycle for every byte stored in the Jiggy-2026 storage system. From creation through active use, archival, and cleanup — every piece of data has a defined path.
+This file defines the complete data lifecycle for every byte stored in the Hercules-Hunt storage system. From creation through active use, archival, and cleanup — every piece of data has a defined path.
 
 ---
 

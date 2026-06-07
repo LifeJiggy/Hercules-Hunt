@@ -1138,7 +1138,7 @@ step back from the day-to-day and see the big picture. Each retro covers:
 - Total system lines: ~47,000+
 
 ### Key Accomplishments
-1. Built comprehensive bug bounty skill system (Jiggy-2026)
+1. Built comprehensive bug bounty skill system (Hercules-Hunt)
 2. Successfully extracted 45+ API endpoints from CoinDesk JS bundles
 3. Discovered JWT alg:none bypass on live target
 4. Created universal adapter for 18 CLI platforms
@@ -1156,7 +1156,7 @@ step back from the day-to-day and see the big picture. Each retro covers:
 3. Achieve $10,000+ in total payout
 4. Get at least one Critical finding approved
 5. Get invited to at least one private program
-6. Continue building Jiggy-2026 based on real hunting feedback
+6. Continue building Hercules-Hunt based on real hunting feedback
 ```
 
 ---
