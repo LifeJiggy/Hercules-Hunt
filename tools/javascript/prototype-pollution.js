@@ -158,6 +158,138 @@ class PrototypePollution {
     if (results.scriptGadgets.length) this.findings.push({ type: 'pollution-gadgets', count: results.scriptGadgets.length, severity: 'HIGH' });
     return results;
   }
+
+  async testJSONParsePollution() {
+    return this.page.evaluate(() => {
+      const results = {};
+      try {
+        const o = JSON.parse('{"__proto__": {"polluted": true}}');
+        results.viaJSONParse = ({})['polluted'] === true;
+      } catch { results.viaJSONParse = false; }
+      try {
+        const o = JSON.parse('{"constructor": {"prototype": {"polluted": true}}}');
+        results.viaConstructor = ({})['polluted'] === true;
+      } catch { results.viaConstructor = false; }
+      return results;
+    });
+  }
+
+  async testURLParamsPollution() {
+    return this.page.evaluate(() => {
+      const up = new URLSearchParams('__proto__[polluted]=true');
+      const obj = {};
+      for (const [k, v] of up) { obj[k] = v; }
+      return { vulnerable: ({})['polluted'] === true };
+    });
+  }
+
+  async testFormDataPollution() {
+    return this.page.evaluate(() => {
+      const fd = new FormData();
+      fd.append('__proto__[polluted]', 'true');
+      const obj = {};
+      fd.forEach((v, k) => { obj[k] = v; });
+      return { vulnerable: ({})['polluted'] === true };
+    });
+  }
+
+  async testObjectAssign() {
+    return this.page.evaluate(() => {
+      try {
+        const t = {}; Object.assign(t, JSON.parse('{"__proto__": {"polluted": true}}'));
+        return { viaObjectAssign: ({})['polluted'] === true };
+      } catch { return { viaObjectAssign: false }; }
+    });
+  }
+
+  async testSpreadOperator() {
+    return this.page.evaluate(() => {
+      try {
+        const malicious = JSON.parse('{"__proto__": {"polluted": true}}');
+        const result = { ...malicious };
+        return { viaSpread: ({})['polluted'] === true };
+      } catch { return { viaSpread: false }; }
+    });
+  }
+
+  async testReducePollution() {
+    return this.page.evaluate(() => {
+      try {
+        [{ a: 1 }, { '__proto__': { 'polluted': true } }].reduce((a, b) => ({ ...a, ...b }), {});
+        return { viaReduce: ({})['polluted'] === true };
+      } catch { return { viaReduce: false }; }
+    });
+  }
+
+  async testHasOwnPropertyBypass() {
+    return this.page.evaluate(() => {
+      const o = {};
+      if (o.hasOwnProperty('polluted')) return { bypassed: false };
+      try {
+        Object.prototype.polluted = true;
+        return { bypassed: !o.hasOwnProperty('polluted'), viaHasOwn: o.hasOwnProperty('polluted') };
+      } finally { delete Object.prototype.polluted; }
+    });
+  }
+
+  async testForInGadget() {
+    return this.page.evaluate(() => {
+      const gadgets = [];
+      for (const key in {}) {
+        if (Object.prototype.hasOwnProperty.call({}, key)) continue;
+        gadgets.push(key);
+      }
+      return { extraGadgets: gadgets };
+    });
+  }
+
+  async testElectronContextBridge() {
+    return this.page.evaluate(() => {
+      if (typeof window.require === 'function' || typeof process !== 'undefined') return { isElectron: true, contextBridgeAvailable: typeof window.electronAPI !== 'undefined' };
+      return { isElectron: false };
+    });
+  }
+
+  async testPolyfillLibraries() {
+    return this.page.evaluate(() => {
+      const libs = {};
+      if (typeof $ !== 'undefined') { try { libs.jQuery = $.fn && $.fn.jquery; } catch {} }
+      if (typeof _ !== 'undefined') { try { libs.lodash = _.VERSION || true; } catch {} }
+      if (typeof angular !== 'undefined') { try { libs.angular = angular.version?.full || true; } catch {} }
+      if (typeof React !== 'undefined') { try { libs.react = React.version; } catch {} }
+      if (typeof Ext !== 'undefined') libs.sencha = true;
+      if (typeof MooTools !== 'undefined') libs.mootools = true;
+      if (typeof Prototype !== 'undefined') libs.prototypejs = true;
+      if (typeof dojo !== 'undefined') libs.dojo = true;
+      return libs;
+    });
+  }
+
+  async testCloneDeep(obj) {
+    return this.page.evaluate(() => {
+      try {
+        const cloned = JSON.parse(JSON.stringify({ '__proto__': { 'polluted': true } }));
+        return { viaCloneDeep: ({})['polluted'] === true };
+      } catch { return { viaCloneDeep: false }; }
+    });
+  }
+
+  async fullPollutionChain() {
+    console.log('[PrototypePollution] Full chain analysis...');
+    const r = await this.testAllVectors();
+    const additional = {
+      jsonParse: await this.testJSONParsePollution(),
+      urlParams: await this.testURLParamsPollution(),
+      formData: await this.testFormDataPollution(),
+      objectAssign: await this.testObjectAssign(),
+      spread: await this.testSpreadOperator(),
+      reduce: await this.testReducePollution(),
+      hasOwnBypass: await this.testHasOwnPropertyBypass(),
+      forInGadgets: await this.testForInGadget(),
+      polyfills: await this.testPolyfillLibraries()
+    };
+    return { ...r, additional };
+  }
 }
 
 module.exports = { PrototypePollution };

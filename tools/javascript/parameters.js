@@ -162,6 +162,147 @@ class Parameters {
     } catch {}
     return results;
   }
+
+  extractGraphQLParams(query) {
+    const params = {};
+    const paramRegex = /\$(\w+)\s*:\s*(\w+)/g;
+    let match;
+    while ((match = paramRegex.exec(query)) !== null) params[match[1]] = match[2];
+    return params;
+  }
+
+  extractRESTParams(path) {
+    const params = {};
+    const segments = path.split('/').filter(Boolean);
+    segments.forEach((s, i) => {
+      if (s.startsWith(':') || s.startsWith('{') || /^[a-f0-9]{24}$/i.test(s) || /^\d+$/.test(s)) {
+        params[`segment_${i}`] = s;
+      }
+    });
+    return params;
+  }
+
+  generateArrayParams(param, values) {
+    return {
+      [`${param}[]`]: values,
+      [`${param}[0]`]: values[0],
+      [`${param}[1]`]: values[1],
+      [`${param}[][key]`]: 'value'
+    };
+  }
+
+  async extractFromJSONBody(body) {
+    try {
+      const parsed = JSON.parse(body);
+      return this.flattenObject(parsed);
+    } catch { return {}; }
+  }
+
+  encodeDouble(url) {
+    return encodeURIComponent(encodeURIComponent(url));
+  }
+
+  encodeUnicode(param) {
+    return param.split('').map(c => `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`).join('');
+  }
+
+  addNullByte(param) {
+    return param + '\0';
+  }
+
+  addNewline(param) {
+    return param + '\n';
+  }
+
+  testParamTypeConfusion(baseUrl, param, origValue) {
+    const types = [
+      { value: 'true', type: 'boolean' },
+      { value: '1', type: 'number' },
+      { value: '[]', type: 'array' },
+      { value: '{}', type: 'object' },
+      { value: 'null', type: 'null' },
+      { value: 'undefined', type: 'undefined' },
+      { value: '0.5', type: 'float' },
+      { value: '-1', type: 'negative' }
+    ];
+    return types.map(t => ({
+      ...t,
+      url: this.buildUrl(baseUrl, { [param]: t.value }),
+      originalValue: origValue
+    }));
+  }
+
+  paramCollisionScan(params) {
+    const collisions = [];
+    const seen = {};
+    for (const [k, v] of Object.entries(params)) {
+      const base = k.replace(/\[\d*\]|\[\]$/g, '').toLowerCase();
+      if (seen[base]) collisions.push({ param1: seen[base], param2: k, base });
+      else seen[base] = k;
+    }
+    return collisions;
+  }
+
+  truncationTest(baseUrl, param, value) {
+    const tests = [];
+    for (let i = 1; i <= Math.min(value.length, 20); i++) {
+      tests.push({ truncateAt: i, value: value.slice(0, i), url: this.buildUrl(baseUrl, { [param]: value.slice(0, i) }) });
+    }
+    return tests;
+  }
+
+  pollutionVariants(baseUrl, params, targetParam) {
+    const variants = [];
+    const base = new URL(baseUrl);
+    for (const sep of ['&', ';', '&amp;', '%26', ',']) {
+      const newUrl = base.toString() + sep + `${targetParam}=polluted`;
+      variants.push({ separator: sep, url: newUrl });
+    }
+    return variants;
+  }
+
+  extractFragmentParams(url) {
+    const hash = new URL(url).hash;
+    if (!hash) return {};
+    const params = {};
+    const qs = hash.split('?')[1] || hash.split('#')[1] || '';
+    qs.split('&').forEach(pair => {
+      const [k, v] = pair.split('=').map(decodeURIComponent);
+      if (k) params[k] = v;
+    });
+    return params;
+  }
+
+  extractCookieParams() {
+    const params = {};
+    document.cookie.split(';').forEach(c => {
+      const [k, ...v] = c.trim().split('=');
+      if (k) params[k.trim()] = v.join('=');
+    });
+    return params;
+  }
+
+  async fuzzParamCount(baseUrl, existingParams, min = 0, max = 50) {
+    const results = [];
+    for (let i = min; i <= max; i++) {
+      const testParams = { ...existingParams, [`__param${i}`]: '1' };
+      results.push({ paramCount: Object.keys(testParams).length, url: this.buildUrl(baseUrl, testParams) });
+    }
+    return results;
+  }
+
+  async fullParamMap(url) {
+    const extracted = this.extractFromUrl(url);
+    const graphQLHints = url.match(/graphql/i) ? ['query', 'variables', 'operationName', 'extensions'] : [];
+    const restfulParts = this.extractRESTParams(url);
+    return {
+      queryParams: extracted,
+      restfulParams: restfulParts,
+      graphQLHints,
+      allParams: { ...extracted.params, ...restfulParts },
+      paramCount: Object.keys(extracted.params).length + Object.keys(restfulParts).length
+    };
+  }
 }
 
 module.exports = { Parameters };

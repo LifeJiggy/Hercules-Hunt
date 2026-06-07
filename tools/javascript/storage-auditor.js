@@ -190,6 +190,145 @@ class StorageAuditor {
   async auditCookies() {
     return this.page.context().cookies();
   }
+
+  async auditWebSQL() {
+    return this.page.evaluate(() => {
+      if (typeof openDatabase === 'undefined') return { supported: false };
+      const results = [];
+      try {
+        const db = openDatabase('__jiggy_audit__', '1.0', 'Jiggy Audit', 2 * 1024 * 1024);
+        db.transaction(tx => {
+          tx.executeSql('SELECT name FROM sqlite_master WHERE type=\'table\'', [], (tx, r) => {
+            for (let i = 0; i < r.rows.length; i++) results.push({ table: r.rows.item(i).name });
+          });
+        });
+      } catch {}
+      return { supported: true, databases: results };
+    });
+  }
+
+  async auditFileSystem() {
+    return this.page.evaluate(async () => {
+      if (typeof navigator.storage === 'undefined' || typeof navigator.storage.getDirectory === 'undefined') return { supported: false };
+      try {
+        const root = await navigator.storage.getDirectory();
+        const entries = [];
+        for await (const [name, handle] of root.entries()) { entries.push({ name, kind: handle.kind }); }
+        return { supported: true, rootEntries: entries };
+      } catch { return { supported: false }; }
+    });
+  }
+
+  async auditCredentialManager() {
+    return this.page.evaluate(async () => {
+      if (typeof navigator.credentials === 'undefined') return { supported: false };
+      try {
+        const creds = await navigator.credentials.get({ password: true, federated: { providers: [] } });
+        return { supported: true, storedCredentials: creds ? true : false };
+      } catch { return { supported: true, storedCredentials: false }; }
+    });
+  }
+
+  async auditPaymentHandler() {
+    return this.page.evaluate(async () => {
+      if (typeof navigator.paymentHandler === 'undefined' && typeof PaymentRequest === 'undefined') return { supported: false };
+      const instruments = [];
+      try {
+        const pr = new PaymentRequest([{ supportedMethods: 'basic-card' }], { total: { label: 'test', amount: { currency: 'USD', value: '0.01' } } });
+        instruments.push({ type: 'PaymentRequest', available: true });
+      } catch { instruments.push({ type: 'PaymentRequest', available: false }); }
+      return { supported: true, instruments };
+    });
+  }
+
+  async detectBlobURLStorage() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && code.includes('createObjectURL') || code.includes('blob:')) {
+          results.push({ type: 'blob-url', src: s.src || 'inline', snippet: code.slice(0, 150) });
+        }
+      });
+      return results;
+    });
+  }
+
+  async detectDataURLStorage() {
+    return this.page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('img[src^="data:"], iframe[src^="data:"], object[data^="data:"]').forEach(el => {
+        const src = el.src || el.data;
+        if (src && src.length > 200) results.push({ tag: el.tagName, length: src.length, type: src.split(';')[0] });
+      });
+      return results;
+    });
+  }
+
+  async auditServiceWorkerCache() {
+    return this.page.evaluate(async () => {
+      if (typeof caches === 'undefined') return [];
+      const names = await caches.keys();
+      const all = [];
+      for (const name of names) {
+        const cache = await caches.open(name);
+        const reqs = await cache.keys();
+        const entries = [];
+        for (const req of reqs.slice(0, 20)) {
+          const resp = await cache.match(req);
+          entries.push({ url: req.url, size: resp ? (await resp.clone().text()).length : 0 });
+        }
+        all.push({ name, totalEntries: reqs.length, entries });
+      }
+      return all;
+    });
+  }
+
+  async detectBeaconExfil() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && (code.includes('sendBeacon') || code.includes('navigator.sendBeacon') || code.includes('keepalive: true') || code.includes('fetch(') && code.includes('keepalive'))) {
+          results.push({ type: 'beacon-exfil', src: s.src || 'inline', snippet: code.slice(0, 150) });
+        }
+      });
+      return results;
+    });
+  }
+
+  async detectClientSideScanning() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      const patterns = [/fingerprint/i, /fingerprintjs/i, /canvas/i, /audio/i, /fonts/i, /webgl/i, /browserleaks/i, /device/i];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        patterns.forEach(p => { if (p.test(code)) results.push({ pattern: p.source, src: s.src || 'inline' }); });
+      });
+      return results;
+    });
+  }
+
+  async fullStorageAudit() {
+    console.log('[StorageAuditor] Full deep storage audit...');
+    const base = await this.fullAudit();
+    const deep = {
+      webSQL: await this.auditWebSQL(),
+      fileSystem: await this.auditFileSystem(),
+      credentialManager: await this.auditCredentialManager(),
+      paymentHandler: await this.auditPaymentHandler(),
+      blobURLs: await this.detectBlobURLStorage(),
+      dataURLs: await this.detectDataURLStorage(),
+      swCache: await this.auditServiceWorkerCache(),
+      beaconExfil: await this.detectBeaconExfil(),
+      clientScanning: await this.detectClientSideScanning()
+    };
+    return { ...base, deep };
+  }
 }
 
 module.exports = { StorageAuditor };

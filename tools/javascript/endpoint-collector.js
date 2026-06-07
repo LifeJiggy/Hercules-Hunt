@@ -216,6 +216,143 @@ class EndpointCollector {
     fs.writeFileSync(mdPath, md.join('\n'));
     return mdPath;
   }
+
+  async detectServiceWorkerEndpoints(pageUrl) {
+    const content = await this.fetchUrl(pageUrl);
+    const swMatch = content.body.match(/navigator\.serviceWorker\.register\(['"]([^'"]+)['"]\)/);
+    if (!swMatch) return [];
+    const swUrl = new URL(swMatch[1], pageUrl).href;
+    const swContent = await this.fetchUrl(swUrl);
+    const endpoints = this.extractFromJS(swContent.body, swUrl);
+    const secrets = this.extractSecrets(swContent.body);
+    return { swUrl, endpoints, secrets, endpointsFound: endpoints.length, secretsFound: secrets.length };
+  }
+
+  async detectWebWorkers(pageUrl) {
+    const content = await this.fetchUrl(pageUrl);
+    const workerRegex = /new\s+(Worker|SharedWorker)\(['"]([^'"]+)['"]\)/g;
+    const workers = [];
+    let match;
+    while ((match = workerRegex.exec(content.body)) !== null) {
+      const workerUrl = new URL(match[2], pageUrl).href;
+      const workerContent = await this.fetchUrl(workerUrl);
+      const endpoints = this.extractFromJS(workerContent.body, workerUrl);
+      workers.push({ type: match[1], url: workerUrl, endpoints, endpointCount: endpoints.length });
+    }
+    return workers;
+  }
+
+  async detectImportMap(pageUrl) {
+    const content = await this.fetchUrl(pageUrl);
+    const imMatch = content.body.match(/<script type="importmap">([\s\S]*?)<\/script>/);
+    if (!imMatch) return null;
+    try {
+      const map = JSON.parse(imMatch[1]);
+      return { imports: map.imports || {}, scopes: map.scopes || {} };
+    } catch { return null; }
+  }
+
+  async detectDynamicImports(pageUrl) {
+    const content = await this.fetchUrl(pageUrl);
+    const imports = [];
+    const dynamicImportRegex = /import\(['"]([^'"]+)['"]\)/g;
+    let match;
+    while ((match = dynamicImportRegex.exec(content.body)) !== null) {
+      try {
+        const importUrl = new URL(match[1], pageUrl).href;
+        imports.push({ specifier: match[1], resolved: importUrl });
+      } catch { imports.push({ specifier: match[1], resolved: 'unresolvable' }); }
+    }
+    return imports;
+  }
+
+  async extractCSSUrls(pageUrl) {
+    const content = await this.fetchUrl(pageUrl);
+    const urls = new Set();
+    const cssUrlRegex = /url\(['"]?([^'")\s]+)['"]?\)/g;
+    let match;
+    while ((match = cssUrlRegex.exec(content.body)) !== null) {
+      try { urls.add(new URL(match[1], pageUrl).href); } catch {}
+    }
+    const importRegex = /@import\s+['"]([^'"]+)['"]/g;
+    while ((match = importRegex.exec(content.body)) !== null) {
+      try { urls.add(new URL(match[1], pageUrl).href); } catch {}
+    }
+    return Array.from(urls);
+  }
+
+  async extractSourceMapContent(jsUrl) {
+    try {
+      const content = await this.fetchUrl(jsUrl);
+      const smMatch = content.body.match(/\/\/#\s*sourceMappingURL=(.+)/);
+      if (!smMatch) return null;
+      const smUrl = new URL(smMatch[1], jsUrl).href;
+      const smResp = await this.fetchUrl(smUrl);
+      const sm = JSON.parse(smResp.body);
+      if (sm.sourcesContent) {
+        const allEndpoints = [];
+        sm.sourcesContent.forEach((src, i) => {
+          if (src) {
+            const eps = this.extractFromJS(src, sm.sources?.[i] || 'unknown');
+            allEndpoints.push({ source: sm.sources?.[i] || `source_${i}`, endpoints: eps });
+          }
+        });
+        return { sources: sm.sources, sourcesContent: true, parsedEndpoints: allEndpoints };
+      }
+      return { sources: sm.sources, sourcesContent: false };
+    } catch { return null; }
+  }
+
+  async extractTemplateLiterals(content) {
+    const endpoints = new Set();
+    const tplRegex = /`([^`]*\/\w+(?:\/\w+)*(?:[?&#][^`]*)?)`/g;
+    let match;
+    while ((match = tplRegex.exec(content)) !== null) {
+      const expr = match[1];
+      if (expr.includes('${')) continue;
+      if (expr.includes('/api') || expr.includes('/v1') || expr.includes('/graphql') || expr.includes('/oauth') || expr.includes('/rest')) endpoints.add(expr);
+    }
+    return Array.from(endpoints);
+  }
+
+  async extractRPC(content) {
+    const endpoints = new Set();
+    const rpcPatterns = [/JSON\.RPC/i, /jsonrpc/i, /rpc/i, /gRPC/i, /protobuf/i, /\.proto/i];
+    const lines = content.split('\n');
+    lines.forEach((line, i) => {
+      rpcPatterns.forEach(p => {
+        if (p.test(line)) endpoints.add(`L${i + 1}: ${line.trim().slice(0, 100)}`);
+      });
+    });
+    return Array.from(endpoints);
+  }
+
+  extractAllJS(ctx) {
+    const endpoints = new Set();
+    const add = (ep) => { if (ep && ep.length > 2) endpoints.add(ep); };
+    ctx.replace(/["'`]([^"'`]*\/(?:api|v\d|graphql|rest|oauth|callback|webhook|hook|action|command|invoke|function|service|event|stream|subscribe|publish|rpc|jsonrpc)[^"'`]*)["'`]/gi, (_, m) => { add(m); return ''; });
+    ctx.replace(/(?:fetch|axios|request|$.ajax|http)\s*\(\s*["'`]([^"'`]+)["'`]/gi, (_, m) => { add(m); return ''; });
+    return Array.from(endpoints);
+  }
+
+  async concurrentFetch(urls, concurrency = 5) {
+    const results = [];
+    const chunks = [];
+    for (let i = 0; i < urls.length; i += concurrency) chunks.push(urls.slice(i, i + concurrency));
+    for (const chunk of chunks) {
+      const batch = chunk.map(url => this.fetchUrl(url).then(r => ({ url, ...r })).catch(e => ({ url, error: e.message })));
+      results.push(...await Promise.all(batch));
+    }
+    return results;
+  }
+
+  async enhancedAnalyzeScript(scriptUrl) {
+    const result = await this.analyzeScript(scriptUrl);
+    const sourceMap = await this.extractSourceMapContent(scriptUrl);
+    const tplEndpoints = await this.extractTemplateLiterals(result.body || '');
+    const rpcHints = await this.extractRPC(result.body || '');
+    return { ...result, sourceMapContent: sourceMap, templateLiteralEndpoints: tplEndpoints, rpcEndpoints: rpcHints };
+  }
 }
 
 module.exports = { EndpointCollector };

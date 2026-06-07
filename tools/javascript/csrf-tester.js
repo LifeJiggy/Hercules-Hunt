@@ -178,6 +178,136 @@ ${html}
     results.forms = forms;
     return results;
   }
+
+  async testCustomHeaderValidation(endpoint) {
+    const headers = ['X-CSRF-Token', 'X-XSRF-Token', 'X-Requested-By', 'X-Requested-With', 'X-CSRF-Header', 'X-Auth-Token'];
+    const results = [];
+    for (const header of headers) {
+      try {
+        const res = await fetch(endpoint, { method: 'POST', headers: { [header]: 'test' } });
+        results.push({ header, status: res.status, accepted: res.status < 400 });
+      } catch { results.push({ header, error: true }); }
+    }
+    return results;
+  }
+
+  async testDoubleSubmitCookie() {
+    const cookies = await this.page.context().cookies();
+    const csrfCookies = cookies.filter(c => /csrf|xsrf|token/i.test(c.name));
+    const findings = [];
+    for (const c of csrfCookies) {
+      const body = await this.page.evaluate(async (name, value) => {
+        try { const r = await fetch(window.location.href, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: `${name}=${value}` }); return r.status; } catch { return 0; }
+      }, c.name, c.value);
+      if (body < 400) findings.push({ cookie: c.name, issue: 'Double-submit cookie pattern — CSRF token equals cookie value', severity: 'HIGH' });
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
+
+  async testStateParameter(url) {
+    const parsed = new URL(url);
+    const stateParam = parsed.searchParams.get('state');
+    if (!stateParam) return { statePresent: false };
+    const findings = [];
+    if (stateParam.length < 16) findings.push({ issue: 'OAuth state parameter too short: ' + stateParam.length + ' chars', severity: 'HIGH' });
+    if (/^[a-z]+$/i.test(stateParam)) findings.push({ issue: 'OAuth state parameter non-random pattern', severity: 'HIGH' });
+    if (stateParam === this.page.url().split('?')[0]) findings.push({ issue: 'OAuth state parameter is current URL — CSRF predictable', severity: 'CRITICAL' });
+    this.findings.push(...findings);
+    return { statePresent: true, findings };
+  }
+
+  async testCORSWithCredentials(endpoint) {
+    const results = [];
+    const origins = ['https://evil.com', 'null', 'https://attacker.net', 'http://localhost:8080'];
+    for (const origin of origins) {
+      try {
+        const res = await fetch(endpoint, { method: 'GET', credentials: 'include', headers: { 'Origin': origin } });
+        const acao = res.headers.get('Access-Control-Allow-Origin');
+        const acac = res.headers.get('Access-Control-Allow-Credentials');
+        if (acao && acac === 'true') results.push({ origin, acao, vulnerable: true });
+      } catch {}
+    }
+    if (results.length) this.findings.push({ type: 'cors-credentials', count: results.length, severity: 'CRITICAL' });
+    return results;
+  }
+
+  async testIdempotency(endpoint) {
+    const results = [];
+    for (let i = 0; i < 3; i++) {
+      try {
+        const res = await fetch(endpoint, { method: 'DELETE' });
+        results.push({ attempt: i + 1, status: res.status });
+      } catch { results.push({ attempt: i + 1, error: true }); }
+    }
+    const uniqueStatuses = [...new Set(results.map(r => r.status))];
+    if (uniqueStatuses.length > 1) this.findings.push({ type: 'non-idempotent', endpoint, issue: 'DELETE/PUT not idempotent', severity: 'LOW' });
+    return results;
+  }
+
+  async testRefererCheck() {
+    const results = [];
+    const referers = ['https://evil.com', 'https://evil.com/page', 'http://evil.com', ''];
+    for (const ref of referers) {
+      try {
+        const res = await fetch(this.page.url(), { method: 'POST', headers: { 'Referer': ref } });
+        results.push({ referer: ref || '(none)', status: res.status, blocked: res.status === 403 || res.status === 401 });
+      } catch { results.push({ referer: ref, error: true }); }
+    }
+    return results;
+  }
+
+  async testJSONCsrf(endpoint) {
+    const results = [];
+    const bodies = [{}, { '': '' }, JSON.stringify({})];
+    for (const body of bodies) {
+      try {
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: typeof body === 'string' ? body : JSON.stringify(body) });
+        results.push({ contentType: 'application/json', status: res.status });
+      } catch { results.push({ contentType: 'application/json', error: true }); }
+    }
+    return results;
+  }
+
+  async automatedPoC(method, action, params) {
+    return `<!DOCTYPE html>
+<html>
+<body>
+<form action="${action}" method="${method}">
+${Object.entries(params).map(([k, v]) => `  <input type="hidden" name="${k}" value="${v}">`).join('\n')}
+  <input type="submit" value="Submit">
+</form>
+<script>document.forms[0].submit();</script>
+</body>
+</html>`;
+  }
+
+  async testLaxBypass(endpoint) {
+    const methods = ['GET', 'POST'];
+    const results = [];
+    for (const m of methods) {
+      const res = await fetch(endpoint, { method: m, credentials: 'include' });
+      results.push({ method: m, status: res.status, cookiesSent: res.headers.get('Cookie') || 'no' });
+    }
+    return results;
+  }
+
+  async testXRequestedWith() {
+    const res = await fetch(this.page.url(), { method: 'GET', headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+    return { accepted: res.status < 400, status: res.status, header: 'X-Requested-With: XMLHttpRequest' };
+  }
+
+  async testPreflightBypass(endpoint) {
+    const methods = ['GET', 'POST', 'PUT', 'DELETE'];
+    const results = [];
+    for (const m of methods) {
+      try {
+        const res = await fetch(endpoint, { method: m, mode: 'no-cors' });
+        results.push({ method: m, status: res.status, noCORSSuccess: res.type === 'opaque' });
+      } catch { results.push({ method: m, error: true }); }
+    }
+    return results;
+  }
 }
 
 module.exports = { CSRFTester };

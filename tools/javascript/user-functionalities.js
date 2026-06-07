@@ -219,6 +219,183 @@ class UserFunctionalities {
       export: () => format === 'json' ? JSON.stringify(requests, null, 2) : requests
     };
   }
+
+  async testPasswordStrength() {
+    const passwords = await this.page.evaluate(() => {
+      const results = [];
+      document.querySelectorAll('input[type="password"]').forEach(el => {
+        const val = el.value || el.getAttribute('value') || '';
+        results.push({
+          name: el.name,
+          length: val.length,
+          hasUpper: /[A-Z]/.test(val),
+          hasLower: /[a-z]/.test(val),
+          hasDigit: /\d/.test(val),
+          hasSpecial: /[^a-zA-Z0-9]/.test(val),
+          minLength: el.minLength || null,
+          pattern: el.pattern || null,
+          autocomplete: el.autocomplete || null
+        });
+      });
+      return results;
+    });
+    const findings = [];
+    for (const p of passwords) {
+      if (p.length < 8) findings.push({ field: p.name, issue: 'Password < 8 chars', severity: 'HIGH' });
+      if (!p.hasUpper) findings.push({ field: p.name, issue: 'No uppercase letter', severity: 'MEDIUM' });
+      if (!p.hasDigit) findings.push({ field: p.name, issue: 'No digit', severity: 'MEDIUM' });
+      if (!p.hasSpecial) findings.push({ field: p.name, issue: 'No special char', severity: 'LOW' });
+    }
+    return { passwords, findings };
+  }
+
+  async testUsernameEnumeration(loginUrl, validUser, invalidUser) {
+    const results = [];
+    for (const { user, expect } of [{ user: validUser, expect: 'valid' }, { user: invalidUser, expect: 'invalid' }]) {
+      await this.page.goto(loginUrl, { waitUntil: 'networkidle' });
+      await this.page.fill('input[name="email"], input[name="username"], input[type="email"]', user);
+      await this.page.fill('input[type="password"]', 'wrongpassword123!');
+      await this.page.click('button[type="submit"], input[type="submit"]');
+      await this.page.waitForTimeout(1000);
+      const body = await this.page.evaluate(() => document.body.textContent);
+      const msgMatch = body.match(/(?:error|alert|message|notification)[^.]{0,100}/i);
+      results.push({ user, expected: expect, bodyMatch: msgMatch ? msgMatch[0].slice(0, 100) : 'no message', message: msgMatch ? msgMatch[0].slice(0, 200) : '' });
+    }
+    const msgs = results.map(r => r.bodyMatch);
+    const enumDetected = msgs[0] !== msgs[1];
+    if (enumDetected) this.findings.push({ type: 'username-enum', issue: 'Different error messages for valid vs invalid users', severity: 'MEDIUM' });
+    return { results, enumDetected };
+  }
+
+  async testAccountLockout(loginUrl, username, attempts = 5) {
+    const results = [];
+    for (let i = 0; i < attempts; i++) {
+      await this.page.goto(loginUrl, { waitUntil: 'networkidle' });
+      await this.page.fill('input[name="email"], input[name="username"], input[type="email"]', username);
+      await this.page.fill('input[type="password"]', `wrong${i}`);
+      const start = Date.now();
+      await this.page.click('button[type="submit"], input[type="submit"]');
+      await this.page.waitForTimeout(500);
+      results.push({ attempt: i + 1, elapsed: Date.now() - start });
+    }
+    const timingShift = results.slice(-3).every(r => r.elapsed > results[0].elapsed * 1.5);
+    if (timingShift) this.findings.push({ type: 'account-lockout', issue: 'Timing shift detected — account lockout may be present', severity: 'INFO' });
+    return { results, lockoutDetected: timingShift };
+  }
+
+  async testForgotPassword( forgotUrl, email ) {
+    await this.page.goto(forgotUrl, { waitUntil: 'networkidle' });
+    await this.page.fill('input[type="email"], input[name="email"]', email);
+    await this.page.click('button[type="submit"], input[type="submit"]');
+    await this.page.waitForTimeout(2000);
+    const body = await this.page.evaluate(() => document.body.textContent);
+    const tokenMatch = body.match(/reset[=:][a-zA-Z0-9\-_.]+/i);
+    const findings = [];
+    if (tokenMatch) findings.push({ issue: 'Reset token in response body', severity: 'CRITICAL', token: tokenMatch[0] });
+    const responseUrl = this.page.url();
+    if (responseUrl.includes('reset') || responseUrl.includes('token')) findings.push({ issue: 'Reset token in URL', severity: 'HIGH', url: responseUrl });
+    if (findings.length) this.findings.push(...findings);
+    return { responseUrl, findings };
+  }
+
+  async testEmailChange(emailChangeUrl, newEmail) {
+    await this.page.goto(emailChangeUrl, { waitUntil: 'networkidle' });
+    const fields = await this.page.$$('input[type="email"], input[name="email"]');
+    const findings = [];
+    for (const field of fields) {
+      const name = await field.getAttribute('name') || '';
+      const id = await field.getAttribute('id') || '';
+      await field.fill(newEmail);
+      const submitBtn = await this.page.$('button[type="submit"], input[type="submit"]');
+      if (submitBtn) {
+        await Promise.all([
+          this.page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
+          submitBtn.click()
+        ]);
+        const currentValues = await this.page.evaluate(() => {
+          const inputs = document.querySelectorAll('input[type="email"], input[name="email"]');
+          return Array.from(inputs).map(i => i.value);
+        });
+        if (currentValues.includes(newEmail) && !this.page.url().includes('confirm')) findings.push({ field: name || id, issue: 'Email changed without confirmation', severity: 'CRITICAL' });
+      }
+    }
+    if (findings.length) this.findings.push(...findings);
+    return findings;
+  }
+
+  async testMassAssignment(url, extraFields) {
+    await this.page.goto(url, { waitUntil: 'networkidle' });
+    const forms = await this.page.$$('form');
+    const results = [];
+    for (const form of forms) {
+      const action = await form.getAttribute('action') || url;
+      const method = (await form.getAttribute('method') || 'POST').toUpperCase();
+      const formData = {};
+      const inputs = await form.$$('input, textarea, select');
+      for (const el of inputs) {
+        const name = await el.getAttribute('name');
+        const value = await el.getAttribute('value') || await el.inputValue();
+        if (name) formData[name] = value;
+      }
+      for (const [key, val] of Object.entries(extraFields)) formData[key] = val;
+      results.push({ action, method, formData });
+    }
+    if (extraFields) this.findings.push({ type: 'mass-assignment-tested', fields: Object.keys(extraFields), severity: 'INFO' });
+    return results;
+  }
+
+  async testLoginCSRF(loginUrl) {
+    await this.page.goto(loginUrl, { waitUntil: 'networkidle' });
+    const forms = await this.page.evaluate(() => {
+      return Array.from(document.querySelectorAll('form')).map(f => ({
+        action: f.action,
+        hasCSRF: !!f.querySelector('input[name*="csrf"], input[name*="token"], input[name*="xsrf"], input[name="authenticity_token"]')
+      }));
+    });
+    const noCSRF = forms.filter(f => !f.hasCSRF);
+    if (noCSRF.length) this.findings.push({ type: 'login-csrf', count: noCSRF.length, issue: 'Login form missing CSRF protection', severity: 'HIGH' });
+    return { forms, vulnerable: noCSRF.length > 0 };
+  }
+
+  async testSessionInURL() {
+    const url = this.page.url();
+    const findings = [];
+    const tokenPatterns = [/[?&](?:session|token|sid|jsessionid|phpsessid|auth)=[a-zA-Z0-9\-_.%]{8,}/i, /\/[a-zA-Z0-9\-_.]{20,}\/[a-zA-Z0-9\-_.]{20,}/];
+    for (const p of tokenPatterns) {
+      const match = url.match(p);
+      if (match) findings.push({ matched: match[0].slice(0, 50), issue: 'Session token in URL — referrer leakage risk', severity: 'HIGH' });
+    }
+    if (findings.length) this.findings.push(...findings);
+    return { url, findings };
+  }
+
+  async testAutoLogout() {
+    const startUrl = this.page.url();
+    await this.page.waitForTimeout(60000);
+    await this.page.goto(startUrl, { waitUntil: 'networkidle', timeout: 30000 }).catch(() => {});
+    const stillAuthenticated = this.page.url() === startUrl;
+    if (stillAuthenticated) this.findings.push({ type: 'no-auto-logout', issue: 'Session still active after 60s inactivity', severity: 'LOW' });
+    return { stillAuthenticated };
+  }
+
+  async testConcurrentSessionLimit(loginUrl, credentials) {
+    const results = [];
+    for (let i = 0; i < 3; i++) {
+      const ctx = await this.page.context().browser().newContext();
+      const p = await ctx.newPage();
+      await p.goto(loginUrl, { waitUntil: 'networkidle' });
+      await p.fill(credentials.usernameField, credentials.username);
+      await p.fill(credentials.passwordField, credentials.password);
+      await p.click(credentials.submitButton);
+      await p.waitForTimeout(2000);
+      const loggedIn = p.url() !== loginUrl;
+      await ctx.close();
+      results.push({ session: i + 1, loggedIn });
+    }
+    const allLoggedIn = results.every(r => r.loggedIn);
+    if (allLoggedIn) this.findings.push({ type: 'no-concurrent-limit', issue: 'No limit on concurrent sessions', severity: 'MEDIUM' });
+    return { results, unlimited: allLoggedIn };
+  }
 }
 
 module.exports = { UserFunctionalities };

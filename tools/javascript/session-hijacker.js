@@ -156,6 +156,126 @@ class SessionHijacker {
     });
     return { ...results, totalFindings: this.findings.length, prioritized };
   }
+
+  async checkCookiePrefixes() {
+    const cookies = await this.page.context().cookies();
+    const findings = [];
+    const sensitive = cookies.filter(c => c.name.toLowerCase().includes('session') || c.name.toLowerCase().includes('token') || c.name.toLowerCase().includes('auth'));
+    for (const c of sensitive) {
+      if (!c.name.startsWith('__Secure-') && c.secure) findings.push({ name: c.name, issue: 'Secure cookie missing __Secure- prefix', severity: 'LOW' });
+      if (!c.name.startsWith('__Host-') && c.secure && c.path === '/' && !c.domain.startsWith('.')) findings.push({ name: c.name, issue: 'Host-critical cookie missing __Host- prefix', severity: 'MEDIUM' });
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
+
+  async testConcurrentSessions() {
+    const context2 = await this.page.context().browser().newContext();
+    const page2 = await context2.newPage();
+    await page2.goto(this.page.url(), { waitUntil: 'networkidle' });
+    const cookies1 = await this.page.context().cookies();
+    const cookies2 = await context2.cookies();
+    const sharedActive = cookies1.some(c1 => cookies2.some(c2 => c2.name === c1.name && c2.value === c1.value));
+    if (sharedActive) this.findings.push({ type: 'concurrent-session', issue: 'Same session active across browser contexts', severity: 'HIGH' });
+    await context2.close();
+    return { concurrentAllowed: sharedActive };
+  }
+
+  async testLogoutEffectiveness() {
+    const preCookies = await this.page.context().cookies();
+    await this.page.goto(this.page.url().replace(/\/[^/]*$/, '/logout'), { waitUntil: 'networkidle', timeout: 10000 }).catch(() => {});
+    await this.page.evaluate(() => { document.cookie.split(';').forEach(c => { document.cookie = c.replace(/^ +/, '').replace(/=.*/, '=;expires=Thu, 01 Jan 2000 00:00:00 GMT;path=/'); }); });
+    const postCookies = await this.page.context().cookies();
+    const stillValid = postCookies.filter(pc => preCookies.some(pc2 => pc2.name === pc.name && pc2.value === pc.value));
+    if (stillValid.length) this.findings.push({ type: 'logout-ineffective', count: stillValid.length, cookies: stillValid.map(c => c.name), issue: 'Cookies persist after logout — session not invalidated', severity: 'CRITICAL' });
+    return { preCount: preCookies.length, postCount: postCookies.length, stillValid: stillValid.map(c => c.name) };
+  }
+
+  async analyzeRememberMe() {
+    const cookies = await this.page.context().cookies();
+    const findings = [];
+    for (const c of cookies) {
+      if (c.name.toLowerCase().includes('remember') || c.name.toLowerCase().includes('keep')) {
+        if (c.expires && (c.expires - Date.now()) > 86400000 * 30) findings.push({ name: c.name, issue: 'Remember-me token expires >30 days — extended attack window', severity: 'HIGH' });
+        if (!c.httpOnly) findings.push({ name: c.name, issue: 'Remember-me token not HttpOnly — XSS theft possible', severity: 'HIGH' });
+        if (!c.secure) findings.push({ name: c.name, issue: 'Remember-me token not Secure — intercepted over HTTP', severity: 'HIGH' });
+      }
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
+
+  async testCookieTossing() {
+    const cookies = await this.page.context().cookies();
+    const findings = [];
+    const domainGroups = {};
+    for (const c of cookies) { const d = c.domain || ''; if (!domainGroups[d]) domainGroups[d] = []; domainGroups[d].push(c); }
+    for (const [domain, domainCookies] of Object.entries(domainGroups)) {
+      const nameCounts = {};
+      domainCookies.forEach(c => { nameCounts[c.name] = (nameCounts[c.name] || 0) + 1; });
+      for (const [name, count] of Object.entries(nameCounts)) {
+        if (count > 1) findings.push({ domain, name, issue: `Cookie '${name}' has ${count} variants across paths — cookie tossing possible`, severity: 'HIGH' });
+      }
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
+
+  async detectJWTInCookies() {
+    const cookies = await this.page.context().cookies();
+    const findings = [];
+    for (const c of cookies) {
+      if (c.value.match(/^eyJ[a-zA-Z0-9\-_]+\.eyJ[a-zA-Z0-9\-_]+/)) {
+        const payload = JSON.parse(Buffer.from(c.value.split('.')[1], 'base64url').toString());
+        findings.push({ name: c.name, issue: 'JWT stored in cookie', severity: 'HIGH', payload: { sub: payload.sub, exp: payload.exp ? new Date(payload.exp * 1000).toISOString() : null } });
+        if (!c.httpOnly) findings.push({ name: c.name, issue: 'JWT cookie without HttpOnly — XSS can steal it', severity: 'CRITICAL' });
+        if (!c.secure) findings.push({ name: c.name, issue: 'JWT cookie without Secure — sent over HTTP', severity: 'HIGH' });
+      }
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
+
+  async scanBatch(urls) {
+    const allResults = [];
+    for (const url of urls) {
+      await this.page.goto(url, { waitUntil: 'networkidle', timeout: 15000 }).catch(() => {});
+      const result = await this.fullSessionAudit(url);
+      allResults.push({ url, ...result });
+    }
+    return allResults;
+  }
+
+  async exportFindings(filePath = 'output/session-audit.json') {
+    const fs = require('fs');
+    const path = require('path');
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(this.findings, null, 2));
+    const mdPath = filePath.replace('.json', '.md');
+    const lines = ['# Session Hijacker Findings', '', `Total: ${this.findings.length}`, ''];
+    const grouped = {}; this.findings.forEach(f => { const s = f.severity || 'INFO'; if (!grouped[s]) grouped[s] = []; grouped[s].push(f); });
+    for (const [sev, items] of Object.entries({ CRITICAL: [], HIGH: [], MEDIUM: [], LOW: [] })) {
+      const found = grouped[sev] || [];
+      if (!found.length) continue;
+      lines.push(`## ${sev} (${found.length})`, '');
+      found.forEach(f => lines.push(`- ${f.issue || f.type}: ${f.name || f.detail || ''}`));
+      lines.push('');
+    }
+    fs.writeFileSync(mdPath, lines.join('\n'));
+    return { json: filePath, md: mdPath };
+  }
+
+  async setVerbose(enabled) { this.verbose = enabled; }
+  async setRetry(count) { this.retryCount = count; }
+  async checkLocalStorageCookieMirror() {
+    const storage = await this.page.evaluate(() => ({ ...localStorage }));
+    const findings = [];
+    for (const [key, val] of Object.entries(storage)) {
+      if (key.toLowerCase().includes('cookie') || key.toLowerCase().includes('session')) findings.push({ key, length: val.length, issue: `Session data mirrored in localStorage: ${key}`, severity: 'MEDIUM' });
+    }
+    this.findings.push(...findings);
+    return findings;
+  }
 }
 
 module.exports = { SessionHijacker };

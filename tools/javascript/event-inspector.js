@@ -191,6 +191,180 @@ class EventInspector {
     if (results.mouseCapture.length) this.findings.push({ type: 'mouse-capture', count: results.mouseCapture.length, severity: 'LOW' });
     return results;
   }
+
+  async testPointerEvents() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('pointerdown') || code.includes('pointerup') || code.includes('pointermove') || code.includes('pointerenter') || code.includes('pointerleave')) results.push({ type: 'pointer-events', src: s.src || 'inline', snippet: code.slice(0, 100) });
+      });
+      return results;
+    });
+  }
+
+  async testTouchEvents() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('touchstart') || code.includes('touchend') || code.includes('touchmove') || code.includes('touchcancel')) results.push({ type: 'touch-events', src: s.src || 'inline', snippet: code.slice(0, 100) });
+      });
+      return results;
+    });
+  }
+
+  async testClipboardEvents() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('copy') || code.includes('paste') || code.includes('cut') || code.includes('clipboard')) results.push({ type: 'clipboard-event', src: s.src || 'inline', snippet: code.slice(0, 100) });
+      });
+      return results;
+    });
+  }
+
+  async testFocusTracking() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if ((code.includes('focus') || code.includes('blur')) && (code.includes('input') || code.includes('form') || code.includes('password'))) results.push({ type: 'focus-tracking', src: s.src || 'inline', snippet: code.slice(0, 100) });
+      });
+      return results;
+    });
+  }
+
+  async detectResizeObserver() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && code.includes('ResizeObserver')) results.push({ type: 'ResizeObserver', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async detectIntersectionObserver() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && code.includes('IntersectionObserver')) results.push({ type: 'IntersectionObserver', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async detectPerformanceObserver() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && code.includes('PerformanceObserver')) results.push({ type: 'PerformanceObserver', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async detectBeforeUnload() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && code.includes('beforeunload')) results.push({ type: 'beforeunload', src: s.src || 'inline', snippet: code.slice(0, 100) });
+      });
+      return results;
+    });
+  }
+
+  async detectVisibilityTracking() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('visibilitychange') || code.includes('visibilityState') || code.includes('hidden')) results.push({ type: 'visibility-tracking', src: s.src || 'inline' });
+        if (code.includes('pagehide') || code.includes('freeze') || code.includes('pageshow')) results.push({ type: 'page-lifecycle', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async detectHashChangeTracking() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (code && (code.includes('hashchange') || code.includes('popstate'))) results.push({ type: code.includes('hashchange') ? 'hashchange' : 'popstate', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async detectCrossTabTracking() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if (code.includes('storage') && code.includes('addEventListener')) results.push({ type: 'cross-tab-storage', src: s.src || 'inline' });
+        if (code.includes('BroadcastChannel') || code.includes('SharedWorker')) results.push({ type: 'cross-context-channel', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async testScrollHijacking() {
+    return this.page.evaluate(() => {
+      const scripts = document.querySelectorAll('script');
+      const results = [];
+      scripts.forEach(s => {
+        const code = s.textContent;
+        if (!code) return;
+        if ((code.includes('scroll') || code.includes('wheel')) && (code.includes('preventDefault') || code.includes('stopPropagation'))) results.push({ type: 'scroll-hijacking', src: s.src || 'inline' });
+      });
+      return results;
+    });
+  }
+
+  async fullEventAudit(url) {
+    console.log('[EventInspector] Full event surface audit...');
+    await this.page.goto(url, { waitUntil: 'networkidle' });
+    const base = await this.fullScan(url);
+    const deep = {
+      pointerEvents: await this.testPointerEvents(),
+      touchEvents: await this.testTouchEvents(),
+      clipboardEvents: await this.testClipboardEvents(),
+      focusTracking: await this.testFocusTracking(),
+      resizeObserver: await this.detectResizeObserver(),
+      intersectionObserver: await this.detectIntersectionObserver(),
+      performanceObserver: await this.detectPerformanceObserver(),
+      beforeUnload: await this.detectBeforeUnload(),
+      visibilityTracking: await this.detectVisibilityTracking(),
+      hashChange: await this.detectHashChangeTracking(),
+      crossTabTracking: await this.detectCrossTabTracking(),
+      scrollHijacking: await this.testScrollHijacking()
+    };
+    return { ...base, deep };
+  }
 }
 
 module.exports = { EventInspector };

