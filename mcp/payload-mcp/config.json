@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "payloads": {
+      "command": "python3",
+      "args": ["mcp/payload-mcp/server.py"],
+      "env": {},
+      "_comment": "Payload generation: XSS, SQLi, SSRF, XXE, CMDi, SSTI, NoSQLi + encoding."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings."
+}

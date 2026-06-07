@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "reports": {
+      "command": "python3",
+      "args": ["mcp/report-mcp/server.py"],
+      "env": {},
+      "_comment": "Findings CRUD + report generation (json/csv/html). Data persisted to findings.json."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings."
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "dns-recon": {
+      "command": "python3",
+      "args": ["mcp/dns-recon-mcp/server.py"],
+      "env": {},
+      "_comment": "DNS recon: lookup, crt.sh, reverse, subdomain brute-force."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings."
+}

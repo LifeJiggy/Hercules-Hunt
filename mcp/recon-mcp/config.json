@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "recon": {
+      "command": "python3",
+      "args": ["mcp/recon-mcp/server.py"],
+      "env": {},
+      "_comment": "Multi-stage recon: subdomain discovery, live probe, fingerprint, port scan."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings."
+}

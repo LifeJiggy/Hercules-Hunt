@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "caido": {
+      "command": "caido-mcp-server",
+      "args": [],
+      "env": {
+        "CAIDO_URL": "${CAIDO_URL}",
+        "CAIDO_PAT": "${CAIDO_PAT}"
+      },
+      "_comment": "Caido proxy MCP. Requires caido-mcp-server binary. Set CAIDO_URL and CAIDO_PAT in environment."
+    }
+  },
+  "_comment": "Copy this into your .claude/settings.json mcpServers section."
+}

@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "url-crawl": {
+      "command": "python3",
+      "args": ["mcp/url-crawl-mcp/server.py"],
+      "env": {},
+      "_comment": "URL crawling: Wayback, CommonCrawl, endpoint extraction."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings."
+}

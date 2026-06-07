@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "interactsh": {
+      "command": "python3",
+      "args": ["mcp/interactsh-mcp/server.py"],
+      "env": {},
+      "_comment": "OOB callback testing via interact.sh. No API key required."
+    }
+  },
+  "_comment": "Copy mcpServers entry into your AI client settings (.claude/settings.json, opencode.json, etc.)"
+}
