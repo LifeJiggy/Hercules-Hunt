@@ -6,6 +6,7 @@
     "retry_delay": 1.0,
     "verify_ssl": false,
     "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    "_note": "verify_ssl:false is intentional — bug bounty targets often use self-signed certs",
     "rate_limit_delay_ms": 100,
     "follow_redirects": true,
     "max_redirects": 5
