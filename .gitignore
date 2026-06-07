@@ -1,2 +1,9 @@
 # Tool output artifacts
 tools/javascript/output/
+
+# Dependencies
+tools/javascript/node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
