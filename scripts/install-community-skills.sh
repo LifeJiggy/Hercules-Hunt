@@ -3,8 +3,7 @@
 # install-community-skills.sh — OPTIONAL: refresh community skills for Hercules-Hunt
 #
 # Hercules-Hunt ships a bundled skill set. This script lets you pull the
-# LATEST community skills from the Hercules-Hunt GitHub repo into your
-# ~/.claude/skills/ for newer hunt-* patterns, updated methodology, etc.
+# LATEST community updates from the Hercules-Hunt GitHub repo.
 #
 # It clones LifeJiggy/Hercules-Hunt into ~/security-research/hercules-hunt/
 # and links the skills. Existing skills are backed up before overwrite.
@@ -61,24 +60,6 @@ for rule_file in "$COMMUNITY_DIR/Hercules-Hunt/rules"/*.md; do
   echo "  ✓ Rule: ${name%.md}"
 done
 
-# === Link skills to ~/.claude/skills/ ===
-if [ -d "$COMMUNITY_DIR/Hercules-Hunt/SKILL.md" ]; then
-  SKILLS_DEST="$HOME/.claude/skills"
-  mkdir -p "$SKILLS_DEST"
-  
-  # Link the main bug-bounty skill
-  if [ -f "$COMMUNITY_DIR/Hercules-Hunt/SKILL.md" ]; then
-    if [ -d "$SKILLS_DEST/bug-bounty" ] && [ ! -L "$SKILLS_DEST/bug-bounty" ]; then
-      backup="$SKILLS_DEST/bug-bounty.backup-$(date +%Y%m%d-%H%M%S)"
-      mv "$SKILLS_DEST/bug-bounty" "$backup"
-      echo "  ↺ Backed up existing bug-bounty skill"
-    fi
-    mkdir -p "$SKILLS_DEST/bug-bounty"
-    cp "$COMMUNITY_DIR/Hercules-Hunt/SKILL.md" "$SKILLS_DEST/bug-bounty/SKILL.md"
-    echo "  ✓ Skill: bug-bounty"
-  fi
-fi
-
 # === Update scripts ===
 cp "$COMMUNITY_DIR/Hercules-Hunt/scripts/hunt.sh" "$JIGGY_DEST/scripts/hunt.sh"
 chmod +x "$JIGGY_DEST/scripts/hunt.sh"
@@ -91,15 +72,16 @@ done
 
 echo ""
 echo "============================================"
-echo "✓ Hercules-Hunt community skills installed"
+echo "✓ Hercules-Hunt community skills updated"
 echo "============================================"
 echo ""
-echo "Agents in:  $JIGGY_DEST/agents/"
-echo "Rules in:   $JIGGY_DEST/rules/"
-echo "Skills in:  $HOME/.claude/skills/bug-bounty/"
-echo "Scripts in: $JIGGY_DEST/scripts/"
+echo "Updated:"
+echo "  agents/             — $COMMUNITY_DIR/Hercules-Hunt/agents/"
+echo "  rules/              — $COMMUNITY_DIR/Hercules-Hunt/rules/"
+echo "  scripts/            — $COMMUNITY_DIR/Hercules-Hunt/scripts/"
+echo "  core docs           — Hercules.md, AGENTS.md, README.md,"
+echo "                        soul.md, purpose.md, goal.md"
 echo ""
 echo "Next steps:"
-echo "  1. Run scripts/install.sh (or install.ps1 on Windows)"
-echo "  2. Review rules in $JIGGY_DEST/rules/"
-echo "  3. See Hercules.md for the full reference"
+echo "  1. Review updates in $COMMUNITY_DIR/Hercules-Hunt"
+echo "  2. Sync to your project: cp -r $COMMUNITY_DIR/Hercules-Hunt/* <your-hercules-dir>/"
