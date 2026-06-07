@@ -653,23 +653,23 @@ The tools directory contains 7 PowerShell/Python tools that can be imported dire
 
 | Tool | File | Purpose |
 |------|------|---------|
-| Curl Hunter | tools/curl-hunter.ps1 | Cookie management, IDOR enum, SSRF, CORS, rate limit testing |
-| JS Analyzer | tools/js-analyzer.ps1 | Bundle download, beautify, endpoint/secret extraction, source maps |
-| PowerShell Lib | tools/powershell-lib.ps1 | 70+ helpers for HTTP, regex, JSON, encoding, crypto, recon |
-| Python Hunter | tools/python-hunter.py | JSAnalyzer, URLCollector, SecretScanner, EndpointFuzzer, Base64Toolkit |
-| Recon Toolkit | tools/recon-toolkit.ps1 | Subdomain enum, live host check, tech detection, Wayback crawl |
-| Fuzzer Toolkit | tools/fuzzer-toolkit.ps1 | Parameter fuzz, path brute, SSRF/SQLi/XSS/SSTI probes |
-| Evidence Toolkit | tools/evidence-toolkit.ps1 | Request capture, cookie/PII redaction, HAR sanitization |
+| Curl Hunter | tools/powershell/curl-hunter.ps1 | Cookie management, IDOR enum, SSRF, CORS, rate limit testing |
+| JS Analyzer | tools/powershell/js-analyzer.ps1 | Bundle download, beautify, endpoint/secret extraction, source maps |
+| PowerShell Lib | tools/powershell/powershell-lib.ps1 | 70+ helpers for HTTP, regex, JSON, encoding, crypto, recon |
+| Python Hunter | tools/python/python-hunter.py | JSAnalyzer, URLCollector, SecretScanner, EndpointFuzzer, Base64Toolkit |
+| Recon Toolkit | tools/powershell/recon-toolkit.ps1 | Subdomain enum, live host check, tech detection, Wayback crawl |
+| Fuzzer Toolkit | tools/powershell/fuzzer-toolkit.ps1 | Parameter fuzz, path brute, SSRF/SQLi/XSS/SSTI probes |
+| Evidence Toolkit | tools/powershell/evidence-toolkit.ps1 | Request capture, cookie/PII redaction, HAR sanitization |
 
 These are loaded via dot-sourcing in PowerShell:
 ```
-. .\tools\powershell-lib.ps1
-. .\tools\curl-hunter.ps1
+. .\tools\powershell\powershell-lib.ps1
+. .\tools\powershell\curl-hunter.ps1
 ```
 
 Or run directly in Python:
 ```
-python tools/python-hunter.py scan endpoint --url https://target.com
+python tools/python/python-hunter.py scan endpoint --url https://target.com
 ```
 
 ### 3.2 Burp Suite Workflow
@@ -874,8 +874,8 @@ ACCOUNTS:
 - Account B (victim): victim+1@test.com
 
 TOOLS LOADED:
-- . .\tools\powershell-lib.ps1
-- . .\tools\curl-hunter.ps1
+- . .\tools\powershell\powershell-lib.ps1
+- . .\tools\powershell\curl-hunter.ps1
 
 RECON NOTES:
 - subdomains found: 47
@@ -967,51 +967,51 @@ result in IP bans or account suspension:
 
 ```powershell
 # Passive subdomain enumeration
-& ".\tools\recon-toolkit.ps1"; Invoke-PassiveSubdomainEnum -Domain target.com
+& ".\tools\powershell\recon-toolkit.ps1"; Invoke-PassiveSubdomainEnum -Domain target.com
 
 # HTTP probing
-& ".\tools\recon-toolkit.ps1"; Invoke-HTTPProbe -InputFile subs.txt
+& ".\tools\powershell\recon-toolkit.ps1"; Invoke-HTTPProbe -InputFile subs.txt
 
 # Wayback URL collection
-& ".\tools\recon-toolkit.ps1"; Invoke-WaybackCrawl -Domain target.com
+& ".\tools\powershell\recon-toolkit.ps1"; Invoke-WaybackCrawl -Domain target.com
 
 # Full recon pipeline
-& ".\tools\recon-toolkit.ps1"; Start-ReconPipeline -Domain target.com
+& ".\tools\powershell\recon-toolkit.ps1"; Start-ReconPipeline -Domain target.com
 ```
 
 ### IDOR Testing
 
 ```powershell
 # Test IDOR on an endpoint with sequential IDs
-& ".\tools\curl-hunter.ps1"; Test-IDOR -BaseUrl "https://api.target.com/users" -SessionCookie "session=YOUR_SESSION" -StartId 1 -EndId 100
+& ".\tools\powershell\curl-hunter.ps1"; Test-IDOR -BaseUrl "https://api.target.com/users" -SessionCookie "session=YOUR_SESSION" -StartId 1 -EndId 100
 ```
 
 ### SSRF Testing
 
 ```powershell
 # Test SSRF with Burp Collaborator callback
-& ".\tools\curl-hunter.ps1"; Test-SSRF -TargetUrl "https://target.com/fetch" -ParameterName url -CallbackUrl "http://YOUR.BURPCOLLABORATOR.NET"
+& ".\tools\powershell\curl-hunter.ps1"; Test-SSRF -TargetUrl "https://target.com/fetch" -ParameterName url -CallbackUrl "http://YOUR.BURPCOLLABORATOR.NET"
 ```
 
 ### CORS Testing
 
 ```powershell
 # Test CORS misconfiguration
-& ".\tools\curl-hunter.ps1"; Test-CORS -Url "https://api.target.com/users/me"
+& ".\tools\powershell\curl-hunter.ps1"; Test-CORS -Url "https://api.target.com/users/me"
 ```
 
 ### JS Analysis
 
 ```powershell
 # Extract endpoints and secrets from JS bundles
-& ".\tools\js-analyzer.ps1"; Invoke-JSBundleAnalysis -Url "https://target.com/assets/app.js"
+& ".\tools\powershell\js-analyzer.ps1"; Invoke-JSBundleAnalysis -Url "https://target.com/assets/app.js"
 ```
 
 ### Evidence Collection
 
 ```powershell
 # Capture and sanitize evidence
-& ".\tools\evidence-toolkit.ps1"; New-EvidencePackage -TargetId "target.com" -VulnType "idor" -ScreenshotDir "C:\screenshots"
+& ".\tools\powershell\evidence-toolkit.ps1"; New-EvidencePackage -TargetId "target.com" -VulnType "idor" -ScreenshotDir "C:\screenshots"
 ```
 
 ---

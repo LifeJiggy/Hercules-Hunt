@@ -935,10 +935,10 @@ Risks:
 - [Risk 2] (mitigation: [how to handle])
 
 Tools to Load:
-  - [ ] .\tools\powershell-lib.ps1
-  - [ ] .\tools\curl-hunter.ps1
-  - [ ] .\tools\fuzzer-toolkit.ps1
-  - [ ] .\tools\evidence-toolkit.ps1
+  - [ ] .\tools\powershell\powershell-lib.ps1
+  - [ ] .\tools\powershell\curl-hunter.ps1
+  - [ ] .\tools\powershell\fuzzer-toolkit.ps1
+  - [ ] .\tools\powershell\evidence-toolkit.ps1
   - [ ] Burp Suite
   - [ ] Python
 
@@ -1051,8 +1051,8 @@ Time Allocation:
   | 1:50-2:00 | Session review and log update
 
 Tools to Load:
-  - [x] .\tools\powershell-lib.ps1
-  - [x] .\tools\curl-hunter.ps1
+  - [x] .\tools\powershell\powershell-lib.ps1
+  - [x] .\tools\powershell\curl-hunter.ps1
   - [ ] Burp Suite (must have Collaborator running)
   - [ ] Python (for JWT manipulation)
   - [ ] interact.sh (backup for SSRF callbacks)
@@ -1083,8 +1083,8 @@ Contingency:
 
 ```powershell
 # Load tools
-. .\tools\powershell-lib.ps1
-. .\tools\curl-hunter.ps1
+. .\tools\powershell\powershell-lib.ps1
+. .\tools\powershell\curl-hunter.ps1
 
 # Test endpoint
 Test-Endpoint -Url "https://api.target.com/api/v2/users/42"
@@ -1096,7 +1096,7 @@ Test-IDOR -BaseUrl "https://api.target.com/api/v2/users" -SessionCookie "session
 Test-SSRF -TargetUrl "https://api.target.com/api/avatar" -ParameterName "url" -CallbackUrl "http://YOUR.oastify.com"
 
 # JWT decode/debug
-python tools/python-hunter.py decode --jwt "eyJ..."
+python tools/python/python-hunter.py decode --jwt "eyJ..."
 ```
 
 ### 14.2 Key URLs
@@ -1163,14 +1163,14 @@ http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/def
 - Use the "Sitemap" tab to track all discovered endpoints
 
 **PowerShell:**
-- Use `.\tools\jiggy.ps1` CLI for quick requests
+- Use `.\tools\powershell\jiggy.ps1` CLI for quick requests
 - Dot-source tools once, then call functions directly
 - Use `$session` variable for cookie persistence
 - Use `$results` array to collect multiple test results
 - Use parameter splatting for complex requests
 
 **Python:**
-- Use `python tools/python-hunter.py` for batch processing
+- Use `python tools/python/python-hunter.py` for batch processing
 - Use `api` module for session management across multiple requests
 - Use `SecretScanner` for JS bundle analysis
 - Use `EndpointFuzzer` for mass parameter testing

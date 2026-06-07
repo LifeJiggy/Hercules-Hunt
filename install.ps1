@@ -71,7 +71,7 @@ function Install-Main {
     Copy-Item "$JiggyRoot\.claude\settings.json" "$InstallDir\.claude\settings.json" -Force
 
     # Profile setup
-    $profileLine = "`n# Jiggy-2026`n. `"$JiggyRoot\tools\powershell-lib.ps1`"`n. `"$JiggyRoot\tools\curl-hunter.ps1`"`n"
+    $profileLine = "`n# Jiggy-2026`n. `"$JiggyRoot\tools\powershell\powershell-lib.ps1`"`n. `"$JiggyRoot\tools\powershell\curl-hunter.ps1`"`n"
     $alreadyAdded = Select-String -Path $PROFILE -Pattern "Jiggy-2026" -SimpleMatch -Quiet -ErrorAction SilentlyContinue
     if (-not $alreadyAdded) {
         Add-Content -Path $PROFILE -Value $profileLine

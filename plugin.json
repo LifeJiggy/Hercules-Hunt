@@ -55,7 +55,7 @@
     }
   },
   "entry_points": {
-    "powershell": "tools/jiggy.ps1",
+    "powershell": "tools/powershell/jiggy.ps1",
     "python": "tools/jiggy.py"
   },
   "install": {
@@ -187,12 +187,12 @@
     { "id": "windows-workflow", "path": "rules/windows-workflow.md", "description": "Windows-specific hunting" }
   ],
   "tools": [
-    { "name": "curl-hunter.ps1", "path": "tools/curl-hunter.ps1", "description": "curl.exe master toolkit" },
-    { "name": "js-analyzer.ps1", "path": "tools/js-analyzer.ps1", "description": "JS bundle analysis toolkit" },
-    { "name": "powershell-lib.ps1", "path": "tools/powershell-lib.ps1", "description": "PowerShell one-liner library" },
-    { "name": "python-hunter.py", "path": "tools/python-hunter.py", "description": "Python hunting toolkit" },
-    { "name": "recon-toolkit.ps1", "path": "tools/recon-toolkit.ps1", "description": "Recon automation pipeline" },
-    { "name": "fuzzer-toolkit.ps1", "path": "tools/fuzzer-toolkit.ps1", "description": "HTTP fuzzing toolkit" },
-    { "name": "evidence-toolkit.ps1", "path": "tools/evidence-toolkit.ps1", "description": "Evidence capture and sanitization" }
+    { "name": "curl-hunter.ps1", "path": "tools/powershell/curl-hunter.ps1", "description": "curl.exe master toolkit" },
+    { "name": "js-analyzer.ps1", "path": "tools/powershell/js-analyzer.ps1", "description": "JS bundle analysis toolkit" },
+    { "name": "powershell-lib.ps1", "path": "tools/powershell/powershell-lib.ps1", "description": "PowerShell one-liner library" },
+    { "name": "python-hunter.py", "path": "tools/python/python-hunter.py", "description": "Python hunting toolkit" },
+    { "name": "recon-toolkit.ps1", "path": "tools/powershell/recon-toolkit.ps1", "description": "Recon automation pipeline" },
+    { "name": "fuzzer-toolkit.ps1", "path": "tools/powershell/fuzzer-toolkit.ps1", "description": "HTTP fuzzing toolkit" },
+    { "name": "evidence-toolkit.ps1", "path": "tools/powershell/evidence-toolkit.ps1", "description": "Evidence capture and sanitization" }
   ]
 }

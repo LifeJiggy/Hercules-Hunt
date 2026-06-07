@@ -142,10 +142,10 @@
     { "name": "api-testing", "path": "rules/api-testing.md", "description": "API fuzzing and methodology" }
   ],
   "tools_config": {
-    "python_hunter": "python tools/python-hunter.py",
+    "python_hunter": "python tools/python/python-hunter.py",
     "powershell_prefix": "powershell -ExecutionPolicy Bypass -File",
-    "recon": "tools/recon-toolkit.ps1",
-    "curl_hunter": "tools/curl-hunter.ps1",
-    "fuzzer": "tools/fuzzer-toolkit.ps1"
+    "recon": "tools/powershell/recon-toolkit.ps1",
+    "curl_hunter": "tools/powershell/curl-hunter.ps1",
+    "fuzzer": "tools/powershell/fuzzer-toolkit.ps1"
   }
 }

@@ -35,12 +35,12 @@ PROGRAM: [HackerOne / Bugcrowd / Intigriti / Immunefi / Private]
 SCOPE: [*.domain.com]
 
 TOOLS LOADED:
-  - [ ] .\tools\powershell-lib.ps1
-  - [ ] .\tools\curl-hunter.ps1
-  - [ ] .\tools\recon-toolkit.ps1
-  - [ ] .\tools\fuzzer-toolkit.ps1
-  - [ ] .\tools\js-analyzer.ps1
-  - [ ] .\tools\evidence-toolkit.ps1
+  - [ ] .\tools\powershell\powershell-lib.ps1
+  - [ ] .\tools\powershell\curl-hunter.ps1
+  - [ ] .\tools\powershell\recon-toolkit.ps1
+  - [ ] .\tools\powershell\fuzzer-toolkit.ps1
+  - [ ] .\tools\powershell\js-analyzer.ps1
+  - [ ] .\tools\powershell\evidence-toolkit.ps1
   - [ ] Burp Suite (port 8080)
   - [ ] Burp Collaborator URL: [URL]
   - [ ] Python 3
@@ -64,8 +64,8 @@ PROGRAM SAFE HARBOR CONFIRMED: [Yes/No]
 ### Tool Loading Log
 
 ```
-HH:MM — Loaded tools\powershell-lib.ps1 (70+ helpers available)
-HH:MM — Loaded tools\curl-hunter.ps1 (15 functions available)
+HH:MM — Loaded tools\powershell\powershell-lib.ps1 (70+ helpers available)
+HH:MM — Loaded tools\powershell\curl-hunter.ps1 (15 functions available)
 HH:MM — Burp Suite started on port 8080
 HH:MM — Burp Collaborator URL: xxxxxx.oastify.com
 HH:MM — Account A session verified — JWT token valid, expires HH:MM

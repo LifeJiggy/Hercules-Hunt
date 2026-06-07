@@ -112,8 +112,8 @@ IF RESUMING NOW:
   1. Check .env.local for tokens (refresh if needed)
   2. Start Burp Suite, load project
   3. New collaborator URL
-  4. . .\tools\powershell-lib.ps1
-  5. . .\tools\curl-hunter.ps1
+  4. . .\tools\powershell\powershell-lib.ps1
+  5. . .\tools\powershell\curl-hunter.ps1
   6. Continue SSRF testing (IAM creds already retrieved)
   7. Test: GCP metadata next
 ```

@@ -71,11 +71,11 @@ Jiggy-2026/
 
 ```powershell
 # Load tools
-. .\tools\powershell-lib.ps1
-. .\tools\curl-hunter.ps1
+. .\tools\powershell\powershell-lib.ps1
+. .\tools\powershell\curl-hunter.ps1
 
 # Full recon pipeline
-.\tools\recon-toolkit.ps1
+.\tools\powershell\recon-toolkit.ps1
 Invoke-ReconPipeline -Domain target.com
 
 # Hunt with curl toolkit
@@ -83,7 +83,7 @@ Test-Endpoint -Url "https://target.com/api/endpoint" -Method GET
 Test-IdorRange -BaseUrl "https://target.com/api/users/{id}/orders" -Start 1 -End 100
 
 # Fuzz parameters
-.\tools\fuzzer-toolkit.ps1
+.\tools\powershell\fuzzer-toolkit.ps1
 Invoke-ParameterFuzz -Url "https://target.com/api/endpoint" -Param "id"
 ```
 

@@ -504,7 +504,7 @@ QUICK RESTORE (new machine in <5 min):
   2. git pull
   3. .\install.ps1
   4. Copy .env.local and fill in tokens
-  5. . .\tools\powershell-lib.ps1
+  5. . .\tools\powershell\powershell-lib.ps1
   6. Start Burp Suite
   7. Run Test-Environment
 ```

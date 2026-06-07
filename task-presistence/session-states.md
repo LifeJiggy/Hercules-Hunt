@@ -230,13 +230,13 @@ PROCESSES RUNNING:
   [ ] Browser (Chrome hunt profile)
 
 TOOLS LOADED:
-  [x] tools/powershell-lib.ps1
-  [x] tools/curl-hunter.ps1
-  [ ] tools/recon-toolkit.ps1 (not needed)
-  [ ] tools/fuzzer-toolkit.ps1 (not needed)
-  [ ] tools/js-analyzer.ps1 (not needed)
-  [ ] tools/evidence-toolkit.ps1 (not loaded yet)
-  [ ] tools/python-hunter.py (not needed)
+  [x] tools/powershell/powershell-lib.ps1
+  [x] tools/powershell/curl-hunter.ps1
+  [ ] tools/powershell/recon-toolkit.ps1 (not needed)
+  [ ] tools/powershell/fuzzer-toolkit.ps1 (not needed)
+  [ ] tools/powershell/js-analyzer.ps1 (not needed)
+  [ ] tools/powershell/evidence-toolkit.ps1 (not loaded yet)
+  [ ] tools/python/python-hunter.py (not needed)
 
 BURP STATE:
   Project: example-com-20260607.burp
@@ -490,8 +490,8 @@ To restore state from a previous session:
 QUICK RESTORE (5 min):
   1. Start Burp Suite (load last project)
   2. New collaborator URL
-  3. . .\tools\powershell-lib.ps1
-  4. . .\tools\curl-hunter.ps1
+  3. . .\tools\powershell\powershell-lib.ps1
+  4. . .\tools\powershell\curl-hunter.ps1
   5. Set environment variables
   6. Verify tokens
   7. Read this file for current state

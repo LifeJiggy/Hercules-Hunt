@@ -264,13 +264,13 @@ Chain B: SSRF in avatar URL + internal Redis accessible
 
 | Tool | Path | Loaded | Version | Notes |
 |------|------|--------|---------|-------|
-| curl-hunter | tools/curl-hunter.ps1 | ✓/✗ | — | — |
-| powershell-lib | tools/powershell-lib.ps1 | ✓/✗ | — | — |
-| python-hunter | tools/python-hunter.py | ✓/✗ | — | — |
-| recon-toolkit | tools/recon-toolkit.ps1 | ✓/✗ | — | — |
-| fuzzer-toolkit | tools/fuzzer-toolkit.ps1 | ✓/✗ | — | — |
-| evidence-toolkit | tools/evidence-toolkit.ps1 | ✓/✗ | — | — |
-| js-analyzer | tools/js-analyzer.ps1 | ✓/✗ | — | — |
+| curl-hunter | tools/powershell/curl-hunter.ps1 | ✓/✗ | — | — |
+| powershell-lib | tools/powershell/powershell-lib.ps1 | ✓/✗ | — | — |
+| python-hunter | tools/python/python-hunter.py | ✓/✗ | — | — |
+| recon-toolkit | tools/powershell/recon-toolkit.ps1 | ✓/✗ | — | — |
+| fuzzer-toolkit | tools/powershell/fuzzer-toolkit.ps1 | ✓/✗ | — | — |
+| evidence-toolkit | tools/powershell/evidence-toolkit.ps1 | ✓/✗ | — | — |
+| js-analyzer | tools/powershell/js-analyzer.ps1 | ✓/✗ | — | — |
 
 ### External Tool Availability
 

@@ -392,13 +392,13 @@ JS DOWNLOAD:
   }
 
 JS ANALYSIS:
-  . .\tools\js-analyzer.ps1
+  . .\tools\powershell\js-analyzer.ps1
   Invoke-FullJsScan -BundlePath "storage/js-bundles"
 
-  python .\tools\python-hunter.py scan --dir storage/js-bundles
+  python .\tools\python\python-hunter.py scan --dir storage/js-bundles
 
 SECRET SCANNING:
-  . .\tools\recon-toolkit.ps1
+  . .\tools\powershell\recon-toolkit.ps1
   Invoke-SecretScan -Path "storage/js-bundles"
 ```
 

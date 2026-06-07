@@ -45,55 +45,55 @@ Examples:
 
 function Invoke-Recon {
     param($Domain)
-    . "$JiggyRoot\tools\recon-toolkit.ps1"
+    . "$JiggyRoot\tools\powershell\recon-toolkit.ps1"
     Invoke-ReconPipeline -Domain $Domain -Verbose
 }
 
 function Invoke-Curl {
     param($Url)
-    . "$JiggyRoot\tools\curl-hunter.ps1"
+    . "$JiggyRoot\tools\powershell\curl-hunter.ps1"
     Test-Endpoint -Url $Url -Method $Method
 }
 
 function Invoke-Fuzz {
     param($Url)
-    . "$JiggyRoot\tools\fuzzer-toolkit.ps1"
+    . "$JiggyRoot\tools\powershell\fuzzer-toolkit.ps1"
     Invoke-FullFuzzPipeline -Url $Url
 }
 
 function Invoke-Idor {
     param($Url, $Start, $End)
-    . "$JiggyRoot\tools\curl-hunter.ps1"
+    . "$JiggyRoot\tools\powershell\curl-hunter.ps1"
     Test-IdorRange -BaseUrl $Url -Start $Start -End $End
 }
 
 function Invoke-CorsTest {
     param($Url)
-    . "$JiggyRoot\tools\curl-hunter.ps1"
+    . "$JiggyRoot\tools\powershell\curl-hunter.ps1"
     Test-Cors -Url $Url
 }
 
 function Invoke-SsrfTest {
     param($Url)
-    . "$JiggyRoot\tools\fuzzer-toolkit.ps1"
+    . "$JiggyRoot\tools\powershell\fuzzer-toolkit.ps1"
     Invoke-SsrfProbe -Url $Url
 }
 
 function Invoke-MethodTest {
     param($Url)
-    . "$JiggyRoot\tools\curl-hunter.ps1"
+    . "$JiggyRoot\tools\powershell\curl-hunter.ps1"
     Test-MethodBypass -Url $Url
 }
 
 function Invoke-JsAnalyze {
     param($File)
-    . "$JiggyRoot\tools\js-analyzer.ps1"
+    . "$JiggyRoot\tools\powershell\js-analyzer.ps1"
     Invoke-FullJsScan -BundlePath $File
 }
 
 function Invoke-SecretScan {
     param($File)
-    python "$JiggyRoot\tools\python-hunter.py" scan --file "$File"
+    python "$JiggyRoot\tools\python\python-hunter.py" scan --file "$File"
 }
 
 function Show-Tools {

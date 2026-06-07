@@ -6,11 +6,11 @@ A comprehensive, agent-powered bug bounty hunting system compatible with **OpenC
 
 ```powershell
 # Load the toolkit
-. .\tools\powershell-lib.ps1
-. .\tools\curl-hunter.ps1
+. .\tools\powershell\powershell-lib.ps1
+. .\tools\powershell\curl-hunter.ps1
 
 # Full recon pipeline
-.\tools\recon-toolkit.ps1
+.\tools\powershell\recon-toolkit.ps1
 Invoke-ReconPipeline -Domain target.com
 
 # Hunt endpoints
@@ -18,19 +18,19 @@ Test-Endpoint -Url "https://target.com/api/test"
 ParameterFuzz -Url "https://target.com/api/endpoint" -Param "id"
 
 # JS analysis
-.\tools\js-analyzer.ps1
+.\tools\powershell\js-analyzer.ps1
 Invoke-FullJsScan -BundlePath "bundle.js"
 
 # Python tools
-python .\tools\python-hunter.py scan --file bundle.js
+python .\tools\python\python-hunter.py scan --file bundle.js
 ```
 
 ```powershell
 # CLI one-liners
-.\tools\jiggy.ps1 recon target.com
-.\tools\jiggy.ps1 idor https://target.com/api/users/{id} -s 1 -e 100
-.\tools\jiggy.ps1 fuzz https://target.com/api/endpoint
-.\tools\jiggy.ps1 js bundle.js
+.\tools\powershell\jiggy.ps1 recon target.com
+.\tools\powershell\jiggy.ps1 idor https://target.com/api/users/{id} -s 1 -e 100
+.\tools\powershell\jiggy.ps1 fuzz https://target.com/api/endpoint
+.\tools\powershell\jiggy.ps1 js bundle.js
 ```
 
 ## AI Agents (17)
