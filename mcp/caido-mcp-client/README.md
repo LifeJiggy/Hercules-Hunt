@@ -1,6 +1,6 @@
 # Caido MCP Integration
 
-Connect Claude Bug Bounty to [Caido](https://caido.io) — the lightweight web security auditing toolkit — via the community [`caido-mcp-server`](https://github.com/c0tton-fluff/caido-mcp-server).
+Connect Hercules-Hunt to [Caido](https://caido.io) — the lightweight web security auditing toolkit — via the community [`caido-mcp-server`](https://github.com/c0tton-fluff/caido-mcp-server).
 
 Caido is a Burp Suite alternative built in Rust. If you already use Caido as your daily proxy, this integration gives the hunting agent live visibility into your traffic the same way the Burp MCP client does.
 

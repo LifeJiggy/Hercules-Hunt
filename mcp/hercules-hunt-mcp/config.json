@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "hercules-hunt": {
+      "command": "python3",
+      "args": ["mcp/hercules-hunt-mcp/server.py"],
+      "env": {},
+      "_comment": "Exposes 9 hunting tools + 3 resources. No API key required."
+    }
+  },
+  "_comment": "Copy this mcpServers entry into your AI client settings (Claude Code settings.json, OpenCode opencode.json, etc.)"
+}

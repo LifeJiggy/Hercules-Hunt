@@ -56,7 +56,7 @@ def _graphql_request(query: str, timeout: int = DEFAULT_TIMEOUT) -> dict:
         data=payload,
         headers={
             "Content-Type": "application/json",
-            "User-Agent": "claude-bug-bounty/2.1",
+            "User-Agent": "Hercules-Hunt/2.0",
         },
     )
     try:

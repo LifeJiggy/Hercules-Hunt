@@ -1,6 +1,6 @@
 # Burp Suite MCP Integration
 
-Connect Claude Bug Bounty to PortSwigger's official Burp Suite MCP server for live HTTP traffic visibility.
+Connect Hercules-Hunt to PortSwigger's official Burp Suite MCP server for live HTTP traffic visibility.
 
 ## What You Get
 

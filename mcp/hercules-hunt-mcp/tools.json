@@ -1,0 +1,81 @@
+{
+  "name": "Hercules-Hunt MCP",
+  "version": "2.0.0",
+  "description": "MCP server exposing all 7 P1 Python hunters + secret scanner + network recon as callable tools",
+  "tools": [
+    {
+      "name": "rce_hunt",
+      "description": "RCE/CMDi/SSTI/deserialization testing",
+      "class": "RCEHunter",
+      "module": "tools/python/rce_hunter.py",
+      "methods": 25
+    },
+    {
+      "name": "sqli_hunt",
+      "description": "SQLi/NoSQLi/JSONi detection",
+      "class": "SQLiHunter",
+      "module": "tools/python/sqli_hunter.py",
+      "methods": 22
+    },
+    {
+      "name": "idor_hunt",
+      "description": "IDOR/mass assignment testing",
+      "class": "IDORHunter",
+      "module": "tools/python/idor_hunter.py",
+      "methods": 24
+    },
+    {
+      "name": "auth_hunt",
+      "description": "JWT/OAuth/MFA/CSRF/rate limit testing",
+      "class": "AuthHunter",
+      "module": "tools/python/auth_hunter.py",
+      "methods": 20
+    },
+    {
+      "name": "ssrf_hunt",
+      "description": "SSRF/cloud metadata/localhost bypass testing",
+      "class": "SSRFHunter",
+      "module": "tools/python/ssrf_hunter.py",
+      "methods": 22
+    },
+    {
+      "name": "xxe_hunt",
+      "description": "XXE/OOB/SVG/SOAP/DOCX testing",
+      "class": "XXEHunter",
+      "module": "tools/python/xxe_hunter.py",
+      "methods": 20
+    },
+    {
+      "name": "file_upload_hunt",
+      "description": "File upload webshell/XSS/XXE testing",
+      "class": "FileUploadHunter",
+      "module": "tools/python/file_upload_hunter.py",
+      "methods": 22
+    },
+    {
+      "name": "secret_scan",
+      "description": "Regex + entropy secret scanning",
+      "class": "SecretScanner",
+      "module": "tools/python/secret_scanner.py",
+      "methods": 30
+    },
+    {
+      "name": "network_recon",
+      "description": "DNS/SSL/port scan/CDN detection",
+      "class": "functions",
+      "module": "tools/python/network_utils.py",
+      "methods": 15
+    }
+  ],
+  "resources": [
+    {"uri": "hercules://findings/latest", "description": "Latest hunt findings"},
+    {"uri": "hercules://tools/inventory", "description": "Full tool inventory"},
+    {"uri": "hercules://config/profile", "description": "Active hunt profile"}
+  ],
+  "config": {
+    "protocol": "stdio",
+    "jsonrpc": "2.0",
+    "handshake": "initialize",
+    "transport": "line-delimited JSON over stdin/stdout"
+  }
+}
