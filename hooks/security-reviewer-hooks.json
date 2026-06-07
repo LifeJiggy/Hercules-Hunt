@@ -328,11 +328,298 @@
     },
     {
       "event": "Stop",
-      "command": "Write-Host '[SECURITY-REVIEWER STOP] Audit complete. Verify: all code paths traced? trust boundaries documented? findings prioritized? remediation guidance provided?' -ForegroundColor Red"
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] Next: /validator for each finding, then /report-writer with audit package (code snippets, PoC, impact).' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Deep analysis mode: taint propagation tracking. Every user-controlled input -> sanitization gate -> transformation -> sink. Flag any direct user input -> sink path with >=2 hops. Flag any transformation that weakens sanitization.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Security regression checks: compare current findings to previous audit. New findings = regression. Fixed findings = improvement. Track trend per component for technical debt measurement.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] CI integration mode: results in SARIF/JSON format for IDE/CI ingestion. Findings mapped to GitHub Security tab, GitLab SAST, or SonarQube. Suppress noise via baseline management.' -ForegroundColor Gray"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'kubesec|kubesec.*scan|kube-hunter|kubectl.*get|kubectl.*describe') { Write-Host '[SEC-REV PRE] Kubernetes security tool detected. Checking: pod security standards, RBAC, network policies, secrets management, privileged containers, hostPath mounts, etc.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'burp.*active|zap.*active|acunetix|nessus|qualys|rapid7|openvas') { Write-Host '[SEC-REV PRE] Active vulnerability scanner detected. Verify authorization before active scan mode. Results supplement static findings.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'LDAP|ldap|ldap inject|LDAP injection|whoami|anonymous bind') { Write-Host '[LDAPi] LDAP injection vector found. Check: (1) input sanitized before LDAP query, (2) bind credentials hardcoded, (3) anonymous bind allowed, (4) excessive search scope.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'template|jinja2|twig|smarty|freemarker|handlebars|mustache|ejs|pug|jade|velocity|thymeleaf') { Write-Host '[SSTI] Template injection found. SSTI severity varies by template engine. Jinja2/ Twig = HIGH (can RCE). Mustache/Handlebars = MEDIUM (XSS). Check if user input reaches template expression context.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'XML|xml|SOAP|ElementTree|parseString|parseBytes|SAXParser|DocumentBuilder|XPath|xpath') { Write-Host '[XXE] XML processing found. Check: (1) external entity expansion enabled, (2) DTD processing allowed, (3) XPath with user input, (4) SOAP with external references. Disable DTDs if possible.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Host:|X-Forwarded-Host|X-Original-Host|Forwarded|X-Host|x-forwarded-server') { Write-Host '[HOST HEADER] Host header manipulation vector found. Check: (1) password reset tokens use Host header, (2) cache poisoning via Host, (3) SSRF via Host-based URL construction, (4) webhook signing bypass.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Cache-Control|ETag|Last-Modified|Vary|Age|X-Cache|HIT|MISS') { Write-Host '[CACHE] Cache control logic found. Check: (1) sensitive data cached without auth, (2) cache poisoning via unkeyed headers, (3) session data cached, (4) stale responses serving stale sensitive data. Cache key must include Authorization.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'CRLF|\\r\\n|header.*inject|unvalidated.*header|response.*split|response splitting') { Write-Host '[CRLF] CRLF injection vector found. If user input reaches header() without sanitization, attacker can inject \\r\\n to create new headers or split response. High risk if Set-Cookie or Location can be controlled.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'X-Frame-Options|frame-ancestors|Content-Security-Policy.*frame-ancestors|clickjack|UI redress') { Write-Host '[CLICKJACK] Frame protection header missing. Missing X-Frame-Options or CSP frame-ancestors = clickjacking risk. Check if sensitive actions (payment, settings, admin) are protected by same-origin policy.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'X-Content-Type-Options|nosniff|MIME|type sniff|content.type|Content-Type') { Write-Host '[MIME SNIFF] X-Content-Type-Options header missing. Without nosniff, browser may sniff and execute content as different type. SVGs as HTML, JSON as JavaScript. Add X-Content-Type-Options: nosniff.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Deserializer|ObjectInputStream|readObject|unserialize|JSONDecoder|Decoder|YBITMAP|pickle|Marshal|YAML|YAMLObject') { Write-Host '[DESER] Deserialization with untrusted data detected. Java ObjectInputStream, PHP unserialize, Python pickle, Ruby Marshal all dangerous with attacker data. Look for gadget chains that can chain to RCE.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Integer|int|float|double|overflow|underflow|unchecked|Solidity|uint256|int256|SafeMath|checked|unchecked') { Write-Host '[INT OVERFLOW] Integer arithmetic operation found. Check: (1) language handles overflow (Python safe, Java safe), (2) Solidity unchecked blocks, (3) C/C++ unsigned integer wrap, (4) casting risks.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'free\\(|delete|drop|release|close|fclose|munmap|freeSecurity|finalize') { Write-Host '[UAF] Use-after-free pattern detected. If pointer/object is freed then accessed later, memory corruption risk. Check: (1) reference counting, (2) garbage collection, (3) double-free risk.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'null|NULL|nullptr|void|undefined|Optional|Option|Maybe|nullable|non-null') { Write-Host '[NULL PTR] Null/nil handling found. Check: (1) dereference before null check, (2) null propagation in API response, (3) null byte handling in file/path operations, (4) null character injection in strings.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] OWASP ASVS 4.0 mapping: verify against Application Security Verification Standard for defense-in-depth coverage. Level 1 (opportunistic) minimum, Level 2 (standard) for sensitive apps, Level 3 (advanced) for critical apps.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] CWE/SANS Top 25 mapping: CWE-787 (OOB Write) most dangerous, CWE-79 (XSS), CWE-89 (SQLi), CWE-20 (Improper Input Validation), CWE-78 (OS Command Injection), CWE-416 (Use After Free), CWE-22 (Path Traversal), CWE-352 (CSRF).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] MITRE ATT&CK mapping for code review: T1190 (Exploit Public-Facing Application), T1059 (Command/Shell Interpreter), T1046 (Network Service Scanning), T1195 (Supply Chain Compromise), T1078 (Valid Accounts), T1552 (Unsecured Credentials).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] DREAD scoring alternative: use CVSS 4.0 primary, DREAD secondary for quick triage. DREAD: Damage, Reproducibility, Exploitability, Affected Users, Discoverability. Sum / 5 for quick severity.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] OWASP API Security Top 10: BOLA/IDOR, Broken Auth, Excessive Data Exposure, Lack of Resources/Rate Limiting, Broken Function/Level Auth, Mass Assignment, Security Misconfig, Injection, Improper Assets Management, Insufficient Logging/Monitoring.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] API security checklist: auth (OAuth2 with PKCE, mTLS), authz (RBAC/ABAC), input validation (JSON schema), rate limiting, pagination limits, field-level encryption, audit logging, versioning, deprecated endpoint handling, webhook signature verification.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Cloud-native security: shared responsibility model, IAM least privilege, VPC/security groups, KMS for encryption, secrets manager (not env vars), container scanning, image signing, service mesh mTLS, runtime security (Falco, Sysdig).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Secure SDLC integration: threat modeling (STRIDE/PASTA) at design phase, SAST in CI, DAST in staging, dependency scan per PR, pen test pre-release, response plan maintained. Each phase has security exit criteria.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Compliance mapping: findings can be mapped to PCI-DSS (6.5 code review, 6.6 WAF), SOC2 (CC7.1-CC7.4), HIPAA (164.312), GDPR (Article 32), ISO27001 (A.14.2). Include compliance context in security-audit reports.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Remediation guidance: every finding must include (1) Root cause, (2) Affected versions/files, (3) Recommended fix (code example preferred), (4) OWASP reference link, (5) Verification steps, (6) Estimated effort (story points).' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] False positive handling: mark as false_positive with reason. Common reasons: theoretical, requires chained vuln first, insane prerequisites, admin-only, unsupported browser. False positive needs tech lead sign-off.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Integration with p1-warrior: security-reviewer finds bugs in source = p1-warrior validates runtime. Process: Reviewer identifies pattern -> Warrior tests via HTTP -> Validator confirms -> Report written.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Integration with js-analysis: JS analysis finds client-side issues (XSS, prototype pollution, credential exposure). Security-reviewer correlates these with server-side code, finds root cause rather than symptom.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Integration with autopilot: security-reviewer runs as full-repo phase (Phase-1b) after recon+ranker. Findings feed directly into p1-warrior target list. Critical findings from SAST auto-promote to P1.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Output format: SARIF v2.1 for tool integration, JSON for internal consumption, Markdown for human review. SARIF enables GitHub Code Scanning, GitLab SAST reports, IDE inline annotations.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Audit trail logging: security_audit/{audit_id}/audit_log.jsonl tracks every tool invocation, finding created, finding updated, finding closed. Each entry: timestamp, action, tool, result_hash, affected_findings.' -ForegroundColor DarkRed"
     },
     {
       "event": "Stop",
-      "command": "Write-Host '[SECURITY-REVIEWER STOP] Next: /validator for each finding, then /report-writer with audit package (code snippets, PoC, impact).' -ForegroundColor Green"
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] Audit finalization: (1) trust boundaries documented and reviewed, (2) all findings verified with code references, (3) SARIF report generated, (4) remediation guidance validated, (5) executive summary drafted, (6) raw files archived.' -ForegroundColor Red"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] Follow-up: schedule re-audit in 90 days for critical findings, 180 days for high findings. Track fix rate in audit history. Unfixed critical findings after 90 days = escalate to leadership.' -ForegroundColor Red"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[SECURITY-REVIEWER STOP] All tools completed. Final integrity check on output files. SHA-256 hashes computed for audit.json and findings.json. Sign and date all deliverables. Report delivered to /security-audit/{audit_id}/.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Regression analysis mode: compare findings to previous security audit. Identify newly introduced vulnerabilities (regressions), fixed vulnerabilities (improvements), persistent unfixed issues. Delta report: new, fixed, unchanged, aged.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Technical debt tracking: every unfixed finding has SLA: Critical=14 days, High=30 days, Medium=90 days, Low=180 days. SLA overdue = escalation to engineering leadership. Persistent unfixed critical at 90 days = CISO escalation.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SEC-REV] Documentation requirement: every audit produces (1) executive summary, (2) technical detailed findings, (3) SAST/DAST raw output, (4) trust boundary diagram, (5) remediation roadmap with effort estimates. All stored in /security-audit/{audit_id}/.' -ForegroundColor Gray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SEC-REV] Report distribution: executive summary = leadership/board. Technical report = engineering team. Raw SARIF = security tools. Findings summary = bug bounty report (sanitized).' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Framework-specific audits: Node.js/Express -> check helmet usage, rate limiting, JWT verification, express-validator, helmet CSP, rate-limit. Python/Django -> check CSRF middleware, SQL injection via ORM, debug mode, secret key in settings, session security.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Framework-specific audits: Java/Spring -> check @PreAuthorize on all endpoints, SQL via JdbcTemplate vs PreparedStatement, Jackson deserialization, JNDI lookups, actuator endpoints exposed. Go -> check sql package queries, template injection, http.Dir traversal, yaml.Unmarshal.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Framework-specific audits: PHP -> check eval/exec/system/passthru usage, unserialize with user data, extract($_GET), include with user input, register_globals, SQL via raw queries, XSS via echo without escaping. Ruby/Rails -> check strong params, CSRF tokens, SQL via raw queries, mass assignment.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Framework-specific audits: .NET -> check Process.Start with user input, dynamic compilation, deserialization via BinaryFormatter/NetDataContractSerializer, SQL via string concat, path traversal via Server.MapPath, ViewState MAC disabled.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Framework-specific audits: React/Vue/Angular SPA -> check dangerouslySetInnerHTML, v-html, postMessage origin validation, localStorage sensitive data, XSS via client-side routing, CSP effectiveness, CORS wildcards.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Container/cloud audits: Kubernetes -> check pod security standards (restricted), RBAC least privilege, network policies, secrets in etcd, privileged containers, hostPath mounts, container escape vectors. AWS -> check IAM roles, S3 ACLs, security groups, KMS usage, CloudTrail enabled.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Database audit: check SQL mode (strict), least privilege DB user, connection encryption (TLS), query logging enabled, parameterized queries enforced, ORM raw query auditing, stored procedure security, backup encryption.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Authentication/authorization audit: check password hashing (bcrypt/argon2, not MD5/SHA1), session token entropy, JWT signing algorithm, token expiration, refresh token rotation, MFA enforcement, brute force protection, account lockout, password policy.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SEC-REV] Data protection audit: check encryption at rest (AES-256), encryption in transit (TLS 1.2+), PII classification, data retention policy, right-to-erasure support, GDPR/CCPA compliance, backup encryption, key rotation schedule.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'gitleaks|gitleaks.*detect|gitleaks.*--report') { Write-Host '[SEC-REV PRE] Gitleaks detected. Scanning git history for committed secrets. Common secret patterns: AWS, GCP, Azure, GitHub, Slack, Stripe, Twilio, Heroku, PostgreSQL, Redis. Output: findings/security-reviewer/gitleaks_report.json' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'semgrep.*org|semgrep.*app|semgrep.*login|semgrep.*ci') { Write-Host '[SEC-REV PRE] Semgrep Cloud (semgrep.dev) detected. Rules from org policy, custom rules, dependency rules. Results will sync to security dashboard and GitHub Security tab.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'syft.*sbom|sbom.*generat| CycloneDX|SPEX|syft.*--') { Write-Host '[SEC-REV PRE] SBOM generation detected. Creating Software Bill of Materials. Format: CycloneDX or SPDX. SBOM used for vulnerability correlation and license compliance.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'falco|sysdig|twistlock|aqua|runtime.*security|container.*runtime') { Write-Host '[SEC-REV PRE] Container runtime security scanner detected. Checking: syscalls, file access, network connections, privilege escalation, process execution, container drift detection.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'op.*amp|observability|Prometheus|Grafana|Jaeger|OpenTelemetry|OTEL|traces|metrics') { Write-Host '[SEC-REV PRE] Observability/telemetry tool detected. Check: (1) PII in logs/metrics, (2) sensitive data in traces, (3) unauthenticated endpoints, (4) metric leak via cardinality exploit.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'API.*gateway|kong|apigee|tyk|AWS.*API.*Gateway|istio.*gateway|envoy.*gateway') { Write-Host '[SEC-REV PRE] API Gateway detected. Check: (1) WAF rules on gateway, (2) auth enforcement, (3) rate limiting, (4) request/response transformation security, (5) upstream trust, (6) API key management.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '@WebFilter|@Component.*Filter|FilterChain|doFilter|OncePerRequestFilter|javax\.servlet\.Filter|Interceptor|HandlerInterceptor') { Write-Host '[FILTER] Java filter/interceptor chain found. Check: (1) filter order/priority, (2) filter bypass paths, (3) request wrapping/mutation, (4) response header modifications, (5) error handling in filter.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'HttpContext|Request\.User|ClaimsPrincipal|IPrincipal|User\.Identity|request\.user|req\.user|currentUser|getCurrentUser') { Write-Host '[AUTHZ] User identity context found. Verify: (1) identity is from server-side trusted source, (2) not spoofable via header injection, (3) roles/claims populated at authentication, (4) identity immutable after auth.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Snowflake|BigQuery|Redshift|Databricks|Elastic|Solr|ClickHouse|Timescale|Cockroach|Spanner|Aurora|RDS|CloudSQL') { Write-Host '[DB] Managed database service detected. Check: (1) public accessibility, (2) IAM auth vs password auth, (3) encryption at rest, (4) audit logging enabled, (5) network isolation, (6) backup retention settings.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'AES|RSA|ECC|ECDSA|ed25519|curve25519|ChaCha20|Poly1305|GCM|CBC|ECB|CBC-MAC|HMAC|PBKDF2|bcrypt|scrypt|argon') { Write-Host '[CRYPTO CHECK] Cryptographic algorithm profile found. Verify: (1) modern algorithm selection (AES-GCM, RSA-2048+, ChaCha20-Poly1305), (2) IV/nonce unique per operation, (3) key length sufficient, (4) key derivation uses strong KDF.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'OAuth2|openid|connect|authorization_code|client_credentials|PKCE|S256|code_verifier|state.*param') { Write-Host '[OAUTH] OAuth2/OIDC flow found. Check: (1) PKCE enforced for public clients, (2) state parameter present/validated, (3) redirect_uri strict validation, (4) token binding (DPoP/mTLS), (5) scope minimalism.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'grpc|protobuf|proto|proto3|proto2|twirp|connect|Dubbo|Thrift|Avro|Parquet|ORC') { Write-Host '[RPC] RPC/serialization framework found. Check: (1) method-level authz (not just transport), (2) input validation on protobuf fields, (3) reflection endpoint exposed, (4) TLS enforcement, (5) message size limits.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'regex|RegExp|Pattern|Pattern\.compile|re\\.compile|match\\(|search\\(|findall\\(|grep') { Write-Host '[REGEX] Regular expression operation found. Check: (1) ReDoS risk (catastrophic backtracking), (2) user-controlled regex (ReDoS or bypass), (3) regex used for security decision (should not be sole gate), (4) unbounded input matched against regex.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Attack surface summary format: each finding includes {title, severity, confidence, category, affected_component, attack_vector, prerequisites, user_interaction, scope_changed, cwe_id, owasp_category, remediation, effort, cvss_40_estimate}.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Trust boundary diagram format: Mermaid ERD showing: external (internet) -> WAF/CDN -> load balancer -> API gateway -> service mesh -> microservices -> databases/cache. Label each boundary crossing with auth mechanism and encryption status.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] Finding deduplication: before adding finding, check if (1) same CWE exists, (2) same affected component, (3) same attack vector. If match -> merge evidence, update severity if needed. False duplicates = separate by affected component or code path.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[SEC-REV CTX] SAST tool orchestration: run all tools in parallel: semgrep (linting), bandit/gosec (lang-specific), osv-scanner (deps), gitleaks (secrets), CodeQL (deep semantic). Combine results, deduplicate, prioritize. Manual review fills gaps.' -ForegroundColor DarkRed"
     }
   ]
 }

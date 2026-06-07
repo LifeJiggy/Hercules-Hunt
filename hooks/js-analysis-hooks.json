@@ -511,6 +511,42 @@
       "command": "Write-Host '[JS CTX] Secret validation protocol: for each potential secret found: (1) validate pattern via regex, (2) test if alive/active API call, (3) determine scope of access, (4) document as potential vs confirmed, (5) redact before any output.' -ForegroundColor DarkGray"
     },
     {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Endpoint testing pipeline: extracted endpoints -> handed to p1-warrior -> warrior runs authz tests -> validator confirms -> report written. JS-analysis does NOT test endpoints, only discovers. Testing is warrio territory.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Regex accuracy: static regex catches ~80% of secrets. False positive rate ~15%. Always manually verify each match. Do not auto-report regex matches without human review.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Framework-specific extraction patterns: React Native check for AsyncStorage, NetInfo. Electron check for ipcRenderer, remote module. Cordova/PhoneGap check for exec plugin. Each framework exposes different native APIs.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] CSP evaluation: document script-src, connect-src, form-action, frame-ancestors. Weak CSP = XSS risk. unsafe-inline = XSS risk. script-src * = XSS risk. report-uri present = monitored CSP. Note CSP for XSS hunting phase.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Cookie analysis categories: session tokens (immediate rotation risk), CSRF tokens (must be unpredictable), auth cookies (HttpOnly critical), analytics cookies (low risk), third-party cookies (cross-origin risk). Map all cookie types from JS found in analysis.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Hardcoded URL classification: (1) Production API URLs = identify for hunting, (2) Internal/private URLs = identify for SSRF testing, (3) Third-party service URLs = note for supply chain context, (4) CDN/static URLs = low priority. Classify each URL found.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Handlebar/template engine detection: if Handlebars/Mustache used, check for template injection. If Angular, check $sce.trustAsHtml usage. If React, check dangerouslySetInnerHTML. Each framework has different XSS risk profile.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Third-party SDK analysis: for each third-party library imported, check: (1) library name matches known vulnerable version, (2) CDN source, (3) SRI hash present, (4) Subresource Integrity checked, (5) CSP compatible. Notable: old jQuery, Lodash below 4.17.21.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Cross-origin resource sharing analysis: document allowedOrigins, allowedMethods, allowCredentials, exposedHeaders. Tested for: wildcard with credentials, null origin reflection, HTTP->HTTPS downgrade, subdomain trust, header reflection.' -ForegroundColor DarkGray"
+    },
+    {
       "event": "Notification",
       "command": "Write-Host '[JS-ANALYSIS] Trust boundary reminder: JS runs in user browser context. It can be fully controlled by user (DevTools, breakpoints). Do NOT rely on client-side JS for security decisions. JS analysis finds what COULD be leaked, not what IS leaked.' -ForegroundColor Yellow"
     },
@@ -545,7 +581,117 @@
     {
       "event": "Stop",
       "command": "Write-Host '[JS-ANALYSIS STOP] Next: (1) Pass endpoints to p1-warrior (api_endpoints.txt), (2) Validate secrets via /validator, (3) Write report for confirmed sensitive leaks via /report-writer, (4) Share chain candidates with /chain-builder.' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Async/pattern detection: detect Promise chains, async/await patterns, Observable sequences (RxJS). Async code often contains race conditions in token refresh, request cancellation, or state mutation. Track race-vulnerable patterns.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Error handler analysis: global error handlers (window.onerror, addEventListener unhandledrejection), try-catch blocks. Error handlers may leak sensitive info in error messages. Document error messages that include stack traces or environment details.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Third-party script trust chain: evaluate CSP for each loaded script, SRI hash verification, integrity attribute, crossorigin attribute, CORS policy for fonts/scripts/images. Unverified third-party = potential supply chain attack vector.' -ForegroundColor Red"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Minification/Obfuscation detection: compare bundle size vs source. High compression ratio (>80%) = likely minified. Detection of eval, atob, btoa, fromCharCode, _0x prefix = obfuscated. Obfuscated code requires deobfuscation phase before analysis.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'brotli|gzip|unzip|tar|gunzip|compress|decompress') { Write-Host '[JS PRE] Compression/decompression tool detected. Many JS bundles served compressed. Decompress before analysis. Note: brotli may require brotli-cli or node zlib module.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'de4js|unpacker|js-beautify|prettier.*--parser|jsnice|snripper') { Write-Host '[JS PRE] JS obfuscation deobfuscation detected. Focus on deobfuscating top 3 largest bundles first. Complex obfuscation may require manual deobfuscation with breakpoints in DevTools.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'cat.*package|type.*package|Get-Content.*package|package.*lock|yarn.lock|pnpm-lock') { Write-Host '[JS PRE] Dependency manifest read detected. Document all direct and transitive dependencies. Cross-reference each with Snyk advisory DB for known vulnerabilities. Lock file = reproducible dependencies.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'devtools|debugger|hot.*reload|hmr|vite.*hmr|webpack.*hmr|live.*reload') { Write-Host '[DEV] Dev tools / HMR endpoints detected in production bundle. HMR = WebSocket connection that may be exploitable. Check if HMR is disabled in production build. Debug endpoints may leak source maps.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'react-native|expo|capacitor|ionic|cordova|phonegap|flutter.*web') { Write-Host '[MOBILE-WEB] Mobile-web framework detected. React Native web = check for AsyncStorage leaks. Ionic/Cordova = check for plugin bridge exposure. Capacitor = check for plugin permissions. Native bridge attacks possible.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'angular.*universal|next.*ssr|nuxt.*ssr|remix|svelteKit.*ssr|astro') { Write-Host '[SSR] Server-side rendering framework detected. SSR frameworks have different XSS risk profile than client-only. Check: (1) hydration mismatch, (2) server-side template injection, (3) script passing from server to client, (4) sercurity headers in SSR.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'aria|role=|navigation|main|heading|alt=|title=|label|for=|tabindex|accesskey') { Write-Host '[A11Y] Accessibility attributes found. These can indicate UI structure and help map application features for hunting. Accessible labels = feature identification. Tab order = form fields for testing.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'IntersectionObserver|ResizeObserver|MutationObserver|PerformanceObserver|IntersectionObserverEntry') { Write-Host '[OBSERVER] Web API Observer pattern detected. Observers track DOM/resource changes. Potential for: (1) data exfil via observer callbacks, (2) DOM-based XSS if observer callback processes attacker-controlled values.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'WebGL|Canvas|WebGPU|OffscreenCanvas|ImageBitmap|createImageBitmap') { Write-Host '[CANVAS] WebGL/Canvas API found. Can be fingerprinting vector or data exfil via timing side channel. Canvas rendering may process untrusted images = image-based XSS or memory corruption (low risk but noted).' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'WebRTC|RTCPeerConnection|getUserMedia|MediaStream|RTCDataChannel') { Write-Host '[WEBRTC] WebRTC API found. May expose: (1) local IP addresses (internal network topology), (2) media device enumeration, (3) data channel bypasses CORS (peer-to-peer). Check if STUN/TURN servers exposed.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Clipboard|copyToClipboard|navigator\\.clipboard|document\\.execCommand.*copy|clipboardData') { Write-Host '[CLIPBOARD] Clipboard API found. Check: (1) sensitive data auto-copied (tokens, passwords), (2) clipboard poisoning vector, (3) async clipboard API requires permission (potential for permission phishing).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Notification|showNotification|PushManager|pushManager|serviceWorker.*push|PushSubscription') { Write-Host '[PUSH] Web Push API found. Push subscription = potential tracking/notification vector. Check: (1) push payload encrypted, (2) VAPID keys rotated, (3) server can unsubscribe, (4) notification click leaks URL parameters.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'PaymentRequest|PaymentMethod|CreditCard|ApplePay|GooglePay|PaymentResponse|requestPayment') { Write-Host '[PAYMENT] Web Payment API found. Document: (1) payment methods accepted, (2) shipping/billing address collection, (3) payment handler, (4) transaction completion. Payment bugs = high bounty. Check for price manipulation, free item via JS modification.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Blob|FormData|FileReader|readAsText|readAsDataURL|slice|stream|ReadableStream|WritableStream') { Write-Host '[BINARY] Binary data handling found. Check: (1) MIME type validation on client, (2) file size limits enforced client-side only (bypassable), (3) Blob URL lifetime/scope, (4) CSV/XML parsing may lead to XXE or formula injection (CSV).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Mutation testing reminder: for XSS findings, test with multiple browsers (Chrome, Firefox, Safari, Edge). CSP bypass varies by browser. DOM clobbering varies by browser. Document browser/version for report reproducibility.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Timing attack awareness: password comparison, JWT verification, auth checks in JS are timing-leaky. Document timing differences if found. JS timing APIs: performance.now(), Date.now(), console.time(). These can leak information via side channels.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Crypto misuse check: check for SHA-1/MD5 in JS, hardcoded crypto keys, weak random (Math.random() instead of crypto.getRandomValues()), ECB mode, static IV, missing authentication tag. Weak crypto in JS = client-side security theater.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Cryptocurrency/wallet detection: check for web3, window.ethereum, ethers, web3.js, MetaMask, WalletConnect, Solana web3.js. Wallet interaction = high-value target. Check: (1) transaction signing without confirmation, (2) network switching, (3) phishing via dApp approval.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Supply chain risk: for each external CDN script, check if SRI (Subresource Integrity) hash is present. Missing SRI = supply chain attack surface if CDN compromised. Document CDN dependencies for security-reviewer supply chain analysis.' -ForegroundColor DarkGray"
     }
+  ]
+}
+  ]
+}
   ]
 }
 

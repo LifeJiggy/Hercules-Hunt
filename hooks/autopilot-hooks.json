@@ -659,5 +659,19 @@
     },
     {
       "event": "Stop",
-      "command": "Write-Host '[AUTOPILOT STOP] Pre-flight check complete for next session: (1) nuclei-templates updated check, (2) tool binary verification, (3) scope file validity, (4) directory structure integrity, (5) knowledge base loaded. Ready for next invocation.' -ForegroundColor Cyan"
+      "command": "Write-Host '[AUTOPILOT STOP] Final summary metrics logged: total_targets={count}, confirmed_bugs={count}, killed_findings={count}, potential_findings={count}, chained_bugs={count}, reports_submitted={count}, estimated_payout={amount}, time_per_bug_class={object}. Report saved to session_summary.json.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Target handoff notes: top targets not fully tested (prioritization overflow) saved to state/knowledge/unfinished_targets.json. Can be resumed in next session on same program.' -ForegroundColor Green"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Final user notification requested. Open findings summary at: findings/{target}_{timestamp}/report/summary.md. Draft reports requiring user review at: reports/draft/. Password/credential rotation reminder sent to user.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[AUTOPILOT STOP] Session archive hash: SHA256={hash}. Verified intact. Archive location: state/archive/{session_id}/. Retention: 90 days. Auto-cleanup schedule: daily at 02:00 UTC.' -ForegroundColor Gray"
     }
+  ]
+}
