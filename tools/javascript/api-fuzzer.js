@@ -264,6 +264,7 @@ class APIFuzzer {
 
   async detectWebSocket(endpoint) {
     try {
+      if (typeof WebSocket === 'undefined') return { supported: false, reason: 'WebSocket not available' };
       const wsUrl = endpoint.replace(/^http/, 'ws') + '/websocket';
       const ws = new WebSocket(wsUrl);
       return await new Promise((resolve) => {

@@ -275,6 +275,7 @@ class Parameters {
 
   extractCookieParams() {
     const params = {};
+    if (typeof document === 'undefined' || !document.cookie) return params;
     document.cookie.split(';').forEach(c => {
       const [k, ...v] = c.trim().split('=');
       if (k) params[k.trim()] = v.join('=');

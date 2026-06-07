@@ -1,0 +1,24 @@
+{
+  "name": "hercules-hunt-js-toolkit",
+  "version": "1.0.0",
+  "description": "Hercules-Hunt Client-Side Hunting Toolkit — 15 P1 bug hunting tools",
+  "main": "index.js",
+  "scripts": {
+    "start": "node launcher.js",
+    "scan": "node client-side-scanner.js",
+    "test": "mocha 'tests/**/*.test.js' --timeout 30000 --exit",
+    "test:unit": "mocha 'tests/**/*.test.js' --timeout 30000 --exit --grep @integration --invert",
+    "test:integration": "mocha 'tests/**/*.test.js' --timeout 60000 --exit --grep @integration",
+    "postinstall": "npx playwright install chromium"
+  },
+  "dependencies": {
+    "playwright": "^1.52.0"
+  },
+  "devDependencies": {
+    "chai": "^4.5.0",
+    "jsdom": "^26.0.0",
+    "mocha": "^11.1.0"
+  },
+  "keywords": ["bug-bounty", "security", "pentesting", "client-side", "recon"],
+  "license": "MIT"
+}
