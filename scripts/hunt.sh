@@ -166,11 +166,10 @@ GITIGNORE
 
   echo ""
   echo "============================================"
-  echo "Initialized engagement: $target"
+  echo "☰ Hercules-Hunt engagement: $target"
   echo "============================================"
   echo ""
-  echo "Files created:"
-  echo "  CLAUDE.md           - Claude engagement context"
+  echo "  CLAUDE.md           - Hercules-Hunt engagement context"
   echo "  scope.md            - parsed scope template"
   echo "  submissions.txt     - submission UUID tracker"
   echo "  findings/README.md  - findings folder convention"
@@ -178,5 +177,8 @@ GITIGNORE
   echo "  evidence/           - gitignored screenshot/HAR folder"
   echo "  .gitignore          - excludes evidence + secrets"
   echo ""
-  echo "cd $dir to start hacking."
+  echo "  Next: source ~/.jiggy/scripts/hunt.sh (if not already)"
+  echo "  Then: cd $dir && cat CLAUDE.md"
+  echo "  Docs: cat ~/.jiggy/Hercules.md"
+  echo ""
 }
