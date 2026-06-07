@@ -47,7 +47,7 @@
       "agents_file": "AGENTS.md"
     },
     "codex-cli": {
-      "context_file": "CLAUDE.md"
+      "context_file": "Hercules.md"
     },
     "generic": {
       "tools_dir": "tools/",

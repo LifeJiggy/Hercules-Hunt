@@ -41,8 +41,120 @@
       "command": "Write-Host '[SECURITY-REVIEWER] Trust boundary rule: every public-facing input is a potential attack surface. Trace data flow from input to sink.' -ForegroundColor Yellow"
     },
     {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Analysis scope options: full repository (deepest, slowest), targeted path (focused, fast), PR diff only (incremental), external attack surface (black-box). Default: targeted path unless full scan requested.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Trust boundary mapping: identify data trust levels (public, internal, confidential, restricted). Map data flow across layers (client -> API -> service -> DB -> cloud). Each boundary crossing = potential breach point.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Attack surface enumeration: list all input vectors (HTTP params, headers, body, file uploads, cookies, WebSocket messages, GraphQL queries, file reads, env vars, config files, framework internals).' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Code path analysis: for each input vector, trace data flow forward (taint analysis) and backward (source analysis). Identify: sanitization points, validation gates, serialization/deserialization, encoding/decoding.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] Business logic section: review auth flows (register, login, password reset, MFA, session management), financial operations (payments, refunds, transfers, credits), access control (role changes, permissions, admin operations), data operations (CRUD with user isolation).' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[SECURITY-REVIEWER] CWE Top 25 extended: CWE-787 (OOB Write), CWE-79 (XSS), CWE-89 (SQLi), CWE-20 (Improper Input Validation), CWE-78 (OS Command Injection), CWE-416 (Use After Free), CWE-22 (Path Traversal), CWE-352 (CSRF), CWE-434 (Unrestricted File Upload), CWE-502 (Deserialization).' -ForegroundColor Yellow"
+    },
+    {
       "event": "Notification",
-      "command": "Write-Host '[SECURITY-REVIEWER] Business logic is the #1 area where automated scanners fail. Manual review required for auth flows, state changes, and financial operations.' -ForegroundColor Red"
+      "command": "Write-Host '[SECURITY-REVIEWER] Priority levels: CRITICAL = RCE, SQLi, auth bypass, hardcoded prod creds. HIGH = SSRF, stored XSS, IDOR, insecure deserialization. MEDIUM = reflected XSS, CSRF, info leak, weak crypto. LOW = missing security headers, verbose errors. INFO = best practice.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SECURITY-REVIEWER] Trust boundary classification: PUBLIC (no auth required), INTERNAL (auth required but no privilege), AUTHENTICATED (logged-in user), PRIVILEGED (admin), RESTRICTED (system/service). Each boundary crossing is auditable.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[SECURITY-REVIEWER] Recurring vuln pattern library maintained: SQLi patterns (ORM bypass, HQL injection, NoSQL injection), XSS patterns (DOM, reflected, stored, prototype pollution), SSRF patterns (redirect, DNS rebinding, cloud metadata).' -ForegroundColor Cyan"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "Write-Host '[SEC-REV PRE] Pre-flight security check: verifying target file paths, tool identity, and auth context before any code or infra access.' -ForegroundColor DarkRed"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'cat\\.json|cat\\.yaml|cat\\.yml|Get-Content\\.json|Get-Content\\.yaml|type\\.json|cat.*config') { Write-Host '[SEC-REV PRE] Config file read. Check for: hardcoded secrets, default credentials, weak TLS config, overly permissive CORS, debug mode flags, exposed admin endpoints.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'semgrep|semgrep.*scan|semgrep.*cli|semgrep.*--config') { Write-Host '[SEC-REV PRE] Semgrep SAST detected. Using rule sets: p/security-audit, p/secrets, p/owasp-top-ten, p/cwe-top-25. Supplement with manual review for business logic.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'bandit|bandit.*-r|bandit.*scan|bandit.*report') { Write-Host '[SEC-REV PRE] Bandit (Python SAST) detected. Scanning for: eval/exec, pickle, subprocess, SQL injection, path traversal, hardcoded passwords, weak crypto.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'brakeman|brakeman.*scan|brakeman.*-q') { Write-Host '[SEC-REV PRE] Brakeman (Ruby SAST) detected. Scanning for: SQL injection, XSS, CSRF, mass assignment, redirect, command injection, unsafe deserialization.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'gosec|gosec.*scan|gosec.*./...') { Write-Host '[SEC-REV PRE] Gosec (Go SAST) detected. Scanning for: command injection, path traversal, weak crypto, hardcoded credentials, SSRF, unsafe parsing, file permissions.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'spotbugs|findsecbugs|spotbugs.*-effort') { Write-Host '[SEC-REV PRE] SpotBugs + FindSecBugs (Java) detected. Scanning for: SQLi, XSS, path traversal, SSRF, insecure random, weak crypto, deserialization, JNDI injection.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'npm audit|yarn audit|pnpm audit|audit.*fix|audit.*--json') { Write-Host '[SEC-REV PRE] NPM audit detected. Scanning package.json dependencies for known CVEs via npm registry advisory database.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'pip audit|pip-audit|requirements.*txt|pyproject\.toml|Pipfile') { Write-Host '[SEC-REV PRE] pip-audit detected. Scanning Python dependencies via PyPI advisory database and OSV.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'govulncheck|osv-scanner|grype|syft|trivy|anchore|snyk test') { Write-Host '[SEC-REV PRE] Go/container vulnerability scanner detected. Scanning: binary dependencies, base images, language ecosystems (Go, Python, Node, Java, Ruby).' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'checkov|checkov.*-d|checkov.*--framework|tfsec|trivy.*config|datree') { Write-Host '[SEC-REV PRE] IaC scanner detected (Checkov/tfsec/Trivy). Checking: public S3, open security groups, unencrypted storage, IAM wildcards, privileged containers, hardcoded secrets in Terraform/K8s.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'detect-secrets|truffleHog|gitleaks|git-secrets|trufflehog.*scan') { Write-Host '[SEC-REV PRE] Secret scanning tool detected. Scanning: git history, codebase, config files. Plugins: AWS, GCP, Azure, Slack, GitHub, Stripe, Twilio. Output: findings/security-reviewer/secrets/' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'CodeQL|codeql|codeql.*database|codeql.*analyze|codeql.*query') { Write-Host '[SEC-REV PRE] GitHub CodeQL detected. Running: cpp, csharp, go, java, javascript, python, ruby, swift queries. Deep semantic analysis, not just pattern matching.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'eslint.*security|eslint-plugin-security|eslint.*--plugin') { Write-Host '[SEC-REV PRE] ESLint security plugin detected. Rules: detect-eval-with-expression, detect-possible-timing-attacks, no-new-array, no-jquery/redirect, no-pseudo-random, detect-object-injection.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'sqlmap|nosqlmap|commix|tplmap|patator|ffuf|wfuzz') { Write-Host '[SEC-REV PRE] Active injection scanner detected. Verify explicit authorization. Ensure target in scope. Save all scan output to findings/security-reviewer/active_scans/.' -ForegroundColor DarkRed }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'docker scan|docker scout|trivy.*image|snyk container|anchore') { Write-Host '[SEC-REV PRE] Container image scan detected. Checking: base image CVEs, exposed ports, running processes, filesystem permissions, secrets in layers, capabilities, user privileges.' -ForegroundColor DarkRed }"
     },
     {
       "event": "PreToolUse",

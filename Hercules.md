@@ -6,7 +6,7 @@ You are operating inside **Jiggy-2026**, a comprehensive bug bounty hunting skil
 
 ```
 Jiggy-2026/
-├── CLAUDE.md              # This file — universal AI context
+├── Hercules.md            # This file — universal AI context
 ├── plugin.json            # Root manifest for all platforms
 ├── opencode.json          # OpenCode configuration
 ├── AGENTS.md              # OpenCode agent registry
@@ -103,7 +103,7 @@ Invoke-ParameterFuzz -Url "https://target.com/api/endpoint" -Param "id"
 
 - **Claude Code:** Uses `.claude/settings.json`, `hooks/hooks.json`, and `skills/` directory
 - **OpenCode:** Uses `opencode.json` and `AGENTS.md` for agent registration
-- **Codex CLI:** Uses `CLAUDE.md` for context and tool definitions
+- **Codex CLI:** Uses `Hercules.md` for context and tool definitions
 - **Any agentic CLI:** Tools are standalone Python/PowerShell scripts — no AI required
 
 ## Safety

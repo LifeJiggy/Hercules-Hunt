@@ -6,19 +6,15 @@
     },
     {
       "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] JavaScript bundle analysis agent active. Model: claude-sonnet-4-6. Input: live URLs from recon-ranker output.' -ForegroundColor Green"
+      "command": "Write-Host '[JS-ANALYSIS] JavaScript bundle analysis agent active. Model: claude-sonnet-4-6. Input: live URLs from recon-ranker output ranked by priority.' -ForegroundColor Green"
     },
     {
       "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] Mission: extract hidden API endpoints, hardcoded secrets, internal paths, feature flags, cloud keys, OAuth credentials, config leaks from JS bundles.' -ForegroundColor Cyan"
+      "command": "Write-Host '[JS-ANALYSIS] Mission: extract hidden API endpoints, hardcoded secrets, internal paths, feature flags, cloud keys, OAuth credentials, config leaks from JS bundles. Output: js_findings/{bundle_hash}.json.' -ForegroundColor Cyan"
     },
     {
       "event": "SessionStart",
       "command": "Write-Host '[JS-ANALYSIS] Methods: (1) Browser DevTools network capture, (2) CLI: katana/ffuf/waybackurls for JS discovery, (3) Static: LinkFinder, JSParser, SecretFinder, (4) Dynamic: Puppeteer/Playwright runtime extraction.' -ForegroundColor Magenta"
-    },
-    {
-      "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] Output schema: js_findings/{bundle_hash}.json — each entry: url, type (endpoint/secret/config/flag), value_redacted, context, severity, replication_steps.' -ForegroundColor Gray"
     },
     {
       "event": "SessionStart",
@@ -60,23 +56,21 @@
       "event": "SessionStart",
       "command": "Write-Host '[JS-ANALYSIS] Headers and cookies analysis: check for HttpOnly, Secure, SameSite, Domain, Path cookie attributes. Look for session tokens, CSRF tokens, custom auth headers. Document cookie scope and leakage risks.' -ForegroundColor Cyan"
     },
-    <SECRET_2db3b4f5>
-    },
-    <SECRET_974ddc6b>
+    {
       "event": "SessionStart",
       "command": "Write-Host '[JS-ANALYSIS] Runtime config exposure: check window.__INITIAL_STATE__, window.__CONFIG__, window.__APP_CONFIG__, window.__PLATFORM__, __NEXT_DATA__, __NUXT__, __APOLLO_STATE__, window.__REDUX_STATE__. Extract configs and compare against production.' -ForegroundColor Cyan"
     },
     {
       "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] Memory hygiene: Never store raw secrets in any output file. Use SHA-256 hash for identification. Keep findings redacted. Clear temp files after validation.' -ForegroundColor Red"
+      "command": "Write-Host '[JS-ANALYSIS] Memory hygiene: Never store raw secrets in any output file. Use SHA-256 hash for identification. Keep findings redacted: show first 8 chars + ***. Clear temp files after validation.' -ForegroundColor Red"
     },
     {
       "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] Health check: verify output directories exist (js_findings/, js_bundles/, findings/js_static/, endpoints/). Create if missing using PowerShell New-Item -ItemType Directory -Force.' -ForegroundColor Cyan"
+      "command": "Write-Host '[JS-ANALYSIS] Health check: verify output directories exist (js_findings/, js_bundles/, findings/js_static/, endpoints/). Create if missing using New-Item -ItemType Directory -Force.' -ForegroundColor Cyan"
     },
     {
       "event": "SessionStart",
-      "command": "Write-Host '[JS-ANALYSIS] Target verification: confirm scope includes all JS host domains from recon-ranker. Out-of-scope domains = EXCLUDE from all analysis. Scope.txt is source of truth.' -ForegroundColor Cyan"
+      "command": "Write-Host '[JS-ANALYSIS] Target verification: confirm scope includes all JS host domains from recon-ranker. Out-of-scope domains = EXCLUDE from all analysis. scope.json is source of truth.' -ForegroundColor Cyan"
     },
     {
       "event": "Notification",
@@ -110,87 +104,87 @@
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'katana|ffuf|gobuster|feroxbuster|waybackurls|urlfinder|gospider') { Write-Host '[JS PRE] JS discovery/crawler tool detected. Set depth limits. output: js_urls.txt' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'katana|ffuf|gobuster|feroxbuster|waybackurls|urlfinder|gospider') { Write-Host '[JS PRE] JS discovery/crawler tool detected. Set depth limit max 3. Output goes to js_urls.txt.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "<SECRET_b75508a7>stCommand -match 'curl.*\\.js|wget.*\\.js|curl.*\\.mjs|wget\\.js|wget.*bundle') { Write-Host '[JS PRE] JS bundle download detected. Verify URL is in-scope. Save to output/js_bundles/ with hash-based filename.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'curl.*\\.js|wget.*\\.js|curl.*\\.mjs|wget\\.js|wget.*bundle') { Write-Host '[JS PRE] JS bundle download detected. Verify URL is in-scope. Save to output/js_bundles/ with SHA-256 hash as filename.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'LinkFinder|JSParser|SecretFinder|truffleHog|jsluice|jshole') { Write-Host '[JS PRE] Static analysis tool detected. Pipe scope-limited bundles only. Tool output goes to findings/js_static/' -ForegroundColor DarkYellow }"
-    },
-    <SECRET_d92206a8>
+      "command": "if ($lastCommand -match 'LinkFinder|JSParser|SecretFinder|truffleHog|jsluice|jshole') { Write-Host '[JS PRE] Static analysis tool detected. Pipe scope-limited bundles only. Tool output goes to findings/js_static/. Tool-specific regexes may miss non-English strings.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'sourcemap|\\.map|map\\.js') { Write-Host '[JS PRE] Source map file detected. Source maps reveal original source. Treat as high-value find.' -ForegroundColor Yellow }"
+      "command": "if ($lastCommand -match 'puppeteer|playwright|selenium|chromedriver|geckodriver') { Write-Host '[JS PRE] Browser automation tool detected. Set headless mode. Capture network requests and console output. Browser fingerprint detectable by targets.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'grep|rg|awk|sed|regex|findstr') { Write-Host '[JS PRE] Text search on JS files. Limit to known secret patterns. Do NOT dump full files to output.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'sourcemap|\\.map|map\\.js') { Write-Host '[JS PRE] Source map file detected. Source maps reveal original source. Treat as high-value find. extracted source saved to output/js_sourcemap/' -ForegroundColor Yellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'js-beautify|prettier|unminify|deobfuscate|jsnice|unpacker') { Write-Host '[JS PRE] JS beautification/deobfuscation detected. Large deobfuscated output -> summarize, do not store raw.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'grep|rg|awk|sed|regex|findstr') { Write-Host '[JS PRE] Text search on JS files. Limit to known secret patterns. Do NOT dump full files to output. Use targeted regex only.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'webpack|parcel|rollup|vite|esbuild|swc') { Write-Host '[JS PRE] Bundler tool detected. Check for source maps and exposed build configuration.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'js-beautify|prettier|unminify|deobfuscate|jsnice|unpacker') { Write-Host '[JS PRE] JS beautification/deobfuscation detected. Large deobfuscated output -> summarize, do not store raw. Memory limit: 2GB for deobfuscation process.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'react|vue|angular|svelte|next|nuxt|gatsby|remix|svelteKit|astro') { Write-Host '[JS PRE] Framework-specific tool or search detected. Adjust extraction patterns for framework-specific secrets and endpoints.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'webpack|parcel|rollup|vite|esbuild|swc') { Write-Host '[JS PRE] Bundler tool detected. Check for source maps and exposed build configuration. webpack stats may expose internal paths and module graph.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'xhr|XMLHttpRequest|ajax|cors|preflight') { Write-Host '[JS PRE] XHR/CORS analysis detected. Review preflight requests for allowed origins and headers.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'react|vue|angular|svelte|next|nuxt|gatsby|remix|svelteKit|astro') { Write-Host '[JS PRE] Framework-specific search/analysis. React: check __SECRET_INTERNALS_ and fiber internals. Vue: __VUE_OPTIONS_API__. Angular: ngZone internals. Next/Nuxt: __NEXT_DATA__/__NUXT__.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'burp|burpsuite|proxy|repeater|intruder') { Write-Host '[JS PRE] Burp Suite usage detected. Imported proxy history may contain XHR calls. Export endpoints for manual testing.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'xhr|XMLHttpRequest|ajax|cors|preflight') { Write-Host '[JS PRE] XHR/CORS analysis detected. Review preflight requests for allowed origins and headers. Document custom headers and auth tokens sent.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'playwright|puppeteer|selenium|chromedriver|geckodriver') { Write-Host '[JS PRE] Browser automation tool detected. Set headless mode. Capture network requests and console output.' -ForegroundColor DarkYellow }"
-    },
-    <SECRET_2b8914d9>
-      "command": "if ($lastCommand -match 'cdn|cloudfront|fastly|akamai|jsdelivr|unpkg|esm|esm.sh|skypack|jspm') { Write-Host '[JS PRE] CDN/external script source detected. Check if in-scope and if versioned URLs leak information.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'burp|burpsuite|proxy|repeater|intruder') { Write-Host '[JS PRE] Burp Suite usage detected. Imported proxy history may contain XHR calls. Export endpoints for manual testing. Enable logging.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'content-security-policy|csp|nonce|hash|strict-dynamic|unsafe-eval|unsafe-inline') { Write-Host '[JS PRE] CSP analysis detected. Look for unsafe directives and potential bypass vectors.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'playwright|puppeteer|selenium|chromedriver|geckodriver') { Write-Host '[JS PRE] Browser automation tool set. Configure headless mode. Set timeout 60s. Capture network requests and console output for JS analysis.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'cors|access-control|origin|credentials|exposed-headers|allow-credentials') { Write-Host '[JS PRE] CORS configuration detected. Check for wildcard origins reflected origins, or null origin allowance.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'cdn|cloudfront|fastly|akamai|jsdelivr|unpkg|esm|esm.sh|skypack|jspm') { Write-Host '[JS PRE] CDN/external script source detected. Check if in-scope and if versioned URLs leak information. CDN cross-origin may expand scope.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'npm|yarn|pnpm|package\\.json|node_modules|bower') { Write-Host '[JS PRE] Package manager tool detected. Check for dependencyConfusion or package.json leaking internal package names.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'content-security-policy|csp|nonce|hash|strict-dynamic|unsafe-eval|unsafe-inline') { Write-Host '[JS PRE] CSP analysis detected. Look for unsafe directives and potential bypass vectors. Document current CSP for report context.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'docker|image|container|kubernetes|helm|k8s|namespace|pod') { Write-Host '[JS PRE] Container/tooling tool detected. Check if K8s config or docker images are linked from JS and may expose internal infrastructure.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'cors|access-control|origin|credentials|exposed-headers|allow-credentials') { Write-Host '[JS PRE] CORS configuration detected. Check for wildcard origins, reflected origins, or null origin allowance. Wildcard + credentials = HIGH severity if confirmed.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'jwt|token|decode|verify|sign|base64|x5c|x5t|x5u|alg|RS256|HS256|ES256') { Write-Host '[JS PRE] JWT library or tool detected. Analyze token structure and signing algorithms for weaknesses.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'npm|yarn|pnpm|package\\.json|node_modules|bower') { Write-Host '[JS PRE] Package manager tool detected. Check for dependency confusion, internal package name leakage, outdated dependency versions in package.json.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'jwt|token|decode|verify|sign|base64|x5c|x5t|x5u|alg|RS256|HS256|ES256') { Write-Host '[JS PRE] JWT library or tool detected. Analyze token structure, signing algorithms, and key handling. Check for alg:none, weak secret, kid injection.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
@@ -200,17 +194,360 @@
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match '\\.js$|\\.mjs$|\\.jsx$|\\.ts$|\\.tsx$') { Write-Host '[JS PRE] JS file read detected. Scanning for secrets, endpoints, and config in current file context. Output to findings/js_static/.' -ForegroundColor DarkYellow }"
-    },
-    {
-      "event": "PreToolUse",
-      "matcher": "Read",
-      "command": "if ($lastCommand -match 'package\\.json|tsconfig\\.json|webpack\\.config|vite\\.config|rollup\\.config|nuxt\\.config|next\\.config') { Write-Host '[JS PRE] Build config file detected. Extract build settings, API baseURLs, environment variables, and exposed private packages.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match '\\.js$|\\.mjs$|\\.jsx$|\\.ts$|\\.tsx$') { Write-Host '[JS PRE] JS file read detected. Scanning for secrets, endpoints, and config in current file. Output to findings/js_static/.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PostToolUse",
       "matcher": "Bash",
       "command": "Write-Host '[JS POST] Reviewing JS analysis output for secrets, endpoints, and sensitive configuration.' -ForegroundColor DarkCyan"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'AKIA|ASIA|AIza|AKIAIOSFODNN7EXAMPLE|xox[baprs]-|ghp_[A-Za-z0-9]{36}|sk_live_|pk_live_|firebase|twilio|sendgrid|mandrill|mailgun|mapbox|contentful|postman|pagerduty|newrelic') { Write-Host '[SECRET] Hardcoded API key/secret found in JS bundle. Document service, key type, scope, and risk. REDACT full value in report.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match '/api/v[0-9]+|/graphql|/rest|/internal|/admin|/private|/secure|/health|/metrics|/debug|/config|endpoint|baseURL|apiUrl|API_URL|BASE_URL') { Write-Host '[ENDPOINT] API endpoint or internal URL found in JS. Document base URL pattern, auth headers expected, and endpoint purpose.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'localhost|127\\.0\\.0\\.1|10\\.|172\\.16\\.|192\\.168|internal|intranet|staging|dev\\.|test\\.') { Write-Host '[CONFIG] Internal/dev URL patterns found in bundle. Check if these can be abused (SSRF, internal access).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'feature.?flag|isEnabled|rollout|experiment|AB.?test|dark.?launch|kill.?switch|ENV_|NODE_ENV|process\\.env|__CONFIG__|window\\.__') { Write-Host '[CONFIG] Feature flags or runtime config found. Document flags and whether they expose hidden/unfinished features.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'aws_access_key_id|aws_secret_access_key|aws_session_token|gcloud|azure|azure_storage|service_account|private_key|-----BEGIN') { Write-Host '[SECRET] Cloud provider credentials found. HIGH severity. Verify if these are production keys. Report to program immediately.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'jwt|jsonwebtoken|decode|sign|verify|alg|kid|exp|nbf|access_token|refresh_token|id_token|session_token') { Write-Host '[CONFIG] JWT/auth token handling found in JS. Check for alg:none, weak signing, token storage (localStorage vs httpOnly cookie).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'password|passwd|pwd|secret|private|apiKey|api_key|app_key|consumer_key|consumer_secret') { Write-Host '[SECRET] Password/secret variables found. Check if hardcoded vs env-injected. Hardcoded = high severity.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'oauth|oauth2|openid|auth0|firebase.auth|identity|sso|saml|okta|auth0|keycloak|ping|cognito|azure.ad') { Write-Host '[AUTH] OAuth/SAML/SSO configuration found. Check for redirect_uri issues, scope misconfig, client secret exposure.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 's3://gs://azure|blob.core|storage.googleapis|digitalocean|backblaze|cloudflare.r2') { Write-Host '[STORAGE] Cloud storage URLs/credentials found. Verify bucket ACLs. Check for path traversal or wildcard access patterns.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'stripe\\.|braintree\\.|square\\.|paypal\\.|adyen\\.|checkout|payment_intent|customer_id|payment_method') { Write-Host '[PAYMENT] Payment SDK/credentials found. HIGH reward target. Check for client-side exposure of payment logic or keys.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'database|mongo|postgres|mysql|redis|elastic|kafka|connection_string|dsn|DATABASE_URL|MONGO_URL|REDIS_URL') { Write-Host '[SECRET] Database connection strings or credentials found. CRITICAL if production. Report immediately to program.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'debug|verbose|log_level|DEBUG|VERBOSE|development|staging|sandbox|test_mode|mock') { Write-Host '[CONFIG] Debug/development mode flags found. If these remain in production, they may leak sensitive information via API responses.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'eval\\(|new Function|setTimeout.*string|setInterval.*string|document\\.write|innerHTML|outerHTML|\\.html\\(|dangerouslySetInnerHTML') { Write-Host '[XSS] DOM XSS sink found. Trace source (location.hash, postMessage, localStorage). Document payload construction.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'axios\\.|fetch\\(|XMLHttpRequest|\\$http|\\.get\\(|\\.post\\(|\\.put\\(|\\.delete\\(|ajax') { Write-Host '[ENDPOINT] HTTP client library calls found. Extract all API URLs and methods. Check for authorization on each.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'CryptoJS|encrypt|decrypt|cipher|aes|rsa|sign|verify|md5|sha1|bcrypt|pbkdf2') { Write-Host '[CRYPTO] Cryptographic implementation found. Check for weak algorithms, hardcoded keys, or insecure usage patterns.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] LinkFinder usage: python linkfinder.py -i {bundle} -o {output}. Extract all domain/path combinations from JS strings.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] SecretFinder usage: python SecretFinder.py -i {bundle} -o {output} -r \'[regex]\'. Use built-in regexes for 30+ secret types.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] JSParser usage: python JSParser.py -d {domain} -u {url} -o {output}. Extracts URLs/endpoints from parsed JS AST.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Browser automation: Playwright script -> navigate to page, capture all network requests, filter for XHR/fetch, extract request URLs and payloads.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Source map command: check URL/{bundle}.map, then parse with source-map-visualization or manual JSON parser to get original source files and original source.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Deobfuscation pipeline: js-beautify first -> then targeted regex extraction. Full deobfuscation only if needed. Always preserve hash of original.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Large file handling: split files >5MB using split command. Process chunks. Reassemble findings by endpoint URL deduplication.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Priority ranking of findings: (1) Active cloud credentials -> Critical, (2) Database credentials -> Critical, (3) Internal endpoints -> High, (4) API keys -> High, (5) Feature flags -> Medium, (6) Internal paths -> Medium.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Validation step: For each secret found, test if it works against known API (e.g., test AWS key against STS:GetCallerIdentity). Verify != assume active.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Extraction priority order: secret > internal endpoint > API endpoint > feature flag > config leak > code path. Each finding type has different impact. Secrets highest priority.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Output organization: organjs_analysis_findings by severity directory: critical/ (cloud keys, prod DB creds), high/ (internal endpoints, API keys), medium/ (feature flags, debug mode), low/ (internal paths, build info). Include finding_type subdir.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Websocket analysis: detect WebSocket connections (new WebSocket, WebSocket URL, ws://, wss://). Capture full handshake, auth headers, message formats. WebSocket authz checks often weaker than REST.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Build artifact analysis: check for webpack stats exposure (stats.json), exposed build configs, development sources. Build artifacts often contain absolute paths, internal hostnames, env vars, API URLs for different environments.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Service Worker analysis: ServiceWorker registrations may cache sensitive data or intercept API calls indefinitely. Check scope, cache names, fetch handlers. sw.js = potential persistent XSS/TOU vector.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Third-party library vuln check: parse package.json and import maps to identify dependency tree. Cross-reference with Snyk, npm audit, OSV for known CVEs. Document affected packages with version ranges.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Prototype pollution check: scan for __proto__, constructor, prototype.[property] patterns. Object merging (Object.assign, $.extend, _merge, spread) with user input = prototype pollution vector in nested objects.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Client-side state analysis: Redux/Vuex/NgRx state inspection. Global state often contains full user object, permissions, session tokens. Document all keys in global state store.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Timing attack surface: check for password comparison, JWT verify, auth check via timing differences in JS. document.write to timing APIs that could leak information via side channels.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[JS-ANALYSIS] Third-party script trust: evaluate all externally-loaded scripts (cdn, analytics, ads, tag manager). Any XSS/CORS/Credential risk from third-party = report to program as supply chain risk.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Scope reminder: analyze only in-scope JS bundles. Redirect to third-party CDNs or analytics = note in report but do not deep-test unless explicitly in scope.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Browser automation ethics: honor robots.txt if program requires. Limit concurrent requests. Add realistic delays. Do not impact production with load testing via browser automation.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Credential validation protocol: for AWS keys found, test with aws sts get-caller-identity (read-only, no cost). For GitHub tokens, test with gh api /user (rate limited but safe). Do NOT assume keys are production without verification.' -ForegroundColor Red"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Evidence quality: screenshot for browser automation. Include browser console errors. Include HAR file from network tab. Raw response bodies. Auth headers redacted but shown as [REDACTED] in reports.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'js-beautify|prettier|unminify|deobfuscat|unwebpack|de4js|jsnice') { Write-Host '[JS PRE] JS beautification/deobfuscation detected. Large deobfuscated output = summarize, do not store raw. Memory: limit 2GB per process.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'webpack.*stats|stats\\.json|build.*config|chunk|bundle.*analysis') { Write-Host '[JS PRE] Webpack build artifact detected. stats.json exposes module graph, entry points, chunk paths. High value for attack surface analysis.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'linkfinder|linkfinder\\.py|linkfinder.*-i|linkfinder.*-o|linkFinder') { Write-Host '[JS PRE] LinkFinder static analysis tool detected. Runs regex-based URL extraction. Output: {output_file}.txt. Process then report top 20 unique endpoints.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'secretfinder|secretfinder\\.py|secretFinder|SecretFinder') { Write-Host '[JS PRE] SecretFinder static analysis tool detected. Extracts hardcoded secrets using regex. Use carefully: large output = filter to high-confidence only. Output: findings/js_static/secrets_{hash}.txt' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'js_parser|JSParser|JSParser\\.py|jsparser') { Write-Host '[JS PRE] JSParser AST analysis detected. Extracts URLs via static analysis of JS Abstract Syntax Tree. More accurate than regex for obfuscated JS. Output: findings/js_static/endpoints_{hash}.txt' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'jsluice|jshole|burp.*js|burpsuite.*js|jsminer') { Write-Host '[JS PRE] JS-specific security analysis tool detected. These tools often combine static + heuristics. Review output for false positives before adding to findings.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'chromium|chrome|edge|firefox.*headless|screenshot.*js|browser.*screenshot') { Write-Host '[JS PRE] Browser screenshot/capture detected. Save screenshots to findings/evidence/screenshots/. Human review of screenshots often reveals hidden UI elements.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'new WebSocket|ws://|wss://|WebSocket\\(|EventSource|SSE|server.sent.events') { Write-Host '[WS] WebSocket endpoint found. Check: (1) auth at connection time, (2) message format, (3) per-message authz, (4) broadcast audience. WebSocket authz often missing entirely. Flag for p1-warrior testing.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'service.?worker|navigator\\.serviceWorker|ServiceWorkerRegistration|cache\\.|workbox|sw\\.js') { Write-Host '[SW] Service Worker detected. SW has persistent cache, intercepts fetch, runs independently. Potential for: (1) cache poisoning, (2) offline data exfil, (3) persistent XSS via postMessage. Test before hunter session.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'fetch\\(|XMLHttpRequest|axios|\\$http|\\.post|\\.put|\\.delete|\\.patch|ajax\\(\\)|ajax\\.') { Write-Host '[API] HTTP client call found. Extract: URL pattern, HTTP method, request headers (especially auth), request body schema. Cross-reference with ranked target list for hunting.' -ForegroundColor Green }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'prototype|__proto__|constructor\\.prototype|\\.prototype\\[|Object\\.assign|\\$\.extend|_merge|lodash.*merge|deep.?merge|Object\\.entries') { Write-Host '[PROTO POLLUTION] Prototype pollution sink found. If user input reaches Object.assign/$.extend/_merge, gadget chain may allow attribute pollution. Document vulnerable library version and payload.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'localStorage|sessionStorage|document\\.cookie|indexedDB|CacheStorage|ServiceWorker.*cache') { Write-Host '[STORAGE] Client-side storage mechanism found. Check: (1) sensitive data stored client-side (tokens, PII), (2) XSS risk from stored data, (3) HttpOnly flag missing (allows JS access = theft if XSS).' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'postMessage|addEventListener.*message|onmessage|message.?event|BroadcastChannel|SharedWorker') { Write-Host '[XSS/BYPASS] postMessage/WebWorker communication found. postMessage origins often validator-weak. Test: (1) origin check missing, (2) data not sanitized, (3) structuredClone with prototype chain, (4) BroadcastChannel originating domain check.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'import\\(|require\\(|chunk|dynamic\\.import|import\\(\'|import\(") { Write-Host '[CODE SPLIT] Dynamic import/chunk loading detected. Map all lazy-loaded chunks. Chunk filenames may contain hashes/version info. Chunk endpoints = additional attack surface.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'webpack.*chunk|webpackJsonp|__webpack_require__|webpackChunk|webpack.*module') { Write-Host '[WEBPACK] Webpack module structure found. Module IDs may leak internal logic paths. Parse webpackChunk to extract all module source strings. Use source-map-explorer for visual analysis.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'redux|vuex|ngrx|pinia|store|getState|dispatch|commit|mutation|selector') { Write-Host '[STATE] State management framework found. Global state often contains: user profile, auth tokens, permissions, sensitive data. Document all keys in initial state. Check for sensitive keys (password, ssn, card) in state tree.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'environment|NODE_ENV|process\\.env\\.|import\\.meta\\.env|VITE_.*|NEXT_PUBLIC_|NUXT_PUBLIC_|REACT_APP_') { Write-Host '[ENV] Application environment variables found. Check: (1) production API keys exposed, (2) debug flags active, (3) internal URLs in public env vars, (4) NODE_ENV != production indicating dev build served.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'debug|verbose|trace|log\\(|console\\.log|logger|debugger|inspector|devtools') { Write-Host '[DEBUG] Debug/development mode found in JS. Document: (1) console.log statements with sensitive data, (2) debugger statements, (3) debug routes/functionality, (4) performance.now() timing leaks.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'workbox|precache|runtime.*caching|cacheFirst|networkFirst|staleWhileRevalidate') { Write-Host '[SW-CACHE] Service Worker caching strategy found. Identify cached content: API responses? User data? Images? Stale-while-revalidate can serve stale sensitive data.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'grecaptcha|recaptcha|hcaptcha|turnstile|cloudflare.*turnstile|captcha') { Write-Host '[CAPTCHA] reCAPTCHA/hCaptcha implementation found. Document: (1) site key (public), (2) whether auto-verification skips challenge, (3) where score-based (v3), (4) bypass potential via token reuse.' -ForegroundColor Gray }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'dangerouslySetInnerHTML|v-html|innerHTML|outerHTML|insertAdjacentHTML|document\\.write|render\\.html|\\.html\\(|Markdown.*render') { Write-Host '[XSS JS] Client-side XSS sink found in JS. check: (1) is user input reachable, (2) is sanitization happening (DOMPurify?), (3) can sanitization be bypassed, (4) context: reflected vs stored vs DOM.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'function\s*\\(|new Function|eval\\(|setTimeout.*string|setInterval.*string|setImmediate.*string|execScript|msWriteProfilerMark') { Write-Host '[RCE JS] Code execution sink in JS. eval/Function constructor with user input = RCE in browser context. Check: (1) can user control code string, (2) is there a sanitization framework, (3) CSP blocks eval?' -ForegroundColor Red }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Context for p1-warrior handoff: extracted endpoints MUST be verified live before adding to api_endpoints.txt. Deduplicate against existing api_endpoints.txt. Add {url, method, auth_required: bool, source: js-analysis}.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Context for chain-builder: leaked credentials or internal endpoint access patterns = prime chain-building material. Chain path: JS secret leak -> cloud access -> sensitive data. Chain path: internal endpoint in JS -> SSRF target if app makes outbound requests.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Spider/monkey coverage: if using Playwright/Puppeteer for dynamic extraction, run 5-10 min monkey browsing. Goal: trigger lazy-loaded bundles, authenticated routes, dynamic API calls not visible in static analysis. Log all new network requests from monkey run.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Big bundle handling (>3MB): split into chunks by (a) source map entry points, (b) webpack chunk boundaries, (c) eval boundaries. Process each chunk independently. Merge findings by URL dedup. Mark oversized bundles in findings/metadata.json.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] GitHub repo discovery: for each JS bundle found, try bundlephobia.com, shikimori.one, github search for source. Often framework example code or open-source component. Match version numbers to known CVEs in OSV/NVD.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Output sanitization rule: never store raw secrets. Replace with SHA-256 hash. Store raw separator in findings/confidential/encrypted_only/ if needed for report, but never include in report file itself.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Audit trail: js_analysis audit entries in audit.jsonl with {timestamp, bundle_url, bundle_hash, analysis_type, findings_count, tool_used, duration_ms}. All JS analysis logged.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[JS CTX] Secret validation protocol: for each potential secret found: (1) validate pattern via regex, (2) test if alive/active API call, (3) determine scope of access, (4) document as potential vs confirmed, (5) redact before any output.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Trust boundary reminder: JS runs in user browser context. It can be fully controlled by user (DevTools, breakpoints). Do NOT rely on client-side JS for security decisions. JS analysis finds what COULD be leaked, not what IS leaked.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Integration with security-reviewer: pass all hardcoded secrets and internal URLs to security-reviewer. They indicate potential backdoor or debug path. Security-reviewer maps these to trust boundary violations.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Integration with p1-warrior: extracted API endpoints = hunting surface for p1-warrior. Each endpoint gets tested per bug class rotation. JS-analysis output format: url, method, auth_required, source_bundle.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Extraction rate limit: max 50 API calls per minute during browser automation. Use throttle. Do not spike target traffic during business hours without program approval.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Regex accuracy: static regex catches ~80% of secrets. False positive rate ~15%. Always manually verify each match. Do not auto-report regex matches without human review.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Source map scope: source maps expose original source code. If target is open-source or uses open-source components in production, this may be intentional. Only report source map findings as vulnerabilties if they expose production secrets.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Notification",
+      "command": "Write-Host '[JS-ANALYSIS] Build reminder: after JS analysis, clean temporary files: rm -rf /tmp/js_bundles/*. Raw bundles should not persist past analysis. Keep only findings/ and evidence/ directories.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[JS-ANALYSIS STOP] Analysis complete. Verify: all bundles processed? secrets redacted? endpoints extracted? findings written to js_findings/? handed off to p1-warrior and validator?' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[JS-ANALYSIS STOP] Next: (1) Pass endpoints to p1-warrior (api_endpoints.txt), (2) Validate secrets via /validator, (3) Write report for confirmed sensitive leaks via /report-writer, (4) Share chain candidates with /chain-builder.' -ForegroundColor Green"
     }
+  ]
+}
+
   ]
 }

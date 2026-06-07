@@ -8,21 +8,21 @@ environments. Each target uses a specific install path and file layout.
 | 1 | Codex CLI | `~/.codex/plugins/jiggy-2026/` | `plugin.json` | Plugin manifest + skill files. Codex loads from `.codex/plugins/`. |
 | 2 | Claude Code | `~/.claude/` | `.claude/settings.json` | Claude reads `skills/`, `agents/`, `rules/` subdirectories. Hooks in `hooks/hooks.json`. |
 | 3 | OpenCode | `~/.config/opencode/jiggy-2026/` | `opencode.json` | OpenCode uses `opencode.json` for config + `AGENTS.md` for agent registry. |
-| 4 | KiloCode | `~/.config/kilocode/jiggy-2026/` | `CLAUDE.md` | Universal AI context file plus agent definitions. |
-| 5 | Kimi Code | `~/.config/kimi-code/jiggy-2026/` | `CLAUDE.md` | Universal AI context file plus rules. |
-| 6 | Hermes Agent | `~/.config/hermes-agent/jiggy-2026/` | `CLAUDE.md` | Agent instruction files. |
+| 4 | KiloCode | `~/.config/kilocode/jiggy-2026/` | `Hercules.md` | Universal AI context file plus agent definitions. |
+| 5 | Kimi Code | `~/.config/kimi-code/jiggy-2026/` | `Hercules.md` | Universal AI context file plus rules. |
+| 6 | Hermes Agent | `~/.config/hermes-agent/jiggy-2026/` | `Hercules.md` | Agent instruction files. |
 | 7 | Aider | `~/.aider/jiggy-2026/` | `.aider.rules.md` | Aider reads `.aider.rules.md` from project root for rules. |
-| 8 | Gemini CLI | `~/.config/gemini-cli/jiggy-2026/` | `CLAUDE.md` | Context file for Gemini code assistance. |
-| 9 | Goose | `~/.config/goose/jiggy-2026/` | `CLAUDE.md` | Recipe/instruction files. |
+| 8 | Gemini CLI | `~/.config/gemini-cli/jiggy-2026/` | `Hercules.md` | Context file for Gemini code assistance. |
+| 9 | Goose | `~/.config/goose/jiggy-2026/` | `Hercules.md` | Recipe/instruction files. |
 | 10 | Cursor | `.cursor/rules/jiggy-2026/` | `rules/*.md` | Project-level rules. Install into your project's `.cursor/rules/` dir. |
 | 11 | Windsurf | `.windsurf/rules/jiggy-2026/` | `rules/*.md` | Workspace-level rules. Install into your project's `.windsurf/rules/` dir. |
 | 12 | Cline | `~/.config/cline/jiggy-2026/` | `.clinerules` | Custom instructions format. |
-| 13 | Roo Code | `~/.config/roo-code/jiggy-2026/` | `CLAUDE.md` | Modes and rules definitions. |
+| 13 | Roo Code | `~/.config/roo-code/jiggy-2026/` | `Hercules.md` | Modes and rules definitions. |
 | 14 | Continue | `~/.continue/jiggy-2026/` | `config.json` | Assistant context configuration. |
-| 15 | Zed | `~/.config/zed/jiggy-2026/` | `CLAUDE.md` | Agent instruction context. |
-| 16 | Sourcegraph Cody | `~/.config/sourcegraph-cody/jiggy-2026/` | `CLAUDE.md` | Custom commands and context rules. |
-| 17 | GitHub Copilot | `~/.config/github-copilot/jiggy-2026/` | `CLAUDE.md` | Repository-level instructions. |
-| 18 | JetBrains AI | `~/.config/JetBrains/jiggy-2026/` | `CLAUDE.md` | Project guideline context. |
+| 15 | Zed | `~/.config/zed/jiggy-2026/` | `Hercules.md` | Agent instruction context. |
+| 16 | Sourcegraph Cody | `~/.config/sourcegraph-cody/jiggy-2026/` | `Hercules.md` | Custom commands and context rules. |
+| 17 | GitHub Copilot | `~/.config/github-copilot/jiggy-2026/` | `Hercules.md` | Repository-level instructions. |
+| 18 | JetBrains AI | `~/.config/JetBrains/jiggy-2026/` | `Hercules.md` | Project guideline context. |
 
 ## Common Payload
 
@@ -94,7 +94,7 @@ report-writing/SKILL.md   Report writing skill
 
 ### Config (4 files)
 ```
-CLAUDE.md                 Universal AI context (all platforms)
+Hercules.md                 Universal AI context (all platforms)
 plugin.json               Root manifest for Codex / generic installs
 AGENTS.md                 OpenCode agent registry
 opencode.json             OpenCode configuration
@@ -137,7 +137,7 @@ mcp/hackerone-mcp/        HackerOne MCP integration
 ### Aider
 - **Install**: `~/.aider/jiggy-2026/`
 - Aider reads `.aider.rules.md` from the project root (or home dir).
-- The installer copies `CLAUDE.md` as `.aider.rules.md` in the install dir.
+- The installer copies `Hercules.md` as `.aider.rules.md` in the install dir.
 - Copy `.aider.rules.md` to your project root to activate.
 
 ### Cursor

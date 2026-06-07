@@ -46,7 +46,7 @@
       "description": "Claude Code skill definitions (root SKILL.md, bug-bounty, security-arsenal, triage-validation, report-writing)"
     },
     "config": {
-      "path": "CLAUDE.md + plugin.json + AGENTS.md + opencode.json",
+      "path": "Hercules.md + plugin.json + AGENTS.md + opencode.json",
       "description": "Universal config files for all platforms"
     },
     "hooks": {
@@ -76,17 +76,17 @@
     },
     "kilocode": {
       "install_path": "~/.config/kilocode/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "agent instruction files"
     },
     "kimi-code": {
       "install_path": "~/.config/kimi-code/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "agent instruction files"
     },
     "hermes-agent": {
       "install_path": "~/.config/hermes-agent/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "agent instruction files"
     },
     "aider": {
@@ -96,12 +96,12 @@
     },
     "gemini-cli": {
       "install_path": "~/.config/gemini-cli/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "context file"
     },
     "goose": {
       "install_path": "~/.config/goose/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "recipe/instruction files"
     },
     "cursor": {
@@ -121,7 +121,7 @@
     },
     "roo-code": {
       "install_path": "~/.config/roo-code/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "modes and rules"
     },
     "continue": {
@@ -131,22 +131,22 @@
     },
     "zed": {
       "install_path": "~/.config/zed/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "agent instruction context"
     },
     "sourcegraph-cody": {
       "install_path": "~/.config/sourcegraph-cody/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "custom commands/context"
     },
     "github-copilot": {
       "install_path": "~/.config/github-copilot/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "repository instructions"
     },
     "jetbrains-ai": {
       "install_path": "~/.config/JetBrains/jiggy-2026/",
-      "entry": "CLAUDE.md",
+      "entry": "Hercules.md",
       "format": "project guideline context"
     }
   },

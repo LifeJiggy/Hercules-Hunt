@@ -452,4 +452,96 @@ SESSION COMPLETION:
 
 ---
 
-*End of sessions-index.md*
+## 15. Session Index Maintenance
+
+### When to Add a Session
+```
+1. Start new hunt → create new session record
+2. Resume interrupted session → verify existing record
+3. Complete session → update with final stats
+4. Archive target → mark all sessions as archived
+```
+
+### When to Clean Up
+- Stale sessions (no activity for 30+ days)
+- Sessions for archived or de-scoped targets
+- Test sessions created during tool validation
+- Duplicate records from system errors
+
+### Cleanup Procedure
+```
+1. Identify stale sessions
+2. Archive or delete session records
+3. Remove corresponding context files
+4. Update cross-references in other storage files
+5. Log cleanup to lessons-log.md
+6. Update findings archive if affected
+```
+
+---
+
+## 16. Session Index Health Checks
+
+| Check | Frequency | Description | Fix |
+|-------|-----------|-------------|-----|
+| Cross-ref integrity | Per session | All sessions link to valid finding IDs | Remove orphan sessions |
+| Timestamp ordering | Per session | New sessions have later timestamps | Fix any out-of-order entries |
+| Duration accuracy | Weekly | Recorded duration matches evidence | Adjust if evidence shows different |
+| Finding count | Weekly | Session finding count matches archive | Recount if mismatch |
+| File existence | Monthly | All session context files exist | Flag missing files |
+
+---
+
+## 17. Session Search & Retrieval
+
+### Search by Target
+```
+Select target from [target-registry.md]
+  → Find all sessions for target
+  → Filter by status (ACTIVE / COMPLETED / ARCHIVED)
+  → Sort by date (newest first)
+  → Read session details
+```
+
+### Search by Finding
+```
+Select finding from [findings-archive.md]
+  → Find session that generated it
+  → Review session context for testing methodology
+  → Check if other findings from same session are related
+```
+
+### Search by Date Range
+```
+Specify date range
+  → List all sessions within range
+  → Group by target
+  → Calculate total time spent per target
+  → Identify patterns (e.g., most productive days)
+```
+
+---
+
+## 18. Backup & Recovery
+
+### Session Backup
+- Full index backup triggered every 10 sessions
+- Individual session backup on completion
+- Automatic backup before any cleanup operation
+
+### Recovery from Index Corruption
+```
+1. Identify the last valid backup
+2. Restore sessions-index.md from backup
+3. Check against findings-archive.md for consistency
+4. Restore any missing session context files
+5. Verify all cross-references are valid
+6. Log the recovery event
+```
+
+### Versioning
+Each session record includes a version field. When updating:
+- Increment minor version (v1.0 → v1.1) for small edits
+- Increment major version (v1.0 → v2.0) for bulk updates
+- Track version history in last modified timestamp
+

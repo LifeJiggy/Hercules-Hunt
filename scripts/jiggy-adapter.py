@@ -63,7 +63,7 @@ def dim(text: str) -> str: return _color(90, text)
 def repo_root() -> Path:
     root = Path(__file__).resolve().parents[1]
     required = [
-        root / "CLAUDE.md",
+        root / "Hercules.md",
         root / "plugin.json",
         root / "AGENTS.md",
         root / "SKILL.md",
@@ -177,7 +177,7 @@ def _skill_files(root: Path) -> list[Path]:
 
 def _config_files(root: Path) -> list[Path]:
     return [p for p in [
-        root / "CLAUDE.md",
+        root / "Hercules.md",
         root / "plugin.json",
         root / "AGENTS.md",
         root / "opencode.json",
@@ -283,7 +283,7 @@ def plan_for_target(root: Path, target: str, home: Path) -> list[PlannedCopy]:
     if target == "aider":
         plan.append(
             PlannedCopy(
-                root / "CLAUDE.md",
+                root / "Hercules.md",
                 base / ".aider.rules.md",
                 "config",
             )
@@ -308,7 +308,7 @@ def plan_for_target(root: Path, target: str, home: Path) -> list[PlannedCopy]:
     if target == "cline":
         plan.append(
             PlannedCopy(
-                root / "CLAUDE.md",
+                root / "Hercules.md",
                 base / ".clinerules",
                 "config",
             )
@@ -317,7 +317,7 @@ def plan_for_target(root: Path, target: str, home: Path) -> list[PlannedCopy]:
     if target == "github-copilot":
         plan.append(
             PlannedCopy(
-                root / "CLAUDE.md",
+                root / "Hercules.md",
                 base / ".github" / "copilot-instructions.md",
                 "config",
             )

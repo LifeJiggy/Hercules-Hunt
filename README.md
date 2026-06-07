@@ -100,7 +100,7 @@ Deep methodology for every bug class — IDOR, SSRF, XSS, SQLi, auth bypass, rac
 
 ```
 Hercules-Hunt/
-├── CLAUDE.md              # Universal AI context
+├── Hercules.md            # Universal AI context
 ├── AGENTS.md              # Agent registry (17 agents)
 ├── opencode.json          # OpenCode configuration
 ├── plugin.json            # Plugin manifest

@@ -53,7 +53,7 @@ function Install-Main {
     }
 
     # Copy config files
-    $configs = @("CLAUDE.md", "opencode.json", "plugin.json", "AGENTS.md")
+    $configs = @("Hercules.md", "opencode.json", "plugin.json", "AGENTS.md")
     foreach ($cfg in $configs) {
         Copy-Item "$JiggyRoot\$cfg" "$InstallDir\$cfg" -Force
     }
