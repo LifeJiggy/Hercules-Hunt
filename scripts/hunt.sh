@@ -2,7 +2,7 @@
 # hunt — Hercules-Hunt engagement scaffolding
 #
 # Adds a `hunt` shell function that creates a per-target working folder
-# under ~/Targets/ with CLAUDE.md, scope.md, submissions tracker,
+# under ~/Targets/ with ENGAGEMENT.md, scope.md, submissions tracker,
 # findings folder, evidence folder (gitignored), and notes scratchpad.
 #
 # Part of the Hercules-Hunt bug bounty toolkit.
@@ -40,8 +40,8 @@ hunt() {
 
   mkdir -p "$dir/findings" "$dir/evidence"
 
-  # ============== CLAUDE.md ==============
-  cat > "$dir/CLAUDE.md" <<CLAUDEMD
+  # ============== ENGAGEMENT.md ==============
+  cat > "$dir/ENGAGEMENT.md" <<ENGMD
 # Engagement: $target
 
 **Target:** $target
@@ -49,7 +49,30 @@ hunt() {
 **Platform:** [TBD — Bugcrowd / HackerOne / Intigriti / Immunefi / private]
 **Program URL:** [paste the program page URL here]
 
-## Quick context
+## Hunter's Foundation
+
+Before you start, internalize the three forces from \`soul.md\`:
+
+1. **Curiosity** — Why does this feature work this way? What shortcut did the developer take?
+2. **Discipline** — Stop when the signal is gone. 10-20 min per test. Rotate.
+3. **Integrity** — Prove it or drop it. No theoretical findings.
+
+Read the full philosophy: \`cat ~/.jiggy/soul.md\`
+
+## Purpose (from \`purpose.md\`)
+
+> "The best bug bounty hunters are not the ones who run the most tools.
+> They are the ones who understand the deepest."
+
+See: \`cat ~/.jiggy/purpose.md\`
+
+## North Star (from \`goal.md\`)
+
+**Every session produces one of two outcomes: a verified finding or a documented dead end.**
+
+See all 10 goals: \`cat ~/.jiggy/goal.md\`
+
+## Engagement context
 
 This folder is the working directory for a single bug-bounty engagement.
 Files in this folder:
@@ -76,7 +99,7 @@ Files in this folder:
 - Stop on encountering other-user PII; document and report.
 - No public disclosure until program explicitly approves.
 - Burp proxy capturing through all browser sessions for this target.
-CLAUDEMD
+ENGMD
 
   # ============== scope.md ==============
   cat > "$dir/scope.md" <<SCOPEMD
@@ -169,7 +192,7 @@ GITIGNORE
   echo "☰ Hercules-Hunt engagement: $target"
   echo "============================================"
   echo ""
-  echo "  CLAUDE.md           - Hercules-Hunt engagement context"
+  echo "  ENGAGEMENT.md       - Hercules-Hunt engagement context (refs soul/purpose/goal)"
   echo "  scope.md            - parsed scope template"
   echo "  submissions.txt     - submission UUID tracker"
   echo "  findings/README.md  - findings folder convention"
@@ -178,7 +201,7 @@ GITIGNORE
   echo "  .gitignore          - excludes evidence + secrets"
   echo ""
   echo "  Next: source ~/.jiggy/scripts/hunt.sh (if not already)"
-  echo "  Then: cd $dir && cat CLAUDE.md"
+  echo "  Then: cd $dir && cat ENGAGEMENT.md"
   echo "  Docs: cat ~/.jiggy/Hercules.md"
   echo ""
 }
