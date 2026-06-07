@@ -1,9 +1,12 @@
 # =====================================================================
-# hunt — bug-bounty engagement scaffolding
+# hunt — Hercules-Hunt engagement scaffolding
 #
 # Adds a `hunt` shell function that creates a per-target working folder
 # under ~/Targets/ with CLAUDE.md, scope.md, submissions tracker,
 # findings folder, evidence folder (gitignored), and notes scratchpad.
+#
+# Part of the Hercules-Hunt bug bounty toolkit.
+# See Hercules.md for the full agent registry, rules, and workflow.
 #
 # Usage:
 #   hunt target.com     # creates ~/Targets/target.com/ with full template
