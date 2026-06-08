@@ -1,0 +1,19 @@
+# Reconnaissance Module
+
+This directory contains the recon methodology and tool reference for Hercules-Hunt.
+
+## Files
+
+- `SKILL.md` — Reconnaissance skill definition: subdomain enumeration, live host discovery, URL crawling, technology fingerprinting, directory fuzzing, JS analysis, and continuous monitoring.
+- `recon-methodology.md` — Detailed recon methodology and pipeline steps (passive first, then active).
+- `recon-arsenal.md` — Tool commands and techniques for recon (nuclei, httpx, subfinder, curl, dig).
+- `README` — This file.
+
+## Usage
+
+Source the recon skill in any AI agent:
+```
+load skill recon/SKILL.md
+```
+
+For executable tools, see `tools/bash/recon-toolkit.sh` (Linux/macOS) or `tools/powershell/recon-toolkit.ps1` (Windows).

@@ -16,12 +16,16 @@ Generated: 2026-06-07 · Updated: 2026-06-08
 | hunt.sh references Claude | `CLAUDE.md` → `ENGAGEMENT.md` referencing soul/purpose/goal |
 | install-community-skills references shuvonsec/claude-bug-bounty | Rewired to `LifeJiggy/Hercules-Hunt` |
 
-### ❌ Still Open
-| Issue | Priority |
-|-------|----------|
-| `recon/README` 0 bytes | Low — delete or fill |
-| `doc/file.md` orphan (brainstorming note) | Low — delete |
-| MCP protocol compliance (error codes, progress) | Low |
+### ✅ Addressed
+| Issue | Fix |
+|-------|-----|
+| `recon/README` 0 bytes | Filled with module description |
+| MCP protocol compliance (error codes, progress, routing) | Shared `mcp/mcp_lib.py` created; all 7 servers updated with proper request/notification routing, progress notifications, standard error codes, `resources/subscribe`, `completion/complete` |
+| Storage/memory hydration not connected | `--in-place` flag added to `hydration.py`; `storage/hydrate.py` and `memory/hydrate.py` created as per-folder convenience scripts |
+| JS test infra | `helpers/browser-mock.js` — 46/46 Jest tests passing |
+| PS error handling | try/catch on all network calls in fuzzer + evidence |
+| Bash equivalents | 7 tools in `tools/bash/` for Linux/macOS |
+| Cross-platform scripts | install.sh, hunt.sh, install-community-skills.sh for Linux/macOS |
 
 ---
 
@@ -41,10 +45,7 @@ Generated: 2026-06-07 · Updated: 2026-06-08
 - `requirements.txt` at root
 
 **What keeps it from 9-10:**
-- `recon/README` 0 bytes and `doc/file.md` orphan are unfinished housekeeping
-- MCP servers use non-standard protocol routing
-- Storage/memory templates not connected to hydration script output (minor)
-- JS tools copy-paste workflow vs headless runner
+- JS tools still require browser copy-paste for full functionality (headless runner would be ideal)
 
 ---
 

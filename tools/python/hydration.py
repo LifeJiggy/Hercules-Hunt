@@ -137,6 +137,10 @@ def parse_args():
     parser.add_argument(
         "--stdout", action="store_true", help="Print hydrated content to stdout",
     )
+    parser.add_argument(
+        "--in-place", action="store_true",
+        help="Write hydrated output directly back to the original template file (overwrites)",
+    )
     return parser.parse_args()
 
 
@@ -187,25 +191,37 @@ def main():
             print(f"  -> {t}")
         return
 
+    if args.in_place:
+        output_dir = None  # disable output dir — write back to original
+
     if args.hydrate:
         fp = Path(args.hydrate)
         if not fp.exists():
             print(f"Error: file not found: {fp}", file=sys.stderr)
             sys.exit(1)
-        result = hydrate_file(fp, values, output_dir if not args.stdout else None)
-        if args.stdout:
-            print(result)
+        if args.in_place:
+            result = hydrate_file(fp, values, output_dir=fp.parent, add_timestamp=True)
+            print(f"In-place hydrated: {fp}")
         else:
-            print(f"Written: {result}")
+            result = hydrate_file(fp, values, output_dir if not args.stdout else None)
+            if args.stdout:
+                print(result)
+            else:
+                print(f"Written: {result}")
 
     elif args.hydrate_all:
-        results = hydrate_all(values, output_dir if not args.stdout else None)
-        if args.stdout:
-            for r in results:
-                print(f"--- {r} ---")
+        if args.in_place:
+            for fp in discover_templates():
+                hydrate_file(fp, values, output_dir=fp.parent, add_timestamp=True)
+                print(f"In-place hydrated: {fp}")
         else:
-            for r in results:
-                print(f"Written: {r}")
+            results = hydrate_all(values, output_dir if not args.stdout else None)
+            if args.stdout:
+                for r in results:
+                    print(f"--- {r} ---")
+            else:
+                for r in results:
+                    print(f"Written: {r}")
 
     else:
         print("No action specified. Use --hydrate, --hydrate-all, --list-templates, or --list-placeholders")
