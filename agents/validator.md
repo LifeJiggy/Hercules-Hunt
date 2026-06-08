@@ -2,7 +2,6 @@
 name: validator
 description: Finding validator. Runs the 7-Question Gate and 4-gate checklist on a described finding. Kills weak/theoretical findings fast before report writing. Prevents N/A submissions. Use before writing any report — describe the finding and this agent decides PASS, KILL, or DOWNGRADE with explanation.
 tools: Read, Bash, WebFetch
-model: claude-sonnet-4-6
 ---
 
 # Validator Agent
@@ -673,3 +672,357 @@ No duplicates found?                 → No → KILL Gate 2
 Report complete and ready?           → No → KILL Gate 3
                                     → Yes → PASS → /report
 ```
+
+## Disclosed Report References
+
+Real-world examples of how triage handled actual submissions. Use these to calibrate your own validation decisions.
+
+### Case 1: KILL — "Could potentially" language (H1, $0)
+
+**Finding:** IDOR on `GET /api/v1/orders/123` returned order data. Researcher submitted: "An attacker could potentially access order history of other users."
+
+**Triage response:** N/A — "Theoretical language. The report says 'could potentially' but does not demonstrate accessing another user's order. No second account was used. No proof that parameter 123 belongs to another user. Demonstrate accessing order you did not create."
+
+**Lesson:** Researcher had only his own account's order ID. He never tested a different user's ID. He assumed IDs were sequential and guessed another user's. This is theoretical. Real IDOR requires: account A's session + account B's resource ID in a single request.
+
+### Case 2: KILL — Self-XSS reported as stored XSS (H1, $0)
+
+**Finding:** Submitting `<script>alert(1)</script>` in profile "Display Name" field. Payload rendered on own profile page. Researcher claimed "Stored XSS affecting all users."
+
+**Triage response:** N/A — "Payload only renders for the user who submitted it. This is self-XSS. You cannot make another user visit your profile and trigger the payload. Self-XSS is excluded per program scope."
+
+**Lesson:** Self-XSS ≠ stored XSS. For stored XSS, the payload must trigger in another user's session without them performing an action the attacker cannot force. Chain with CSRF to make victim submit the payload on your behalf, then trigger via profile view.
+
+### Case 3: DOWNGRADE — SSRF with DNS-only evidence (H1, Medium→Low)
+
+**Finding:** SSRF via webhook URL parameter. Input `http://attacker.com/test` triggered a DNS resolution visible on researcher's DNS server. Claimed Critical — "Internal network access."
+
+**Triage response:** Downgraded to Low — "Only DNS resolution confirmed. No HTTP callback received. No internal service accessed. No data exfiltrated. SSRF with DNS-only demonstrates the parameter reaches a server but does not prove internal network access. VRT rates SSRF DNS-only as Low (P4)."
+
+**Lesson:** DNS callbacks are partial evidence. Triagers know the difference between DNS and HTTP callbacks. Always use Burp Collaborator or interactsh with HTTP mode. If only DNS available, DO NOT claim network access — claim "partial SSRF" and chain with port scan.
+
+### Case 4: PASS — IDOR on payment data ($3,500 payout)
+
+**Finding:** `GET /api/billing/invoices/{invoice_id}` returned full payment data including last 4 card digits, billing address, and line items. Using account A's session, accessed invoice `INV-87321` which belonged to a random user (confirmed via name/email in response). Tested sequential IDs — accessed 47 unique invoices belonging to other users.
+
+**Triage response:** Accepted as High. Paid $3,500.
+
+**What worked:**
+- Two accounts used (attacker + victim data accessed)
+- Real other-user data in response (not own data)
+- Scale demonstrated (47 records, not just one)
+- Data sensitivity: payment billing info is NOT public
+- Clean request/response pair included
+- Title: "IDOR on /api/billing/invoices allows enumeration of all customer payment records"
+
+**Lesson:** IDOR needs scale + real other-user data + sensitive data type. A single "I could change user_id=123 to 124 and got different data" is weaker than "I enumerated 47 invoices with card data."
+
+### Case 5: CHAIN REQUIRED — Open redirect on login page (H1)
+
+**Finding:** `https://target.com/login?redirect=http://evil.com` returned 302 with `Location: http://evil.com`. Researcher submitted as Medium severity.
+
+**Triage response:** N/A — "Open redirect standalone is excluded per scope. Requires OAuth code theft or phishing for impact. See program rules: 'Open redirects are not accepted unless chained with OAuth redirect_uri bypass.'"
+
+**Lesson:** Never submit open redirect as a standalone finding unless the program explicitly accepts it. The chain (OAuth redirect_uri + open redirect) turns a P4 into a possible P1. Research what chains are possible before giving up.
+
+### Case 6: PASS — Race condition on gift card balance ($2,000 payout)
+
+**Finding:** Single-use gift card `GC-XXXX-1234` with $50 balance. Sent 20 parallel PATCH requests to apply card to cart using Python asyncio. 7 out of 20 succeeded, effectively spending the same $50 card 7 times. Demonstrated $350 in fraudulent orders from a $50 card.
+
+**Triage response:** Accepted as High. Paid $2,000.
+
+**What worked:**
+- Script reproduced race condition with measurable success rate (7/20)
+- Clear financial impact calculated ($300 fraud from $50 card)
+- No impossible preconditions (attacker creates own account, applies own card)
+- Burp Turbo Intruder script included in report
+- Title: "Race condition on gift card redemption allows $300 fraud from $50 card"
+
+**Lesson:** Race conditions require programmatic proof and financial damage calculation. Do not submit "race might work" — submit "7/20 requests succeeded, calculated fraud at $X."
+
+### Validation Patterns Summary
+
+| Factor | KILL signal | PASS signal |
+|--------|------------|-------------|
+| Language | "could potentially", "might allow" | "Demonstrated", "confirmed" |
+| Accounts | Single account | Two+ accounts showing other user's data |
+| Evidence | Theory, code review only | Request/response pair, callback |
+| Impact | "Technically possible" | Actual data, actual access |
+| Scope | Not read-excluded | Confirmed per program rules |
+| Chain | Half a chain submitted | Full chain demonstrated |
+
+## Ambiguous Finding Decision Tree
+
+Use this flow chart to resolve common gray-area findings. Start at the top and follow the path.
+
+```
+Finding seems ambiguous
+    |
+    v
+Does the finding require victim user interaction?
+    |--- No  --> Proceed normally through 7Q gate
+    |
+    |--- Yes --> Can the attacker force the interaction?
+        |--- No, victim must type/paste something
+        |       --> Is the interaction a form submission (click only)?
+        |           |--- Yes --> CSRF (maybe valid, check if action is sensitive)
+        |           |--- No, victim must type/paste
+        |                   --> Self-XSS → KILL Q2 (excluded by ~all programs)
+        |                   --> Chain: pair with CSRF to automate payload submission
+        |
+        |--- Yes, attacker can force via link/iframe
+                --> Valid CSRF candidate (if action is sensitive enough)
+                --> Check: Does the action change state?
+                    |--- Yes, sensitive (password, email, transfer) --> PASS
+                    |--- Yes, non-sensitive (logout, profile theme)  --> KILL Q2
+                    |--- No, read-only GET                             --> KILL Q7
+
+Does the finding leak data but has no direct exploit path?
+    |
+    v
+What type of data?
+    |--- Internal IP, server version, debug info
+    |       --> LOW/INFO disclosure → Check scope exclusions
+    |       --> Most programs exclude → KILL Q2
+    |       --> Chain: pair with SSRF to exploit internal IPs
+    |
+    |--- PII (email, name, phone, address) of OTHER users
+    |       --> Can you enumerate systematically (scale)?
+    |           |--- Yes, 100+ records extractable
+    |           |       --> HIGH — data breach. Passes validation.
+    |           |--- No, single record with no enumeration path
+    |                   --> MEDIUM — limited impact. Passes but severity capped.
+    |
+    |--- Credentials (API keys, tokens, hashes)
+    |       --> HIGH/CRITICAL if usable → PASS
+    |       --> But verify: is it a real working credential?
+    |           |--- Test it before reporting → Q1 requirement
+    |           |--- "Might be a valid key" = KILL Q1
+    |
+    |--- Public data (usernames, public profile info)
+            --> KILL Q2 — already public, no breach
+            --> Exception: enumerated at scale (10k+ records) on "private" profiles
+
+Does the finding only work on your own account?
+    |
+    v
+What is the bug class?
+    |--- IDOR-like: you changed your own user_id=123 to user_id=456 and got DIFFERENT data
+    |       --> Can you confirm the data belongs to another real person?
+    |           |--- Yes (email, name in response) → PASS (IDOR confirmed)
+    |           |--- No (just got object with different data, no owner identification)
+    |                   --> Incomplete evidence → KILL Q1
+    |                   --> Must prove data belongs to another user
+    |
+    |--- Self-XSS: payload renders only in your own browser
+    |       --> KILL Q2 (excluded) or CHAIN REQUIRED (with CSRF)
+    |
+    |--- Mass assignment on own profile: you added "role:admin" and it changed your role
+    |       --> Does this give you access to admin features?
+    |           |--- Yes → PASS (privilege escalation)
+    |           |--- No → KILL Q1 (field accepted but inactive)
+    |
+    |--- Rate limit bypass on own account: you sent 1000 password attempts without lockout
+            --> Valid only if you target ANOTHER user's account
+            --> Single-account rate limit bypass → must demonstrate on victim
+
+Does the finding require chaining with another bug for impact?
+    |
+    v
+Can you build the full chain right now?
+    |--- Yes → Build it. Do NOT submit half.
+    |       --> CHAIN REQUIRED decision → handoff to chain-builder
+    |       --> Submit as a single report covering both bugs
+    |
+    |--- No, chain is theoretical or missing piece
+    |       --> KILL Q1 — "might be chained with" is theoretical
+    |       --> Do NOT report the primitive alone
+    |       --> File internally for future reference
+    |
+    |--- Partial chain found accidentally (you got further than expected)
+            --> Document carefully and test for full completion
+            --> Many high-severity bugs are discovered as incomplete chains
+            --> Example: SSRF DNS-only → try HTTP mode → discovered metadata accessible
+
+Edge Cases:
+    |
+    v
+Rate limiting on login/2FA:
+    |--- 1000+ attempts without lockout on ANOTHER account
+    |       --> Valid if you demonstrate it + have a password list
+    |       --> HIGH if paired with credential stuffing
+    |--- 10 attempts then blocked → not a bug, system working
+
+Timing attack on password:
+    |--- Sub-millisecond difference → network jitter overwhelms → KILL Q7
+    |--- Multi-millisecond difference on constant-time comparison → investigate
+
+Information disclosure in error message:
+    |--- Shows SQL query → KILL Q2 unless you also demonstrate SQLi
+    |--- Shows internal path → LOW at best, check scope
+    |--- Shows session token/PII → HIGH, PASS (real credential leak)
+
+Host header injection:
+    |--- Host header reflected in links → CHAIN REQUIRED with password reset
+    |--- Host header NOT reflected anywhere → KILL Q1 (no observable effect)
+```
+
+## Triage Psychology Reference
+
+Understanding how triagers think is as important as the technical finding. These patterns explain why identical bugs get different outcomes.
+
+### The "First 10 Lines" Rule
+
+Triagers spend 10-15 seconds on initial triage. They read the first 10 lines of your report. If those lines don't scream "valid," the report enters "skeptical reading" mode. Every subsequent line is read as "convince me this isn't N/A."
+
+**What must be in the first 10 lines:**
+- Line 1: Title with bug class + endpoint + impact
+- Lines 2-3: Impact statement — what attacker achieves, what they walk away with
+- Lines 4-5: Brief vulnerability description (2 sentences max)
+- Lines 6-8: Core evidence — request/response, callback, or PoC
+- Lines 9-10: Severity + justification
+
+**Fatal first-10-line mistakes:**
+- "I found a vulnerability in your application" — vague, no signal
+- "This might be a security issue" — researcher is unsure
+- Three paragraphs of explanation before any evidence — buried the lead
+- No impact statement until page 2 — triager already decided N/A
+- CVSS score without vector string — incomplete, looks amateur
+- "As per OWASP..." — teaching triager their job is a red flag
+
+### How N/A Ratio Affects Reputation
+
+H1 and Bugcrowd track N/A rates silently. Here is the actual impact:
+
+**HackerOne:**
+- 0-20% N/A rate: Invitations to private programs increase. Triage gives benefit of doubt.
+- 20-40% N/A rate: Normal. Some reports questioned, most accepted.
+- 40-60% N/A rate: Invitations decrease. Triage scrutinizes every submission. Reports often returned "Needs more information."
+- 60%+ N/A rate: Shadow-banned. No invitations. Reports auto-N/A on certain bug classes. Triage assumes bad faith.
+- 80%+ N/A rate: Near account termination. Some programs may request researcher removed.
+
+**Bugcrowd:**
+- Tracks "Researcher Health" internally — N/A ratio, average response time, report quality.
+- High N/A = fewer invitations to priority programs
+- Low quality reports = lost "Trusted" status
+- Bugcrowd less transparent about thresholds, but same dynamics apply
+
+**Researcher-side strategy:**
+- Kill 4 questionable findings to save 1 good one from N/A
+- A single N/A is fine. Ten N/As from the same pattern is reputation damage.
+- If finding passes Q1-Q3 but feels weak on Q4-Q6, KILL it. The N/A protection is worth more than the unlikely payout.
+- Non-bounty programs (VDP): N/A still counts. Don't submit weak findings even for "reputation."
+
+### When to Overclaim vs Underclaim Severity
+
+**Never overclaim severity.** This is the strongest signal in this document.
+
+Why overclaiming backfires:
+- Triager who sees "CRITICAL" for a reflected XSS will remember you
+- Future submissions from your account get extra scrutiny
+- Triager notes might tag you as "severity inflator"
+- Program managers share researcher reputation internally
+
+**When to underclaim (strategically):**
+- Reflected XSS on login page that can steal session cookies: Claim Medium (VRT baseline) but note "Upgrade to High recommended — login page XSS captures session tokens that bypass 2FA"
+- This signals you know the baseline rules and are arguing evidence-based upgrade
+- Triager respects accuracy. If they agree, they upgrade. If they don't, Medium stays.
+
+**When to accurately claim High/Critical:**
+- Only when your evidence matches the severity table exactly
+- RCE with output: Critical
+- ATO demonstrated end-to-end: Critical
+- SQLi with credential extraction: High/Critical
+- SSRF with HTTP callback showing internal service response: High
+
+**The "Triage Test" for severity:**
+1. Read your severity justification
+2. If it contains the word "if" ("if attacker can X, then Y") → Your severity is too high
+3. If it contains "could" ("could lead to account takeover") → Downgrade until you demonstrate the takeover
+4. If you're arguing with "theoretically" → Kill the finding
+
+### How to Read Triager Notes Between the Lines
+
+Triagers rarely say exactly what they mean. Interpret the code:
+
+| Triager says | Triager means | Your response |
+|-------------|---------------|---------------|
+| "This is out of scope per our policy" | You didn't read the scope page. Finding is dead. | Read scope, confirm they're right, move on. Do NOT argue. |
+| "Please provide more evidence" | Your evidence is weak but finding might be valid. | Provide the missing evidence within 2 days. If you can't, drop it. |
+| "This requires user interaction" (on a CSRF) | You reported CSRF correctly. They're noting the interaction requirement. | Confirm you understand: "Yes, CSRF requires victim click. Attacker can force this via link/iframe." |
+| "This requires user interaction" (on stored XSS) | You reported self-XSS, not stored XSS. They're being polite. | Kill the finding. It's self-XSS. |
+| "This is a duplicate of #12345" | Your research was incomplete. | Ask if you can see the original report (if public). Improve your Q5 methodology. Do NOT say "but mine is different" unless you have new evidence. |
+| "Downgrading to Medium per CVSS" | Your severity was inflated. You lost credibility. | Accept the downgrade gracefully. "Thank you, I understand the CVSS assessment." |
+| "Needs more information" (generic) | Your report was incomplete. Triager is giving you one chance. | Respond with ALL missing evidence in one message. Add more detail than asked. |
+| "This is a feature, not a bug" | Either you're right and they're wrong, or you fundamentally misunderstand the app. | Re-read the finding. If you're SURE, politely explain with evidence from the app's own documentation. If unsure, drop it. |
+| "Cannot reproduce" | Either (a) system changed, (b) your steps were unclear, (c) your finding was wrong. | Reproduce from scratch with fresh account. Record video. If cannot reproduce again, finding is dead. |
+| "Will fix in next release" | Accepted. Payout when fix ships (H1) or immediately (BC). | Wait. Do NOT claim this as a win until payment arrives. |
+| No response for 30+ days | Either overwhelmed, or finding is queued for N/A. | Follow up politely once. If no response in 7 more days, either escalate to H1 mediation or accept the loss. |
+| "Reward paid" (short message) | Professional respect for clean report. | Good. Move to next finding. |
+
+**Reading the silence:** If triager takes longer than usual on your report (7+ days for simple bugs, 14+ for complex), possible meanings:
+- They're investigating internally (could be serious)
+- They're deciding between N/A and accept (ambiguous finding)
+- They're waiting for second opinion
+- Program is understaffed (most common)
+- Your English/writing was unclear (consider getting peer review)
+
+**When to argue vs when to fold:**
+- Argue only if triager factually misinterpreted your evidence
+- Never argue about severity after downgrade (write a better report next time)
+- Never argue about scope after N/A (you didn't read the page)
+- Never argue about duplicates (original reporter has priority)
+- Fold on everything else. Time spent arguing is time not spent hunting.
+
+### The "Triage Fatigue" Factor
+
+Late-week submissions get stricter review. Monday morning submissions get fresh eyes but skeptical (weekend backlog). Optimal submission timing:
+
+- **Best:** Tuesday-Thursday morning (UTC). Triager is fresh, backlog manageable.
+- **Okay:** Monday morning — triager has weekend backlog, might be dismissive.
+- **Bad:** Friday afternoon — triager wants to leave, rushes through reports, quick N/A for ambiguous findings.
+- **Worst:** During major holidays, end-of-month — skeleton crew, backlog, reports sit for weeks.
+
+### Platform-Specific Psychology
+
+**HackerOne:** Triagers are often third-party (not employees of the target company). They follow strict guidelines. Behavioral signals matter — polite, well-structured reports get benefit of doubt on borderline severity. Rude or demanding researchers get the strictest interpretation of the rules.
+
+**Bugcrowd:** In-house triage at Bugcrowd, then forwarded to program. VRT is strict — if you want an override, your evidence must clearly exceed VRT baseline. Bugcrowd triagers are more likely to engage in back-and-forth if your report shows effort.
+
+**Immunefi:** Technical triage — smart contract researchers evaluating other researchers. Extremely strict. No room for "potential" impact. If funds weren't at risk, finding is rejected regardless of technical merit. Perfect answer: demonstrated transaction moving real funds.
+
+## Self-Diagnostics
+
+After completing your analysis, run through this checklist:
+- [ ] Did I follow the prescribed methodology for this task?
+- [ ] Did I test all relevant input vectors and edge cases?
+- [ ] Did I record exact curl commands and raw response excerpts?
+- [ ] Is my finding reproducible from scratch?
+- [ ] Is the finding clearly in scope per program rules?
+- [ ] Have I attempted to chain this with other primitives?
+- [ ] Did I validate with a second technique (not just one probe)?
+- [ ] Is there a more severe variant I might have missed?
+- [ ] Is the evidence clean (no exposed cookies/PII)?
+- [ ] Would this survive triage scrutiny?
+
+## Context Optimization
+
+If the target tech stack doesn't match your core focus, hand off to the relevant specialist:
+- **IDOR/API bugs** ? idor-hunter or api-misconfig-hunter
+- **SSRF/cloud metadata** ? ssrf-hunter
+- **XSS/blind XSS** ? xss-hunter
+- **Auth/MFA/password reset** ? auth-bypass-hunter
+- **Race conditions** ? race-condition-hunter
+- **Business logic/workflow** ? business-logic-hunter
+- **File upload** ? file-upload-hunter
+- **GraphQL** ? graphql-hunter
+- **SSTI ? RCE** ? ssti-hunter
+- **Browser-based testing** ? browser-automator
+
+When tech stack is known, trim your methodology to what's relevant:
+- Static site ? skip SSTI, focus on XSS and CORS
+- API-only ? skip file upload and DOM XSS
+- Rails ? prioritize mass assignment, IDOR
+- Next.js/Node ? prioritize SSRF, auth bypass
+- Old tech (no WAF) ? test SQLi, command injection
+- WAF present ? use bypass techniques from the start

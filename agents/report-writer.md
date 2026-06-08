@@ -1,8 +1,7 @@
 ---
 name: report-writer
-description: Bug bounty report writer. Generates professional H1/Bugcrowd/Intigriti/Immunefi reports. Impact-first writing, human tone, no theoretical language, CVSS 4.0 calculation included. Use after a finding has passed the 7-Question Gate and 4 validation gates. Never generates reports with "could potentially" language.
-tools: Read, Write, Bash, WebFetch
-model: claude-opus-4-6
+description: Professional bug bounty report writer. Generates HackerOne, Bugcrowd, Intigriti, and Immunefi reports. Impact-first writing, no theoretical language, CVSS 4.0 calculation included. Never uses 'could potentially' language.
+tools: Read, Write, Bash
 ---
 
 # Report Writer Agent
@@ -2306,3 +2305,478 @@ curl -s -o /dev/null -w "%{time_total}" "https://target.com/api/products?categor
 for i in {1..100}; do curl -s -o /dev/null -w "%{http_code} " -X POST \
   "https://target.com/api/auth/login" -d '{"email":"x@x","password":"x"}'; done
 ```
+## Disclosed Report References
+
+These are real bug bounty reports that paid well. Study their structure, impact framing, and evidence presentation for your own reports. All referenced reports are publicly disclosed on HackerOne's Hacktivity feed.
+
+### 1. Uber — SSRF to Cloud Metadata
+
+| Detail | Value |
+|--------|-------|
+| **Bug class** | SSRF leading to AWS IAM credential exposure |
+| **Severity** | Critical ($10,000) |
+| **Report link** | [HackerOne #159127](https://hackerone.com/reports/159127) |
+
+**What made it effective:**
+- **Attack path clear**: Shows exactly how the SSRF reaches 169.254.169.254 AWS metadata endpoint
+- **Credentials retrieved**: Proof of actual IAM role credentials (`AccessKeyId`, `SecretAccessKey`, `Token`) in the response
+- **Lateral movement**: Explains what the credentials grant access to (S3, RDS)
+- **No auth needed**: Highlights that the endpoint requires no authentication
+- **Concise**: Under 400 words, yet fully reproducible with a single curl command
+
+### 2. GitHub — Stored XSS in Issue Comments
+
+| Detail | Value |
+|--------|-------|
+| **Bug class** | Stored Cross-Site Scripting (XSS) |
+| **Severity** | High ($3,500) |
+| **Report link** | [HackerOne #43707](https://hackerone.com/reports/43707) |
+
+**What made it effective:**
+- **Reproducibility**: Exact step-by-step with the payload visible in the report
+- **Context shown**: Explains the exact DOM context where the payload executes (issue comment body)
+- **CSP analysis**: Shows that GitHub's CSP would not block the attack via the specific bypass used
+- **Victim action**: No user interaction required — XSS fires on page load
+- **Impact scope**: Demonstrates session cookie exfiltration with a real collaborator URL
+
+### 3. Twitter — IDOR in Account Information
+
+| Detail | Value |
+|--------|-------|
+| **Bug class** | IDOR (Horizontal privilege escalation) |
+| **Severity** | High ($5,040) |
+| **Report link** | [HackerOne #173898](https://hackerone.com/reports/173898) |
+
+**What made it effective:**
+- **Simple reproduction**: One curl command replaces an ID in a URL — copy-paste ready
+- **Exact PII shown**: Phone number, email, and billing info returned in the response body
+- **Quantified impact**: "All 330M+ monthly active users affected"
+- **GDPR framing**: Explains regulatory implications clearly
+- **No rate limit**: Shows that bulk enumeration is feasible with a simple loop
+
+### 4. Shopify — IDOR in Partner Account API
+
+| Detail | Value |
+|--------|-------|
+| **Bug class** | IDOR leading to full account takeover |
+| **Severity** | Critical ($10,000) |
+| **Report link** | [HackerOne #94717](https://hackerone.com/reports/94717) |
+
+**What made it effective:**
+- **Impact-first title**: Clearly states "IDOR in partner API leads to partner account takeover"
+- **End-to-end PoC**: Demonstrates actual account takeover, not just data read
+- **Chain shown**: IDOR → API key access → full account takeover
+- **Victim/attacker distinction**: Both accounts clearly identified in every request
+- **No hypothetical language**: Every claim is backed by a request/response pair
+
+### 5. Grammarly — IDOR in User Documents
+
+| Detail | Value |
+|--------|-------|
+| **Bug class** | IDOR granting access to all user documents |
+| **Severity** | Critical ($5,000) |
+| **Report link** | [HackerOne #1042326](https://hackerone.com/reports/1042326) |
+
+**What made it effective:**
+- **Clear data exposure**: Shows actual document content retrieved via IDOR
+- **Wide impact**: Explains that every user's documents including private notes are accessible
+- **Minimal steps**: Three step reproduction from login to data access
+- **Data sensitivity framing**: Highlights that users store sensitive content (passwords, notes, ideas) in the application
+- **Fix recommendation**: Includes server-side authorization check code example
+
+---
+
+## Platform-Specific Tactics
+
+### HackerOne
+
+**CVSS Calculator Integration:**
+- H1 uses CVSS 3.1 as default. Some programs now accept 4.0 — check the program policy
+- When in doubt, provide both: "CVSS 4.0: 7.1 High — Vector A | CVSS 3.1: 6.5 Medium — Vector B"
+- H1's built-in CVSS calculator requires the full vector string — paste it in the "CVSS Vector" field
+- Use H1's "CVSS Calculator" link in the submission form to verify your scoring before submitting
+
+**Structured Scoping:**
+- Use the "Scope" field to specify exactly which asset is affected (URL, hostname, or wildcard)
+- If the finding spans multiple assets, list them all and indicate primary vs secondary
+- H1 triagers check scope first — if the asset is not listed, your report will be closed as N/A
+- Use the "Weakness" dropdown to select the CWE — this auto-populates certain CVSS fields
+- H1 triage prefers concise reports: Summary (2-3 sentences), Steps, Impact, Fix
+- Always include a "Suggested CVSS" in your report body even though H1 has a CVSS field — redundancy helps triagers
+
+**Bounty Expectations:**
+- Most paid H1 programs publish bounty ranges in the policy
+- If no range is published, use these benchmarks:
+  - Critical (RCE, auth bypass, SSRF→metadata): $3,000 - $10,000
+  - High (IDOR PII, stored XSS, SQLi with data): $1,000 - $5,000
+  - Medium (reflected XSS, blind SSRF, business logic): $250 - $1,000
+
+### Bugcrowd
+
+**VRT Category Selection:**
+- Bugcrowd uses VRT (Vulnerability Rating Taxonomy) — your category selection directly influences the severity
+- Get the VRT wrong and the triager will recategorize (often downgrading severity)
+- Use the exact VRT path from the reference table in this document
+- For borderline cases, include a "VRT Justification" paragraph that cites specific VRT language:
+  ```
+  VRT Path: Server-Side Injection > Server-Side Request Forgery
+  VRT Justification: VRT rates SSRF with "Confirmed read access to an internal service (cloud metadata endpoint)" as P2. The AWS metadata returned includes IAM credentials, enabling cloud account compromise.
+  ```
+
+**Severity Request Paragraph:**
+- Bugcrowd allows you to suggest a severity (P1-P4) but the triager decides
+- Include a short "Severity Justification" section that:
+  1. States your suggested priority
+  2. Cites the VRT entry and severity
+  3. Explains why the actual impact exceeds the VRT default
+  ```
+  Severity Justification: P2 — VRT specifies SSRF with confirmed internal service access as P2. However, this SSRF exposes IAM credentials with S3 and RDS permissions, which elevates the practical impact to cloud infrastructure compromise.
+  ```
+
+**Submission Workflow:**
+- Bugcrowd requires you to select a "Target" first, then "Category" (VRT), then write the report
+- Always set "Visibility" to "Private" until the report is triaged
+- Add attachments (HAR, screenshots, video) after the initial submission — Bugcrowd allows retroactive attachment
+- Include "Remediation Advice" section — Bugcrowd encourages this for higher bounties
+- Use "Expected vs Actual Behavior" format — it makes the vulnerability obvious to triagers
+
+### Intigriti
+
+**Triage Differences:**
+- Intigriti uses two-stage triage: first automated (duplicate/spam scan), then human review
+- Intigriti triagers are more technical and want deeper technical detail than H1 or Bugcrowd
+- Intigriti does NOT use CVSS as the primary severity metric — they use their own "Severity" scale (Critical/High/Medium/Low/Info)
+- However, they still want your CVSS calculation — it guides their severity assessment
+- Intigriti prefers table-formatted headers (as shown in the Intigriti template) over prose headings
+
+**Submission Strategy:**
+- Intigriti reports should include MORE technical detail (code snippets, framework specifics) than H1 reports
+- Intigriti triage often asks follow-up technical questions — be prepared with detailed knowledge of the vulnerable code path
+- Intigriti's "Proof of Concept" field expects a URL or video link — use a self-hosted or Google Drive link
+- Intigriti allows draft submissions — use this to save progress and revisit before final submission
+- Intigriti has a "Hall of Fame" for valid reports even if the program doesn't reward cash bounties
+
+**Bounty Expectations:**
+- Intigriti bounties tend to be lower than H1 for comparable bugs
+- Critical: €1,000 - €5,000
+- High: €500 - €2,500
+- Medium: €150 - €500
+- Prices are often listed in EUR — check the program page
+
+### Immunefi
+
+**Writing for DeFi/Blockchain Audiences:**
+- Immunefi reports are read by smart contract developers, not web app security engineers
+- Change your vocabulary: "endpoint" → "function", "request" → "transaction", "user" → "attacker wallet"
+- Focus on economic impact (TVL at risk, profit per attack), not data exposure
+- Include a Foundry/Hardhat PoC, not curl commands
+- Use Solidity code snippets with line numbers — developers need to see exact vulnerable code
+- Show the attack path as numbered steps with clear before/after states
+
+**Severity in DeFi Context:**
+- Critical = Direct loss of funds (TVL at risk, unlimited drain)
+- High = Indirect loss of funds (MEV, sandwich, oracle manipulation with constraints)
+- Medium = No direct loss but broken accounting logic
+- Low = Gas inefficiencies, informational
+
+**Immunefi-Specific Requirements:**
+- Always include "TVL at risk" in the Impact section — this is the single most important metric
+- Always include "Attack cost" (gas fees, required capital) — shows practicality
+- Always include a "Run" instruction for the PoC: `forge test --match-test test_exploit -vvvv`
+- Immunefi requires "Recommended Fix" as a code diff (--- / +++) format
+- Reference established security patterns (Checks-Effects-Interactions, ReentrancyGuard, etc.)
+- Immunefi payments are in USD or USDC depending on the program — note the payout currency
+
+**Bounty Expectations:**
+- Immunefi pays significantly more than web app bug bounties
+- Critical: $50,000 - $10,000,000+ (percent of TVL)
+- High: $5,000 - $50,000
+- Medium: $1,000 - $5,000
+- Always check the program's "Max Bounty" — some have caps
+
+---
+
+## Critical vs High Decision Guide
+
+Use this guide to decide whether a finding is Critical or High severity. These are guidelines — CVSS 4.0/3.1 calculation is the authoritative method.
+
+### Remote Code Execution
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| RCE on production server, no auth | **Critical** | Full server compromise, data access, lateral movement potential |
+| RCE on production server, auth required | **High → Critical** | High if auth is strong; Critical if auth is simple (free account) |
+| RCE on staging/dev server | **High** | Staging data is typically synthetic; no customer impact |
+| RCE via SSTI (no auth) | **Critical** | Template injection → code execution on the server |
+| RCE via deserialization | **Critical** | Typically no auth required, wide impact |
+| RCE via file upload (authenticated) | **High → Critical** | Critical if the server stores files in webroot |
+
+### SQL Injection
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| SQLi with data exfiltration (production) | **Critical** | Full database access = all user data, credentials, business data |
+| SQLi with data exfiltration (staging) | **High** | No real user data exposed |
+| SQLi (blind/time-based, no data extracted) | **High** | Theoretical data access; demonstrate actual extraction for Critical |
+| SQLi (error-based, no data) | **High** | Information disclosure but no data exfiltration |
+| NoSQLi with data access | **Critical** | Same impact as SQLi — full database access |
+| SQLi (out-of-band, no data extracted) | **High** | Confirm data extraction path for Critical |
+
+### Account Takeover
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| ATO with zero user interaction | **Critical** | Attacker takes over any account automatically |
+| ATO requiring one click | **High** | Requires social engineering |
+| Password reset token prediction | **Critical** | Automatic takeover of any account |
+| Password reset token leak (referer) | **High** | Depends on victim clicking a link |
+| OAuth account linking CSRF | **High** | Requires victim to be logged in and click a link |
+| SAML signature bypass → ATO | **Critical** | Automatic, no user interaction |
+
+### IDOR (Insecure Direct Object Reference)
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| IDOR reading PII (email, phone, DOB, address) | **High** | Direct PII exposure |
+| IDOR reading financial data (bank, payment info) | **Critical** | Financial data has higher regulatory and fraud impact |
+| IDOR reading medical data | **Critical** | HIPAA-protected data |
+| IDOR writing/modifying other users' data | **High** | Integrity impact |
+| IDOR deleting other users' data | **High → Critical** | Critical if irreversible (account deletion, data purge) |
+| IDOR accessing admin-level data | **Critical** | Admin data includes all users' information |
+
+### SSRF (Server-Side Request Forgery)
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| SSRF to cloud metadata (AWS/GCP/Azure) | **Critical** | IAM credentials exposed = cloud account compromise |
+| SSRF to internal service with data read | **Critical** | Internal database, Redis, or API access |
+| SSRF to internal service (blind) | **High** | Port scanning + service fingerprinting |
+| SSRF with data exfil (file:// protocol) | **Critical** | Read arbitrary files from server |
+| SSRF (no data returned, no sensitive service) | **Medium** | No data confidentiality impact |
+
+### XSS (Cross-Site Scripting)
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| Stored XSS in admin/support context | **Critical** | Admin session theft = full platform access |
+| Stored XSS visible to all users | **High** | Mass session theft, phishing, defacement |
+| Stored XSS visible only to attacker | **Medium** | Self-XSS, no cross-user impact |
+| Reflected XSS (no auth required) | **High** | Phishing via link, session theft |
+| Reflected XSS (auth required) | **Medium** | Limited to authenticated users |
+| DOM-based XSS | **High → Medium** | Depends on context; often requires user interaction |
+
+### Authentication & Access Control
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| Complete auth bypass (no auth → admin) | **Critical** | Full platform access |
+| RBAC bypass (user → admin actions) | **Critical** | Privilege escalation to highest level |
+| JWT "alg: none" accepted | **Critical** | Forge arbitrary user identities |
+| MFA not enforced on sensitive actions | **High** | Account takeover when password is known |
+| MFA OTP brute-force (no rate limit) | **High** | 10^6 attempts needed, feasible |
+| Rate limit missing on login | **Medium** | Enables brute-force but not a direct vulnerability |
+
+### Business Logic
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| Direct financial loss (uncapped) | **High → Critical** | Critical if unlimited funds can be drained |
+| Direct financial loss (capped) | **High** | Limited to a specific amount per exploit |
+| Race condition on coupon/balance | **High** | Direct financial impact |
+| Negative pricing / quantity abuse | **High** | Direct financial impact |
+| Referral bonus abuse | **High** | Direct financial loss for the platform |
+| Feature abuse (no financial impact) | **Medium** | Service abuse but no direct loss |
+
+### File Upload
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| File upload → RCE (unauthenticated) | **Critical** | Full server compromise |
+| File upload → RCE (authenticated) | **High → Critical** | Critical if any user can upload |
+| File upload → Stored XSS (SVG/HTML) | **High** | XSS in upload context |
+| File upload → Path traversal (file write) | **High** | Arbitrary file write |
+| File upload → XXE (DOCX/SVG) | **High** | SSRF or file read via XXE |
+
+### GraphQL
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| Missing auth on mutations (data modification) | **Critical** | Any user can modify any data |
+| Missing auth on queries (data read) | **High** | Any user can read any data |
+| Introspection enabled (no sensitive fields) | **Medium** | Information disclosure |
+| Batching attack (rate limit bypass) | **Medium** | Rate limit bypass, no data access |
+
+### Cloud/Infrastructure
+
+| Scenario | Severity | Rationale |
+|----------|----------|-----------|
+| AWS key in public repo/JS bundle | **Critical** | Cloud account compromise |
+| S3 bucket public read (PII contained) | **Critical** | PII exposure at scale |
+| S3 bucket public write | **High** | Malware hosting, data corruption |
+| Exposed internal dashboard/Kibana | **High** | Internal data exposure |
+
+---
+
+## Impact Statement Templates
+
+Use these templates to write the Impact section of your report. Fill in the bracketed fields with your specific details.
+
+### IDOR (Read PII)
+
+> Any [authenticated/unauthenticated] attacker can read the [PII fields] of any other user by changing the [ID parameter] in [endpoint]. This affects all [N] registered users. The exposed data includes [email, phone, DOB, address] — sufficient for identity theft and classified as PII under GDPR Article 4(1).
+
+### IDOR (Read Financial Data)
+
+> Any [authenticated] attacker can read the [financial data] of any other user including [payment method, billing history, bank account details]. This exposes [N] users' financial records and qualifies as a [PCI-DSS / financial data breach] reportable event.
+
+### IDOR (Write/Modify)
+
+> Any [authenticated] attacker can modify [data] belonging to any other user by sending a [PUT/POST/DELETE] request with a different user's ID. This enables [account takeover / data corruption / privilege escalation] without the victim's knowledge.
+
+### SSRF to Cloud Metadata
+
+> An [unauthenticated] attacker can make the server send HTTP requests to the [AWS/GCP] metadata endpoint at [169.254.169.254 / 172.254.169.254], retrieving IAM role credentials. The exposed credentials for role [role_name] provide access to [S3/RDS/other services]. This enables cloud account compromise and lateral movement beyond the web application.
+
+### SSRF (Blind)
+
+> An [authenticated/unauthenticated] attacker can trigger the server to make requests to arbitrary internal IP addresses. While no response data is returned, this allows internal port scanning of [Redis/Memcached/MySQL] services, identifying live internal services for further attack.
+
+### SSRF (File Read via file://)
+
+> An [authenticated/unauthenticated] attacker can read arbitrary files from the server by using the `file://` protocol in the [parameter] parameter. Confirmed by reading [/etc/passwd, /proc/self/environ] returning [content]. This exposes application source code, configuration files, and credentials.
+
+### Stored XSS
+
+> An attacker can execute arbitrary JavaScript in the browser of every [user/admin/support agent] who views [page/feature]. The attacker's payload executes without user interaction, enabling session cookie theft, keylogging, phishing, and [specific impact]. This affects [N] users and allows [ATO / data theft / defacement].
+
+### Reflected XSS
+
+> An attacker can execute arbitrary JavaScript in the browser of a victim who clicks a crafted link. The payload executes in the context of [target.com], allowing session cookie theft and [specific impact]. A phishing link can be crafted as: [URL with payload].
+
+### Auth Bypass (Complete)
+
+> An unauthenticated attacker can access [admin panel / all user data] by navigating directly to [URL]. The endpoint does not perform any authentication or authorization check, granting full access to [specific data/actions]. All [N] users' data, [transactions, PII, internal records] are exposed to any internet user.
+
+### Auth Bypass (Privilege Escalation)
+
+> An attacker with [low privilege role] can perform [admin-level action] by [bypass method — HTTP method override, path traversal, header injection]. This allows [specific impact — deleting users, modifying all transactions, accessing support tickets of other customers].
+
+### SQLi with Data Exfiltration
+
+> An unauthenticated attacker can extract all data from the [database name] database including [user credentials, PII, business data] by injecting SQL into the [parameter] parameter. The database contains [N] tables with user accounts, transactions, and [sensitive data types]. The full database can be extracted within [time estimate] using automated tools.
+
+### SQLi (Blind/Time-Based)
+
+> An unauthenticated attacker can extract database content character by character using time-based SQL injection in [parameter]. This exposes [N] tables of user data including [data types]. Extraction rate: [N] characters per minute using sqlmap or custom script. The full database dump is feasible given sufficient time.
+
+### RCE (Command Injection)
+
+> An [authenticated/unauthenticated] attacker can execute arbitrary operating system commands on the server by injecting into the [parameter] parameter. Command output is returned in the response body. This grants full server control: read/write all files, install backdoors, pivot to internal networks, and access [database/other services].
+
+### RCE (SSTI)
+
+> An [authenticated/unauthenticated] attacker can achieve remote code execution by injecting template expressions into the [parameter] parameter. The server-side template engine ([Jinja2/Twig/Freemarker]) renders user input without sanitization. Confirmed via [command] returning [output]. Full server compromise is achievable.
+
+### File Upload → RCE
+
+> An [authenticated/unauthenticated] attacker can upload arbitrary files to the server via [endpoint]. The uploaded file is stored at [accessible URL] and executed by the server. This allows arbitrary [PHP/ASPX/JSP] code execution, server compromise, and [specific impact — data theft, malware hosting, site defacement].
+
+### File Upload → XSS
+
+> An attacker can upload an SVG/HTML file containing JavaScript that executes when viewed by [admin/users]. The uploaded file is served with [Content-Type: text/html or similar], allowing script execution in the victim's browser context at [target.com].
+
+### Business Logic (Financial Loss)
+
+> An attacker can abuse the [feature] to gain unlimited [discounts/credits/refunds]. In testing, [N] redemptions were processed in [time] yielding [$ amount] in unauthorized value. This can be automated to drain [program budget / pool funds] at a rate of [$ amount per hour] with no indication of abuse.
+
+### Business Logic (Race Condition)
+
+> An attacker can exploit a race window in [endpoint] by sending [N] parallel requests before the server locks state. This allows [coupon abuse / double-spending / balance manipulation]. In testing, [N] of [N] parallel requests succeeded, each granting [$ amount / benefit]. The race window is ~[N]ms based on timing analysis.
+
+### GraphQL Introspection
+
+> The GraphQL endpoint at [URL] has introspection enabled, exposing the full schema including [N] queries and [N] mutations. The schema reveals hidden endpoints: [examples of sensitive fields — adminResetPassword, deleteUser, internalNotes]. This enables attackers to discover the entire API attack surface without documentation.
+
+### GraphQL IDOR (Missing Auth)
+
+> Any authenticated user can query/modify data belonging to any other user via GraphQL at [URL]. The [query/mutation] accepts a user ID parameter without verifying authorization. Example: [query] returns [data] for user IDs [A-B]. This exposes [N] users' [PII/financial data].
+
+### MFA Bypass (Step-Skip)
+
+> An attacker can bypass the MFA requirement by navigating directly to [post-login URL] after authenticating with credentials. The application does not enforce MFA as a middleware check on [endpoints]. This reduces MFA protection to zero for an attacker who has obtained the victim's password.
+
+### MFA Bypass (Not Enforced)
+
+> The [sensitive action — password change / email change / API key generation] endpoint does not require MFA re-authentication. An attacker with access to the victim's session (via XSS, leaked cookie, or shared device) can change [sensitive setting] without triggering MFA. This enables persistent account takeover.
+
+### MFA Bypass (OTP Brute-force)
+
+> The [N]-digit OTP verification endpoint at [URL] has no rate limiting or account lockout. Testing confirmed [N] sequential OTP attempts in [time] with no rejected attempts. An attacker can brute-force all [10^N] possible codes within [time estimate] to enroll their own device or authenticate as the victim.
+
+### OAuth CSRF (Account Linking)
+
+> An attacker can link their OAuth provider account to a victim's platform account by exploiting the missing `state` parameter in the OAuth authorization flow at [URL]. The attacker generates a valid authorization URL, tricks the victim into authorizing it, and the victim's account becomes linked to the attacker's OAuth identity, granting persistent access.
+
+### SAML Signature Bypass
+
+> An attacker can forge SAML assertions for any user by removing the digital signature element from a SAML response. The service provider at [URL] does not validate the signature and accepts the modified assertion. This enables authentication as any user including [admin] without valid credentials.
+
+### Cache Poisoning (Unkeyed Header)
+
+> An attacker can poison the web cache by injecting a malicious response into [endpoint] via the [unkeyed header — X-Forwarded-Host, X-Forwarded-Proto]. Poisoned responses are served to all users for [N] seconds/minutes. The poisoned content [redirects to phishing site / serves malicious JS / displays defaced content to all visitors].
+
+### Cache Deception
+
+> An attacker can trick the cache into storing sensitive API responses by appending a static-like extension (.css, .js, .ico) to an API URL at [endpoint]. The cached response is then served to other users, exposing [PII / tokens / internal data]. Confirmed via `X-Cache: hit` header on the deceptive URL.
+
+### CSRF (State Change)
+
+> An attacker can perform [sensitive action — email change / password reset / fund transfer] on behalf of any authenticated victim by tricking them into visiting a malicious page. The [endpoint] accepts POST requests without CSRF tokens, origin headers, or SameSite cookie validation. A one-line HTML form triggers the action silently.
+
+### Prototype Pollution (Client-side → XSS)
+
+> An attacker can pollute Object.prototype via [endpoint/parameter] to inject properties that enable XSS. The polluted property [property_name] propagates to the [vulnerable component] where it is used in a DOM manipulation sink [innerHTML, document.write]. This bypasses the existing XSS protection.
+
+### Prototype Pollution (Server-side → RCE)
+
+> An attacker can pollute the global Object prototype on the server via [endpoint], enabling remote code execution. The JSON merge operation at [function] uses [lodash.merge / Object.assign] without filtering `__proto__` or `constructor.prototype` keys. Confirmed by achieving [command execution / file read].
+
+### Rate Limiting Missing (Login)
+
+> The login endpoint at [URL] has no rate limiting or account lockout. Testing confirmed [N] failed login attempts in [time] without any restriction. This enables credential brute-force attacks against user accounts. No CAPTCHA, no exponential backoff, no IP-based blocking was observed across [N] sequential attempts.
+
+## Self-Diagnostics
+
+After completing your analysis, run through this checklist:
+- [ ] Did I follow the prescribed methodology for this task?
+- [ ] Did I test all relevant input vectors and edge cases?
+- [ ] Did I record exact curl commands and raw response excerpts?
+- [ ] Is my finding reproducible from scratch?
+- [ ] Is the finding clearly in scope per program rules?
+- [ ] Have I attempted to chain this with other primitives?
+- [ ] Did I validate with a second technique (not just one probe)?
+- [ ] Is there a more severe variant I might have missed?
+- [ ] Is the evidence clean (no exposed cookies/PII)?
+- [ ] Would this survive triage scrutiny?
+
+## Context Optimization
+
+If the target tech stack doesn't match your core focus, hand off to the relevant specialist:
+- **IDOR/API bugs** ? idor-hunter or api-misconfig-hunter
+- **SSRF/cloud metadata** ? ssrf-hunter
+- **XSS/blind XSS** ? xss-hunter
+- **Auth/MFA/password reset** ? auth-bypass-hunter
+- **Race conditions** ? race-condition-hunter
+- **Business logic/workflow** ? business-logic-hunter
+- **File upload** ? file-upload-hunter
+- **GraphQL** ? graphql-hunter
+- **SSTI ? RCE** ? ssti-hunter
+- **Browser-based testing** ? browser-automator
+
+When tech stack is known, trim your methodology to what's relevant:
+- Static site ? skip SSTI, focus on XSS and CORS
+- API-only ? skip file upload and DOM XSS
+- Rails ? prioritize mass assignment, IDOR
+- Next.js/Node ? prioritize SSRF, auth bypass
+- Old tech (no WAF) ? test SQLi, command injection
+- WAF present ? use bypass techniques from the start

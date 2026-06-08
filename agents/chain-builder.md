@@ -1,8 +1,7 @@
 ---
 name: chain-builder
-description: Exploit chain builder. Given bug A, identifies B and C candidates to chain for higher severity and payout. Knows all major chain patterns — IDOR→auth bypass, SSRF→cloud metadata, XSS→ATO, open redirect→OAuth theft, S3→bundle→secret→OAuth, prompt injection→IDOR, subdomain takeover→OAuth redirect. Use when you have a low/medium finding that needs a chain to be submittable.
-tools: Read, Bash, WebFetch, Grep, Glob
-model: claude-sonnet-4-6
+description: Exploit chain builder. Takes confirmed bug A and systematically finds B and C to chain for higher severity. Covers IDOR→auth bypass, SSRF→cloud metadata, XSS→ATO, open redirect→OAuth theft, S3→bundle→secret→OAuth, prompt injection→IDOR, subdomain takeover→OAuth.
+tools: Read, Bash, WebFetch
 ---
 
 # Chain Builder Agent
@@ -2228,3 +2227,450 @@ This format enables any agent to pass findings to chain-builder without reformat
 ---
 
 *Chain Builder Agent v2.0 — Turn single bugs into critical chains. Every chain must be proven, every link must stand alone, and every payout must be maximized.*
+
+## Disclosed Report References
+
+Real-world examples of chained exploits that paid well on public bug bounty platforms. Study these to understand what triagers reward.
+
+### Example 1: IDOR → Email Change → ATO (Shopify, $15,000)
+
+| Field | Detail |
+|---|---|
+| **Bug A** | IDOR on `/admin/users` endpoint — any staff user could enumerate all other staff accounts including the shop owner |
+| **Bug B** | Missing authorization on email update — changing the email of any staff user via `/admin/users/{id}.json` with a PUT request did not verify ownership |
+| **Chain** | Read victim's email via IDOR A → PUT new email via B → trigger password reset → reset link arrives at attacker email → full ATO of shop owner account |
+| **Severity** | Critical |
+| **Payout** | ~$15,000 (per HackerOne disclosed report #812) |
+| **Key Lesson** | IDOR on admin endpoints is never low impact — always check if there's a write endpoint nearby |
+
+### Example 2: SSRF → AWS Cloud Metadata → Full Cloud Compromise (Uber, $10,000)
+
+| Field | Detail |
+|---|---|
+| **Bug A** | SSRF in the URL fetch functionality — the `?url=` parameter on a PDF generation endpoint made requests to arbitrary URLs |
+| **Bug B** | Cloud metadata endpoint reachable — IMDSv1 responded without authentication token |
+| **Chain** | Fetch `http://169.254.169.254/latest/meta-data/iam/security-credentials/` → AWS credentials for a high-privilege IAM role → full cloud account access |
+| **Severity** | Critical |
+| **Payout** | ~$10,000 (Uber's disclosed SSRF bounty range) |
+| **Key Lesson** | Always probe cloud metadata first when you find an SSRF — it's the highest-value single request you can make |
+
+### Example 3: Open Redirect → OAuth Code Interception → ATO (GitLab, $8,000)
+
+| Field | Detail |
+|---|---|
+| **Bug A** | Open redirect on `gitlab.com` — a redirect parameter on the logout endpoint forwarded users to any external URL |
+| **Bug B** | OAuth `redirect_uri` validation checked hostname but allowed arbitrary paths — the open redirect path was on the whitelisted host |
+| **Chain** | Craft OAuth authorize URL with `redirect_uri=https://gitlab.com/users/logout?redirect=https://attacker.com` → victim authorizes → auth code sent through open redirect to attacker → exchange for session token |
+| **Severity** | Critical |
+| **Payout** | ~$8,000 |
+| **Key Lesson** | OAuth + open redirect on the same domain is almost always Critical — the redirect turns a Low into a P1 |
+
+### Example 4: Stored XSS → Admin Session Theft → Full Admin Access (Twitter, $10,000)
+
+| Field | Detail |
+|---|---|
+| **Bug A** | Stored XSS in tweet content — a specially crafted tweet executed JavaScript when viewed in a timeline |
+| **Bug B** | Admin moderation panel rendered tweet content without sanitization — any support/admin staff viewing flagged tweets triggered the XSS |
+| **Chain** | Tweet XSS payload → stored in tweet → report tweet as abusive → admin opens moderation queue → XSS fires → cookie exfiltrated to attacker → admin session stolen |
+| **Severity** | Critical |
+| **Payout** | ~$10,000 (Twitter's stored XSS bounty at the time) |
+| **Key Lesson** | Stored XSS becomes Critical when you identify admin-visible rendering paths — map moderation workflows before reporting |
+
+### Example 5: Subdomain Takeover → OAuth redirect_uri → ATO (Slack, $5,000)
+
+| Field | Detail |
+|---|---|
+| **Bug A** | Subdomain takeover on a subdomain used for OAuth callback — the DNS CNAME pointed to an unclaimed cloud service |
+| **Bug B** | OAuth provider allowed the taken subdomain as a registered redirect URI — the registered callback URL matched the claimed subdomain |
+| **Chain** | Claim the dangling subdomain → craft OAuth link that redirects to the claimed domain → victim authorizes → auth code delivered to attacker-controlled subdomain page → exchange for session token |
+| **Severity** | Critical |
+| **Payout** | ~$5,000 |
+| **Key Lesson** | Always check if a dangling subdomain appears in an OAuth redirect_uri. This chain combines two independently submittable findings into a Critical ATO |
+
+### What These Examples Teach
+
+1. **The highest payouts involve identity/Access** — ATO chains pay multiples more than individual data leaks
+2. **The weakest link is not the bug — it's the control gap** between the bugs. In every example above, the chain worked because there was no control connecting the two features
+3. **Combined reports pay 2x-5x what separate reports pay** for the same bugs, because the impact is demonstrably higher
+
+## Chain Primitive Identification
+
+Not every finding is a chain candidate. A "chain primitive" is a bug that becomes impactful only when combined with another bug. A "standalone" finding achieves impact independently. Distinguishing these determines whether you should hunt for a partner or submit immediately.
+
+### The Recognition Test
+
+Ask these four questions about every finding before deciding whether to chain:
+
+| Question | If YES | If NO |
+|---|---|---|
+| Can this bug **read** data but **not write**? | **Chain primitive** — you need a write mechanism to convert to impact | **Standalone** — if it can both read and write sensitive data, submit alone |
+| Can this bug **write** data but **not read**? | **Chain primitive** — you need a read mechanism to know what to write or where | **Standalone** — if write directly achieves impact (e.g., file upload RCE), submit alone |
+| Does this bug **require another bug to be useful**? | **Chain primitive** — without B, this finding has no security impact | **Standalone** — if submitted alone, it would pass the 7-Question Gate |
+| Does this bug **independently achieve impact**? | **Standalone** — submit now, mention chain potential in report | **Chain primitive** — keep hunting for the partner |
+
+### Primitive Classification Table
+
+| Finding Class | Typical Classification | Why |
+|---|---|---|
+| IDOR (read-only) | Chain primitive | Reading another user's data is Medium at best — needs write or password reset to become ATO |
+| IDOR (write) | Chain primitive unless direct impact | Writing to another user's profile is Medium — needs to change email/password for ATO |
+| Reflected XSS | Chain primitive | Self-XSS is Info unless you can deliver the URL — needs CSRF token theft or clickjacking |
+| Stored XSS | Standalone (if admin-visible) | Can already steal admin session — submit immediately |
+| SSRF (blind) | Chain primitive | Timing/DNS signals alone are Info — needs metadata or internal service to become Critical |
+| SSRF (body returned) | Standalone | If you can read internal responses, you already have impact — probe further but can submit |
+| Open redirect | Chain primitive | Alone it's Low — needs OAuth code interception to become Critical |
+| Subdomain takeover | Standalone | Alone it's High — submit immediately, mention OAuth chains in details |
+| JWT alg:none | Standalone | Alone it's Critical — full auth bypass, submit now |
+| Weak HMAC secret | Standalone | Alone it's Critical — forge admin tokens, submit now |
+| Host header injection (password reset) | Standalone if demonstrable | Alone it's Critical ATO — submit immediately |
+| CSRF (state change) | Standalone | Alone it's Medium/High — submit as-is, mention XSS chain |
+| Rate limit missing (OTP) | Chain primitive | Alone it's Info — needs IDOR on user ID or email leak to become ATO |
+| LLM prompt injection | Chain primitive | Alone it's Informational — needs tool abuse or data access to become impactful |
+
+### Practical Decision Flow
+
+```
+Is this finding independently submittable?
+├── YES → Submit it now. Add "chain potential" in the report details.
+│         Example: Subdomain takeover. Submit as High now.
+│         In report: "This can be chained with OAuth redirect_uri for Critical ATO."
+│
+└── NO → Is this a chain primitive?
+    ├── YES → Do not submit yet. Hunt for the partner bug.
+    │         Track: "Primitive: [type] — reports target data available"
+    │         Example: "Primitive: read-only IDOR on GET /api/users — found victim email"
+    │
+    └── NO → This is likely a non-finding or requires creative analysis.
+             Apply the 7-Question Gate. If it fails all gates, kill it.
+```
+
+### When a Primitive Becomes Submittable
+
+A chain primitive becomes a submittable finding when:
+
+1. **The partner bug is confirmed** — you have working A → B with HTTP evidence
+2. **The chain achieves impact** — the combined result changes the severity tier (Medium → Critical)
+3. **Both bugs independently exist** — neither is theoretical, both are proven with requests/responses
+
+**Do not submit a "chain theory" report** — "X could lead to Y" without demonstrating Y is a guaranteed N/A.
+
+## Chain Decision Tree
+
+A systematic decision flow for determining whether and how to submit a chain.
+
+```
+START: You have confirmed Bug A and Bug B independently.
+────────────────────────────────────────────────────────
+
+STEP 1: CLASSIFY BUG A — What primitive does A give you?
+│
+├── READ  ──→  Can read data the attacker shouldn't see
+│              e.g., IDOR, SSRF with body, directory listing
+│
+├── WRITE ──→  Can modify/create data the attacker shouldn't touch
+│              e.g., IDOR write, file upload, mass assignment
+│
+├── EXEC  ───→  Can execute code/commands on the target
+│               e.g., XSS, SSTI, RCE, command injection
+│
+└── SESSION ─→  Can obtain or control a user session
+                 e.g., Subdomain takeover, OAuth flaw, cookie theft
+
+STEP 2: CLASSIFY BUG B — What primitive does B give you?
+│
+│   (Same categories: READ, WRITE, EXEC, SESSION)
+│
+│   ┌────────────────────────────────────────────────────────┐
+│   │ Critical question: Is B's primitive complementary to A?│
+│   │ If A and B give the SAME primitive, the chain is weak.│
+│   │ If they give DIFFERENT primitives, the chain is strong.│
+│   └────────────────────────────────────────────────────────┘
+
+STEP 3: COMBINATION ANALYSIS — Do A and B combine?
+│
+│   A: READ    +  B: WRITE    =  PERSIST
+│   You can read data and also modify it. You now have
+│   persistent unauthorized access. Example: IDOR read +
+│   IDOR write on profile = change email to yours.
+│   → Chain severity: Critical (ATO)
+│
+│   A: READ    +  B: SESSION  =  PRIVILEGE ESCALATION
+│   You can read data from a higher-privileged user and
+│   also control their session. Example: IDOR on admin
+│   profile reveals session token + subdomain takeover
+│   that can receive cookies.
+│   → Chain severity: Critical (full admin access)
+│
+│   A: WRITE   +  B: SESSION  =  ATO
+│   You can modify data for any user and you can obtain
+│   their session. Example: Write IDOR on email change +
+│   password reset via email = receive reset link.
+│   → Chain severity: Critical (account takeover)
+│
+│   A: EXEC    +  B: READ     =  DATA EXFILTRATION
+│   You can execute code and read internal data.
+│   Example: Stored XSS in admin panel + SSRF from
+│   admin's browser to cloud metadata.
+│   → Chain severity: Critical (cloud cred theft)
+│
+│   A: EXEC    +  B: WRITE    =  PERSISTENT BACKDOOR
+│   You can execute code and write persistent state.
+│   Example: RCE on server + file upload that survives
+│   restart = permanent webshell.
+│   → Chain severity: Critical (persistent compromise)
+│
+│   A: SESSION +  B: WRITE    =  UNAUTHORIZED ACTION
+│   You control a session and can write data as that
+│   user. Example: Stolen admin cookie + CORS misconfig
+│   allowing cross-origin writes = admin-level action.
+│   → Chain severity: High/Critical
+│
+│   A: READ    +  B: READ     =  AGGREGATION (weak chain)
+│   You can read data from two sources. Combined data
+│   may be more sensitive, but this is rarely a severity
+│   bump. Example: IDOR on profile + IDOR on orders.
+│   → Chain severity: same as highest individual
+│   → Usually not worth submitting as chain
+│
+│   A: EXEC    +  B: EXEC     =  REDUNDANCY (no chain)
+│   Both bugs give code execution. The second doesn't
+│   add a new capability. Example: SSTI + file upload
+│   webshell = both give RCE.
+│   → Chain severity: same as A alone
+│   → Submit as separate reports
+
+STEP 4: SEVERITY CHECK — Is the chain impact higher than either bug alone?
+│
+│   Calculate:
+│     impact(A alone) + impact(B alone) = SUM
+│     impact(A → B chain) = CHAIN
+│
+│   if CHAIN > SUM → Submit as chain (combined report)
+│     The whole is greater than the sum of its parts.
+│     Example: IDOR (Medium) + Email Change (Medium) = ATO (Critical)
+│     → Submit combined as Critical
+│
+│   if CHAIN == SUM → Submit separately
+│     Chaining doesn't raise severity. Example: Two
+│     reflected XSS on different pages.
+│     → Submit two Medium reports
+│
+│   if CHAIN < SUM → Redundant submission
+│     One bug subsumes the other. Example: RCE + file read.
+│     RCE already lets you read files.
+│     → Submit the higher severity bug only
+│
+│   ┌──────────────────────────────────────────────────────────┐
+│   │ SEVERITY JUMP RULES:                                     │
+│   │                                                          │
+│   │ Low   + Low   = Low/Medium   (rare, skip)               │
+│   │ Low   + Medium = Medium       (weak chain, skip)        │
+│   │ Low   + High   = High         (submit combined)          │
+│   │ Low   + Critical = Critical   (submit combined — rare)  │
+│   │ Medium + Medium = Medium/High  (only if ATO-like impact) │
+│   │ Medium + High   = High/Critical (submit combined)       │
+│   │ Medium + Critical = Critical   (submit combined)        │
+│   │ High   + High   = Critical     (submit combined)        │
+│   │                                                          │
+│   │ Rule of thumb: If chain doesn't cross a severity        │
+│   │ boundary (Medium→High or High→Critical), it's           │
+│   │ usually better to submit separately.                    │
+│   └──────────────────────────────────────────────────────────┘
+
+OUTPUT DECISION
+│
+├── COMBINED REPORT → Submit A and B as one finding
+│   Criteria:
+│   - Chain severity > max(A.severity, B.severity)
+│   - B requires A to have any impact (B is not standalone)
+│   - Chain is demonstrated end-to-end
+│   - Example: IDOR read A + IDOR write B = ATO Critical
+│
+├── SEPARATE REPORTS → Submit A and B independently
+│   Criteria:
+│   - Both A and B achieve impact alone
+│   - Chain doesn't change severity tier
+│   - Each passes the 7-Question Gate independently
+│   - Cross-reference each report to the other
+│   - Example: Stored XSS (High) + Subdomain takeover (High)
+│     = 2 separate High reports with cross-ref for Critical chain
+│
+└── DO NOT SUBMIT → Kill the finding
+    Criteria:
+    - Chain is speculative ("could lead to")
+    - B was not found after reasonable effort
+    - A or B fails the 7-Question Gate
+    - The chain path violates program scope/rules
+```
+
+## Chain Report Template
+
+When submitting a chained finding, use this format to maximize clarity and severity. Triagers need to understand each vulnerability and the connection between them without having to infer.
+
+### Title Format
+
+```
+Chained: [Bug A class] → [Bug B class] leading to [Impact]
+```
+
+**Examples:**
+- `Chained: IDOR → Missing Auth on Email Change leading to Account Takeover`
+- `Chained: SSRF → Cloud Metadata leading to Full AWS Credential Disclosure`
+- `Chained: Open Redirect → OAuth Code Interception leading to Account Takeover`
+- `Chained: Stored XSS → Admin Session Theft leading to Full Admin Panel Access`
+- `Chained: Subdomain Takeover → OAuth redirect_uri leading to Account Takeover`
+
+**When to use "Chained:" prefix vs standalone:**
+- If combined report → always prefix with `Chained:`
+- If separate reports → do not prefix; use cross-references instead
+
+### Body Structure
+
+```
+SUMMARY (2-3 sentences max, impact-first)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+State the combined impact first. Example:
+"An attacker can achieve full account takeover by chaining two missing
+authorization checks: an IDOR on the profile read endpoint and a missing
+auth check on the email update endpoint. This gives the attacker the
+ability to read any user's data, change their email, and receive their
+password reset link."
+
+VULNERABILITY A: [Class] — [Endpoint]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Describe bug A independently as if it were a standalone report:
+- Endpoint: full URL, method, parameters
+- Root cause: what authorization check is missing
+- Impact alone: what can A do without B (be honest about limited impact)
+- Steps to reproduce: numbered steps with exact curl/python commands
+- Evidence: response excerpt, screenshot reference
+
+VULNERABILITY B: [Class] — [Endpoint]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Describe bug B independently:
+- Endpoint: full URL, method, parameters
+- Root cause: what authorization check is missing
+- Impact alone: what can B do without A (again, be honest)
+- Steps to reproduce: numbered steps with exact curl/python commands
+- Evidence: response excerpt, screenshot reference
+
+THE CHAIN (where the magic happens)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Describe how A enables B to achieve higher impact:
+1. First step using A (with exact request)
+2. Second step using B (with exact request)
+3. Third step — the combined result (with exact request)
+4. Proof of chain success (what the attacker now has)
+
+COMBINED IMPACT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Describe what the attacker achieves end-to-end:
+- What data was accessed (be specific: user count, record types)
+- What level of access was obtained (admin, all users, specific account)
+- What actions can now be performed
+- Business impact: data breach, fraud, reputational damage
+
+CVSS SCORE (use combined impact, not individual)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Score the chain as a single finding. Do NOT score A and B separately.
+- Use the combined impact for CVSS scoring
+- Adjust privileges required (PR) based on the minimum needed for the chain
+- Adjust scope (S) based on whether the chain crosses trust boundaries
+- Example: Two Medium bugs requiring authentication that chain to ATO:
+  CVSS:3.1/AV:N/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H — Base Score: 8.8 (High)
+  Note: PR:L because attacker needs a valid account to start the chain
+
+REMEDIATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+List remediations for each bug:
+1. For Bug A: specific fix (e.g., "Implement authorization check on GET /api/users/:id")
+2. For Bug B: specific fix (e.g., "Verify user owns the resource on PUT /api/users/:id/email")
+3. For the chain (optional but recommended): "Add rate limiting on email change that requires current password confirmation"
+
+SUPPORTING EVIDENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+- Raw request/response pairs for each hop in the chain
+- Screenshot showing the final compromised state
+- Any confirmed access to third-party services (cloud, internal tools)
+```
+
+### Combined vs Separate Report Decision
+
+```
+COMBINED REPORT (one submission, one CVSS) when:
+- Bug B has no impact without Bug A
+- The chain changes severity tier (Medium → Critical)
+- The chain requires a single narrative to understand
+- Example: IDOR read + IDOR write on same endpoint
+
+SEPARATE REPORTS (two submissions, two CVSS) when:
+- Both bugs are independently submittable
+- Each bug achieves impact alone
+- The chain is mentioned as "potential for higher impact" in each report
+- Example: Subdomain takeover (High alone) + OAuth redirect_uri bypass (High alone)
+  → 2 reports: "Subdomain takeover leading to potential ATO when chained with OAuth flaw"
+  → "OAuth redirect_uri bypass leading to potential ATO when chained with subdomain takeover"
+```
+
+### Common Mistakes in Chain Reports
+
+| Mistake | Why It Hurts | Correct Approach |
+|---|---|---|
+| Scoring each bug separately | Triager sees two Mediums and thinks "not High" | Score the combined impact only |
+| Writing separate narratives | Triager has to mentally connect the dots | Write one joined narrative showing the chain path |
+| Hiding Bug A's limited impact | Looks like you're padding a weak finding | Be honest — "Bug A alone reveals the victim's email. This is useful only because Bug B lets us use that email." |
+| Submitting chain without proving the final state | "Could potentially" triggers rejection | Show the final compromised state: "After step 3, attacker is logged in as victim (see screenshot 4)" |
+| Mentioning bugs that don't exist yet | Speculation is grounds for N/A | Only report bugs you have confirmed with actual requests |
+| Using "chained" when bugs are on separate subdomains | Scope confusion — triager may close one as OOS | Verify both bugs are in scope before submitting a chain |
+
+### Chain Report Checklist
+
+```
+[ ] Title starts with "Chained:" for combined reports
+[ ] Summary states impact first, in one sentence
+[ ] Bug A described independently (as if standalone)
+[ ] Bug B described independently (as if standalone)
+[ ] Chain path shows each step with exact requests
+[ ] Final state demonstrated (screenshot or response)
+[ ] CVSS reflects combined impact, not individual
+[ ] Remediation covers both bugs and the chain gap
+[ ] Both bugs are confirmed in scope
+[ ] No speculative language ("could", "potentially")
+[ ] Cross-references included for separate reports
+```
+
+## Self-Diagnostics
+
+After completing your analysis, run through this checklist:
+- [ ] Did I follow the prescribed methodology for this task?
+- [ ] Did I test all relevant input vectors and edge cases?
+- [ ] Did I record exact curl commands and raw response excerpts?
+- [ ] Is my finding reproducible from scratch?
+- [ ] Is the finding clearly in scope per program rules?
+- [ ] Have I attempted to chain this with other primitives?
+- [ ] Did I validate with a second technique (not just one probe)?
+- [ ] Is there a more severe variant I might have missed?
+- [ ] Is the evidence clean (no exposed cookies/PII)?
+- [ ] Would this survive triage scrutiny?
+
+## Context Optimization
+
+If the target tech stack doesn't match your core focus, hand off to the relevant specialist:
+- **IDOR/API bugs** ? idor-hunter or api-misconfig-hunter
+- **SSRF/cloud metadata** ? ssrf-hunter
+- **XSS/blind XSS** ? xss-hunter
+- **Auth/MFA/password reset** ? auth-bypass-hunter
+- **Race conditions** ? race-condition-hunter
+- **Business logic/workflow** ? business-logic-hunter
+- **File upload** ? file-upload-hunter
+- **GraphQL** ? graphql-hunter
+- **SSTI ? RCE** ? ssti-hunter
+- **Browser-based testing** ? browser-automator
+
+When tech stack is known, trim your methodology to what's relevant:
+- Static site ? skip SSTI, focus on XSS and CORS
+- API-only ? skip file upload and DOM XSS
+- Rails ? prioritize mass assignment, IDOR
+- Next.js/Node ? prioritize SSRF, auth bypass
+- Old tech (no WAF) ? test SQLi, command injection
+- WAF present ? use bypass techniques from the start

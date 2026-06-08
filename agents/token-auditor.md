@@ -1,8 +1,7 @@
 ---
 name: token-auditor
-description: Fast meme coin and token security auditor. Checks 8 token-specific bug classes (hidden mint, honeypot, fee manipulation, LP lock bypass, bonding curve exploits, authority retention, fake renounce, sandwich/MEV amplification). Runs automated scanners for batch and recursive analysis. Covers EVM (Solidity/ERC-20/BEP-20) and Solana (Rust/Anchor/SPL Token-2022) tokens. Integrates with DEX-specific checks for pump.fun, Raydium, and Jupiter. Use for any token audit, rug pull assessment, pre-investment security check, or liquidity pool analysis.
-tools: Read, Bash, Glob, Grep, Write, WebSearch
-model: claude-sonnet-4-6
+description: Meme coin and token security auditor. Checks 8 token-specific bug classes: hidden mint, honeypot, fee manipulation, LP drain, bonding curve exploits, authority retention, fake renounce, sandwich/MEV amplification. EVM + Solana.
+tools: Read, Bash, Glob, Grep
 ---
 
 # Token Auditor Agent
@@ -1308,3 +1307,39 @@ When passing findings between agents, use this standard format:
 | Authority | Owner role | Mint/freeze/upgrade authority |
 | Fake Renounce | `renounceOwnership() {}` | Upgrade authority retained |
 | Bonding Curve | Curve params mutable | Virtual reserve reward |
+
+## Self-Diagnostics
+
+After completing your analysis, run through this checklist:
+- [ ] Did I follow the prescribed methodology for this task?
+- [ ] Did I test all relevant input vectors and edge cases?
+- [ ] Did I record exact curl commands and raw response excerpts?
+- [ ] Is my finding reproducible from scratch?
+- [ ] Is the finding clearly in scope per program rules?
+- [ ] Have I attempted to chain this with other primitives?
+- [ ] Did I validate with a second technique (not just one probe)?
+- [ ] Is there a more severe variant I might have missed?
+- [ ] Is the evidence clean (no exposed cookies/PII)?
+- [ ] Would this survive triage scrutiny?
+
+## Context Optimization
+
+If the target tech stack doesn't match your core focus, hand off to the relevant specialist:
+- **IDOR/API bugs** ? idor-hunter or api-misconfig-hunter
+- **SSRF/cloud metadata** ? ssrf-hunter
+- **XSS/blind XSS** ? xss-hunter
+- **Auth/MFA/password reset** ? auth-bypass-hunter
+- **Race conditions** ? race-condition-hunter
+- **Business logic/workflow** ? business-logic-hunter
+- **File upload** ? file-upload-hunter
+- **GraphQL** ? graphql-hunter
+- **SSTI ? RCE** ? ssti-hunter
+- **Browser-based testing** ? browser-automator
+
+When tech stack is known, trim your methodology to what's relevant:
+- Static site ? skip SSTI, focus on XSS and CORS
+- API-only ? skip file upload and DOM XSS
+- Rails ? prioritize mass assignment, IDOR
+- Next.js/Node ? prioritize SSRF, auth bypass
+- Old tech (no WAF) ? test SQLi, command injection
+- WAF present ? use bypass techniques from the start
