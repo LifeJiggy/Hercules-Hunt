@@ -282,7 +282,7 @@
     },
     {
       "event": "PromptSend",
-      "command": "Write-Host '[JS CTX] SecretFinder usage: python SecretFinder.py -i {bundle} -o {output} -r \'[regex]\'. Use built-in regexes for 30+ secret types.' -ForegroundColor DarkGray"
+      "command": "Write-Host '[JS CTX] SecretFinder usage: python SecretFinder.py -i {bundle} -o {output} -r \\'[regex]\\'. Use built-in regexes for 30+ secret types.' -ForegroundColor DarkGray"
     },
     {
       "event": "PromptSend",
@@ -421,7 +421,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'prototype|__proto__|constructor\\.prototype|\\.prototype\\[|Object\\.assign|\\$\.extend|_merge|lodash.*merge|deep.?merge|Object\\.entries') { Write-Host '[PROTO POLLUTION] Prototype pollution sink found. If user input reaches Object.assign/$.extend/_merge, gadget chain may allow attribute pollution. Document vulnerable library version and payload.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'prototype|__proto__|constructor\\.prototype|\\.prototype\\[|Object\\.assign|\\$\\.extend|_merge|lodash.*merge|deep.?merge|Object\\.entries') { Write-Host '[PROTO POLLUTION] Prototype pollution sink found. If user input reaches Object.assign/$.extend/_merge, gadget chain may allow attribute pollution. Document vulnerable library version and payload.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
@@ -436,7 +436,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'import\\(|require\\(|chunk|dynamic\\.import|import\\(\'|import\(") { Write-Host '[CODE SPLIT] Dynamic import/chunk loading detected. Map all lazy-loaded chunks. Chunk filenames may contain hashes/version info. Chunk endpoints = additional attack surface.' -ForegroundColor Gray }"
+      "command": "if ($lastOutput -match 'import\\(|require\\(|chunk|dynamic\\.import|import\\(\\'|import\\(\") { Write-Host '[CODE SPLIT] Dynamic import/chunk loading detected. Map all lazy-loaded chunks. Chunk filenames may contain hashes/version info. Chunk endpoints = additional attack surface.' -ForegroundColor Gray }"
     },
     {
       "event": "PostToolUse",
@@ -476,7 +476,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'function\s*\\(|new Function|eval\\(|setTimeout.*string|setInterval.*string|setImmediate.*string|execScript|msWriteProfilerMark') { Write-Host '[RCE JS] Code execution sink in JS. eval/Function constructor with user input = RCE in browser context. Check: (1) can user control code string, (2) is there a sanitization framework, (3) CSP blocks eval?' -ForegroundColor Red }"
+      "command": "if ($lastOutput -match 'function\\s*\\(|new Function|eval\\(|setTimeout.*string|setInterval.*string|setImmediate.*string|execScript|msWriteProfilerMark') { Write-Host '[RCE JS] Code execution sink in JS. eval/Function constructor with user input = RCE in browser context. Check: (1) can user control code string, (2) is there a sanitization framework, (3) CSP blocks eval?' -ForegroundColor Red }"
     },
     {
       "event": "PromptSend",
@@ -688,12 +688,5 @@
       "event": "PromptSend",
       "command": "Write-Host '[JS CTX] Supply chain risk: for each external CDN script, check if SRI (Subresource Integrity) hash is present. Missing SRI = supply chain attack surface if CDN compromised. Document CDN dependencies for security-reviewer supply chain analysis.' -ForegroundColor DarkGray"
     }
-  ]
-}
-  ]
-}
-  ]
-}
-
   ]
 }

@@ -155,17 +155,17 @@
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'command.injection|rce|os.command|shell_exec|exec\\(|system\\(|passthru|popen|proc_open|shell_exec|backticks|\`|eval\\(|assert\\(|preg_replace.*e|create_function') { Write-Host '[CHAIN PRE] RCE interaction detected. Chain candidate: RCE->cloud metadata->IAM credentials->AWS takeover.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'command.injection|rce|os.command|shell_exec|exec\\(|system\\(|passthru|popen|proc_open|shell_exec|backticks|\\`|eval\\(|assert\\(|preg_replace.*e|create_function') { Write-Host '[CHAIN PRE] RCE interaction detected. Chain candidate: RCE->cloud metadata->IAM credentials->AWS takeover.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'file.upload|upload|multipart|form-data|Content-Disposition|filename|\.php|\.asp|\.aspx|\.jsp|\.py|\.pl|\.rb|\.cgi|\.sh|\.exe|\.dll|\.so|\.dylib') { Write-Host '[CHAIN PRE] File upload interaction detected. Chain candidate: upload shell->RCE->cloud metadata->takeover, or upload->path traversal->config steal.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'file.upload|upload|multipart|form-data|Content-Disposition|filename|\\.php|\\.asp|\\.aspx|\\.jsp|\\.py|\\.pl|\\.rb|\\.cgi|\\.sh|\\.exe|\\.dll|\\.so|\\.dylib') { Write-Host '[CHAIN PRE] File upload interaction detected. Chain candidate: upload shell->RCE->cloud metadata->takeover, or upload->path traversal->config steal.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'deserial|unserialize|pickle|marshal|yaml\.load|yaml\.unsafe|ObjectInputStream|readObject|JSON.loads|xml.etree|defusedxml| unserialize|phar|zip://|phar://|expect://|input://|data://|php://filter|php://input') { Write-Host '[CHAIN PRE] Deserialization interaction. Chain candidate: deserialization->RCE->cloud metadata->IAM takeover.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'deserial|unserialize|pickle|marshal|yaml\\.load|yaml\\.unsafe|ObjectInputStream|readObject|JSON.loads|xml.etree|defusedxml| unserialize|phar|zip://|phar://|expect://|input://|data://|php://filter|php://input') { Write-Host '[CHAIN PRE] Deserialization interaction. Chain candidate: deserialization->RCE->cloud metadata->IAM takeover.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
@@ -175,7 +175,7 @@
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match '/etc/passwd|/etc/shadow|/proc/|/sys/|C:\\windows|C:\\winnt|\.env|config\.json|credentials|secrets|id_rsa|\.ssh|authorized_keys|known_hosts|web\.config|appsettings|\.yml|\.yaml|application\.properties|config\.php|wp-config') { Write-Host '[CHAIN PRE] Sensitive file read. Log full file path and contents. Check for chain value: tokens, keys, internal URLs, credentials.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match '/etc/passwd|/etc/shadow|/proc/|/sys/|C:\\windows|C:\\winnt|\\.env|config\\.json|credentials|secrets|id_rsa|\\.ssh|authorized_keys|known_hosts|web\\.config|appsettings|\\.yml|\\.yaml|application\\.properties|config\\.php|wp-config') { Write-Host '[CHAIN PRE] Sensitive file read. Log full file path and contents. Check for chain value: tokens, keys, internal URLs, credentials.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
@@ -195,7 +195,7 @@
     {
       "event": "PreToolUse",
       "matcher": "WebFetch",
-      "command": "if ($lastCommand -match 'metadata|internal|localhost|127\.0\.0\.1|169\.254|169\.254\.169\.254|metadata\.google|100\.100\.100\.200|metadata\.azure') { Write-Host '[CHAIN PRE] Web fetch to internal/metadata endpoint. Chain candidate: SSRF via fetch->cloud metadata->credential extract.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'metadata|internal|localhost|127\\.0\\.0\\.1|169\\.254|169\\.254\\.169\\.254|metadata\\.google|100\\.100\\.100\\.200|metadata\\.azure') { Write-Host '[CHAIN PRE] Web fetch to internal/metadata endpoint. Chain candidate: SSRF via fetch->cloud metadata->credential extract.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PostToolUse",
@@ -240,7 +240,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'internal|localhost|127\.0\.0\.1|10\\.|172\\.|192\.168|metadata|metadata.google|169\.254') { Write-Host '[CHAIN POST] Internal/cloud metadata access achieved. Document service: AWS IMDS, GCE metadata, Azure IMDS.' -ForegroundColor Green }"
+      "command": "if ($lastOutput -match 'internal|localhost|127\\.0\\.0\\.1|10\\.|172\\.|192\\.168|metadata|metadata.google|169\\.254') { Write-Host '[CHAIN POST] Internal/cloud metadata access achieved. Document service: AWS IMDS, GCE metadata, Azure IMDS.' -ForegroundColor Green }"
     },
     {
       "event": "PostToolUse",
@@ -650,27 +650,27 @@
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match '.env|\.env\.local|\.env\.dev|\.env\.prod|\.env\.staging|config\.env|environment|dotenv') { Write-Host '[CHAIN PRE] ENV file read. HIGH CHAIN VALUE. Check for: API keys, database URLs, JWT secrets, cloud credentials, third-party tokens.' -ForegroundColor Red }"
+      "command": "if ($lastCommand -match '.env|\\.env\\.local|\\.env\\.dev|\\.env\\.prod|\\.env\\.staging|config\\.env|environment|dotenv') { Write-Host '[CHAIN PRE] ENV file read. HIGH CHAIN VALUE. Check for: API keys, database URLs, JWT secrets, cloud credentials, third-party tokens.' -ForegroundColor Red }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match 'composer\.json|package\.json|requirements\.txt|Gemfile|go\.mod|pom\.xml|build\.gradle|Cargo\.toml|package-lock|yarn\.lock|Pipfile|poetry\.lock') { Write-Host '[CHAIN PRE] Dependency file read. Check for: outdated packages with known CVEs, internal package URLs, devDependencies secrets.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'composer\\.json|package\\.json|requirements\\.txt|Gemfile|go\\.mod|pom\\.xml|build\\.gradle|Cargo\\.toml|package-lock|yarn\\.lock|Pipfile|poetry\\.lock') { Write-Host '[CHAIN PRE] Dependency file read. Check for: outdated packages with known CVEs, internal package URLs, devDependencies secrets.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match 'Dockerfile|docker-compose|\.dockerignore|Containerfile|Buildah|Podman|nerdctl|containerd') { Write-Host '[CHAIN PRE] Container config read. Check for: base image, exposed ports, secrets in ENV, volume mounts, privileged mode, host network.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'Dockerfile|docker-compose|\\.dockerignore|Containerfile|Buildah|Podman|nerdctl|containerd') { Write-Host '[CHAIN PRE] Container config read. Check for: base image, exposed ports, secrets in ENV, volume mounts, privileged mode, host network.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match '\.git|\.gitignore|HEAD|config|packed-refs|objects|refs|logs|index|shallow|description|info|hooks') { Write-Host '[CHAIN PRE] Git repository access. Check for: previous commits with secrets, git history sensitive data, .git/config credentials.' -ForegroundColor Red }"
+      "command": "if ($lastCommand -match '\\.git|\\.gitignore|HEAD|config|packed-refs|objects|refs|logs|index|shallow|description|info|hooks') { Write-Host '[CHAIN PRE] Git repository access. Check for: previous commits with secrets, git history sensitive data, .git/config credentials.' -ForegroundColor Red }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Read",
-      "command": "if ($lastCommand -match 'htaccess|\.htaccess|htpasswd|web\.config|nginx\.conf|apache2\.conf|httpd\.conf|lighttpd\.conf|caddy\.conf|traefik\.yml|ingress\.yml') { Write-Host '[CHAIN PRE] Web server config read. Check for: basic auth creds, IP whitelist, proxy_pass to internal services, secret paths.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match 'htaccess|\\.htaccess|htpasswd|web\\.config|nginx\\.conf|apache2\\.conf|httpd\\.conf|lighttpd\\.conf|caddy\\.conf|traefik\\.yml|ingress\\.yml') { Write-Host '[CHAIN PRE] Web server config read. Check for: basic auth creds, IP whitelist, proxy_pass to internal services, secret paths.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PreToolUse",
@@ -680,22 +680,22 @@
     {
       "event": "PreToolUse",
       "matcher": "Grep",
-      "command": "if ($lastCommand -match 'mongodb(\+srv)?://|postgres(ql)?://|mysql://|mariadb://|redis://|amqp://|mqtt://|kafka://|elasticsearch://|rabbitmq://|memcache://|memcached://|couchdb://|couchbase://') { Write-Host '[CHAIN PRE] Database connection string matched. Document: DB type, host, credentials (redacted). Chain value: connect->exfil->data breach.' -ForegroundColor Red }"
+      "command": "if ($lastCommand -match 'mongodb(\\+srv)?://|postgres(ql)?://|mysql://|mariadb://|redis://|amqp://|mqtt://|kafka://|elasticsearch://|rabbitmq://|memcache://|memcached://|couchdb://|couchbase://') { Write-Host '[CHAIN PRE] Database connection string matched. Document: DB type, host, credentials (redacted). Chain value: connect->exfil->data breach.' -ForegroundColor Red }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Write",
-      "command": "if ($lastCommand -match '\.php|\.asp|\.aspx|\.jsp|\.py|\.pl|\.rb|\.cgi|\.sh|\.bash|\.zsh|\.fish|\.bat|\.cmd|\.ps1|\.psm1|\.psd1') { Write-Host '[CHAIN PRE] Code file write detected. Check if web-accessible. Chain candidate: upload shell->RCE->takeover.' -ForegroundColor Red }"
+      "command": "if ($lastCommand -match '\\.php|\\.asp|\\.aspx|\\.jsp|\\.py|\\.pl|\\.rb|\\.cgi|\\.sh|\\.bash|\\.zsh|\\.fish|\\.bat|\\.cmd|\\.ps1|\\.psm1|\\.psd1') { Write-Host '[CHAIN PRE] Code file write detected. Check if web-accessible. Chain candidate: upload shell->RCE->takeover.' -ForegroundColor Red }"
     },
     {
       "event": "PreToolUse",
       "matcher": "Edit",
-      "command": "if ($lastCommand -match '\.env|config|settings|application|app|database|credentials|secrets|auth|users|permissions|roles|admins|staff|payment|stripe|paypal') { Write-Host '[CHAIN PRE] Config file edit detected. Chain candidate: config tampering->auth bypass->privilege escalation.' -ForegroundColor DarkYellow }"
+      "command": "if ($lastCommand -match '\\.env|config|settings|application|app|database|credentials|secrets|auth|users|permissions|roles|admins|staff|payment|stripe|paypal') { Write-Host '[CHAIN PRE] Config file edit detected. Chain candidate: config tampering->auth bypass->privilege escalation.' -ForegroundColor DarkYellow }"
     },
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'sudo|su\s|doas|pkexec|runas|Invoke-Expression|iex|Start-Process|New-Object|System\.Diagnostics|Process::Start') { Write-Host '[CHAIN POST] Privilege escalation or code execution context in output. Document exact command and resulting privileges.' -ForegroundColor Green }"
+      "command": "if ($lastOutput -match 'sudo|su\\s|doas|pkexec|runas|Invoke-Expression|iex|Start-Process|New-Object|System\\.Diagnostics|Process::Start') { Write-Host '[CHAIN POST] Privilege escalation or code execution context in output. Document exact command and resulting privileges.' -ForegroundColor Green }"
     },
     {
       "event": "PostToolUse",
@@ -705,7 +705,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'crontab|cron|at\s|systemd|timer|schedule|launchd|task scheduler|schtasks') { Write-Host '[CHAIN POST] Scheduler/task interaction. Document: job name, command, schedule. Chain value: persistence, delayed execution, privilege.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'crontab|cron|at\\s|systemd|timer|schedule|launchd|task scheduler|schtasks') { Write-Host '[CHAIN POST] Scheduler/task interaction. Document: job name, command, schedule. Chain value: persistence, delayed execution, privilege.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
@@ -745,7 +745,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Glob",
-      "command": "if ($lastOutput -match '.env|\.env|\.pem|\.key|\.p12|\.pfx|\.jks|\.keystore|\.truststore|id_rsa|id_dsa|id_ecdsa|id_ed25519|\.txt|\.log|\.bak|\.old|\.swp|\.tmp|\.cache') { Write-Host '[CHAIN POST] Sensitive file extension found via Glob. Verify permissions and content. Chain value: credential->lateral movement.' -ForegroundColor Red }"
+      "command": "if ($lastOutput -match '.env|\\.env|\\.pem|\\.key|\\.p12|\\.pfx|\\.jks|\\.keystore|\\.truststore|id_rsa|id_dsa|id_ecdsa|id_ed25519|\\.txt|\\.log|\\.bak|\\.old|\\.swp|\\.tmp|\\.cache') { Write-Host '[CHAIN POST] Sensitive file extension found via Glob. Verify permissions and content. Chain value: credential->lateral movement.' -ForegroundColor Red }"
     },
     {
       "event": "PostToolUse",
@@ -755,7 +755,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Write",
-      "command": "if ($lastOutput -match '\.json|\.xml|\.yaml|\.yml|\.toml|\.ini|\.cfg|\.conf|\.config') { Write-Host '[CHAIN POST] Config file written. Check: is this file loaded by system? Does it override security settings? Chain value: config poison->bypass.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match '\\.json|\\.xml|\\.yaml|\\.yml|\\.toml|\\.ini|\\.cfg|\\.conf|\\.config') { Write-Host '[CHAIN POST] Config file written. Check: is this file loaded by system? Does it override security settings? Chain value: config poison->bypass.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",

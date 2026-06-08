@@ -119,7 +119,7 @@
     {
       "event": "PreToolUse",
       "matcher": "Bash",
-      "command": "if ($lastCommand -match 'pip audit|pip-audit|requirements.*txt|pyproject\.toml|Pipfile') { Write-Host '[SEC-REV PRE] pip-audit detected. Scanning Python dependencies via PyPI advisory database and OSV.' -ForegroundColor DarkRed }"
+      "command": "if ($lastCommand -match 'pip audit|pip-audit|requirements.*txt|pyproject\\.toml|Pipfile') { Write-Host '[SEC-REV PRE] pip-audit detected. Scanning Python dependencies via PyPI advisory database and OSV.' -ForegroundColor DarkRed }"
     },
     {
       "event": "PreToolUse",
@@ -214,7 +214,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'pickle\\.loads|yaml\\.load|ObjectInputStream|readObject|deserialize|unserialize|json_decode.*\$|XMLDecoder') { Write-Host '[DESER] Unsafe deserialization detected. CRITICAL if attacker-controlled data reaches these functions.' -ForegroundColor Red }"
+      "command": "if ($lastOutput -match 'pickle\\.loads|yaml\\.load|ObjectInputStream|readObject|deserialize|unserialize|json_decode.*\\$|XMLDecoder') { Write-Host '[DESER] Unsafe deserialization detected. CRITICAL if attacker-controlled data reaches these functions.' -ForegroundColor Red }"
     },
     {
       "event": "PostToolUse",
@@ -239,7 +239,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'isAdmin|is_admin|isSuperAdmin|role.*=|permission|canAccess|hasRole|\.admin|\.root|privileged') { Write-Host '[AUTHZ] Access control logic found. Verify: (1) server-side enforcement, (2) every endpoint checked, (3) role hierarchy not bypassable.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'isAdmin|is_admin|isSuperAdmin|role.*=|permission|canAccess|hasRole|\\.admin|\\.root|privileged') { Write-Host '[AUTHZ] Access control logic found. Verify: (1) server-side enforcement, (2) every endpoint checked, (3) role hierarchy not bypassable.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
@@ -573,12 +573,12 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match '@WebFilter|@Component.*Filter|FilterChain|doFilter|OncePerRequestFilter|javax\.servlet\.Filter|Interceptor|HandlerInterceptor') { Write-Host '[FILTER] Java filter/interceptor chain found. Check: (1) filter order/priority, (2) filter bypass paths, (3) request wrapping/mutation, (4) response header modifications, (5) error handling in filter.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match '@WebFilter|@Component.*Filter|FilterChain|doFilter|OncePerRequestFilter|javax\\.servlet\\.Filter|Interceptor|HandlerInterceptor') { Write-Host '[FILTER] Java filter/interceptor chain found. Check: (1) filter order/priority, (2) filter bypass paths, (3) request wrapping/mutation, (4) response header modifications, (5) error handling in filter.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'HttpContext|Request\.User|ClaimsPrincipal|IPrincipal|User\.Identity|request\.user|req\.user|currentUser|getCurrentUser') { Write-Host '[AUTHZ] User identity context found. Verify: (1) identity is from server-side trusted source, (2) not spoofable via header injection, (3) roles/claims populated at authentication, (4) identity immutable after auth.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'HttpContext|Request\\.User|ClaimsPrincipal|IPrincipal|User\\.Identity|request\\.user|req\\.user|currentUser|getCurrentUser') { Write-Host '[AUTHZ] User identity context found. Verify: (1) identity is from server-side trusted source, (2) not spoofable via header injection, (3) roles/claims populated at authentication, (4) identity immutable after auth.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
@@ -603,7 +603,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'regex|RegExp|Pattern|Pattern\.compile|re\\.compile|match\\(|search\\(|findall\\(|grep') { Write-Host '[REGEX] Regular expression operation found. Check: (1) ReDoS risk (catastrophic backtracking), (2) user-controlled regex (ReDoS or bypass), (3) regex used for security decision (should not be sole gate), (4) unbounded input matched against regex.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'regex|RegExp|Pattern|Pattern\\.compile|re\\.compile|match\\(|search\\(|findall\\(|grep') { Write-Host '[REGEX] Regular expression operation found. Check: (1) ReDoS risk (catastrophic backtracking), (2) user-controlled regex (ReDoS or bypass), (3) regex used for security decision (should not be sole gate), (4) unbounded input matched against regex.' -ForegroundColor Yellow }"
     },
     {
       "event": "PromptSend",

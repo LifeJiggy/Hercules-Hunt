@@ -213,7 +213,7 @@
     {
       "event": "PostToolUse",
       "matcher": "Bash",
-      "command": "if ($lastOutput -match 'internal|intranet|local|localhost|127.0.0.1|10\.|172\.16|192.168|metadata|169.254') { Write-Host '[RANKER POST] Internal/private IP patterns found. Potential SSRF target if web app makes outbound requests. +6 priority for SSRF hunting.' -ForegroundColor Yellow }"
+      "command": "if ($lastOutput -match 'internal|intranet|local|localhost|127.0.0.1|10\\.|172\\.16|192.168|metadata|169.254') { Write-Host '[RANKER POST] Internal/private IP patterns found. Potential SSRF target if web app makes outbound requests. +6 priority for SSRF hunting.' -ForegroundColor Yellow }"
     },
     {
       "event": "PostToolUse",
