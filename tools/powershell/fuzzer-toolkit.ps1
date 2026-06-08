@@ -68,8 +68,13 @@ function _Invoke-Curl {
 
     $argsList += $Url
 
-    $result = curl.exe @argsList 2>&1
-    $exitCode = $LASTEXITCODE
+    try {
+        $result = curl.exe @argsList 2>&1
+        $exitCode = $LASTEXITCODE
+    } catch {
+        Write-Warning "[_Invoke-Curl] curl.exe failed: $_"
+        return @{ StatusCode = $null; Body = ""; Headers = ""; ExitCode = -1; Error = $_.ToString() }
+    }
 
     $statusCode = 0
     $responseHeaders = ''

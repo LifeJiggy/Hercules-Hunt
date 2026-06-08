@@ -1,6 +1,57 @@
 # Hercules-Hunt — Project Review
 
-Generated: 2026-06-07
+Generated: 2026-06-07 · Updated: 2026-06-08
+
+## Status of Previously-Identified Issues
+
+### ✅ Addressed
+| Issue | Fix |
+|-------|-----|
+| JS tools untestable without browser | `helpers/browser-mock.js` created — 46/46 Jest tests passing |
+| PS tools lack error handling | `try/catch` added to `_Invoke-Curl` (fuzzer-toolkit) and `Invoke-CurlCapture` (evidence-toolkit) |
+| Windows-gated PS tools (cross-platform gap) | 7 bash equivalents created in `tools/bash/` — `jiggy.sh` CLI dispatches all |
+| No requirements.txt | Exists at root — `requests>=2.28` |
+| No philosophy/mission docs | `soul.md`, `purpose.md`, `goal.md` created |
+| Hercules.md incomplete | Rewritten to catalog all 30+ directories and 100+ files |
+| hunt.sh references Claude | `CLAUDE.md` → `ENGAGEMENT.md` referencing soul/purpose/goal |
+| install-community-skills references shuvonsec/claude-bug-bounty | Rewired to `LifeJiggy/Hercules-Hunt` |
+
+### ❌ Still Open
+| Issue | Priority |
+|-------|----------|
+| `recon/README` 0 bytes | Low — delete or fill |
+| `doc/file.md` orphan (brainstorming note) | Low — delete |
+| No CI / GitHub Actions | Medium |
+| No Python tests | Medium |
+| Storage/memory templates not hydrated | Low (by design for now) |
+| MCP protocol compliance (error codes, progress) | Low |
+| Uneven domain coverage (chain-rules has no agent) | Low |
+
+---
+
+## Current Rating: 7.5 / 10
+
+**Why 7.5:**
+- Architecture is solid — multi-format, cross-CLI, agent-driven
+- Content quality is high — agents average 1K+ lines of real methodology
+- JS test infra now works (browser-mock.js, 46/46 passing)
+- Bash equivalents close the cross-platform gap
+- PS tools now have error handling on all network calls
+- Philosphy docs (soul/purpose/goal) give the project identity
+
+**What keeps it from 8-9:**
+- No CI pipeline — no automated quality gate
+- No Python tests — the heaviest executable code is untested
+- `recon/README` 0 bytes and `doc/file.md` orphan are unfinished
+- Storage/memory are templates only — no hydration scripts
+- MCP servers use non-standard protocol routing
+
+**To reach 9:**
+- Add `.github/workflows/ci.yml` with `py_compile` + `pytest` + PS syntax check
+- Add pytest tests for non-HTTP Python modules (`secret_scanner.py`, `payload_generator.py`, `base64_utils.py`)
+- Clean up dead files (`recon/README`, `doc/file.md`)
+
+---
 
 ---
 

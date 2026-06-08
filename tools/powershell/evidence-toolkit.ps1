@@ -98,7 +98,7 @@ function Invoke-CurlCapture {
     if($Method-ne'GET'){$ca+='-X',$Method}
     foreach($kv in $Headers.GetEnumerator()){$ca+='-H',"$($kv.Key): $($kv.Value)"}
     if($Method-in@('POST','PUT','PATCH')-and$Body){$ca+='-H',"Content-Type: $ContentType";$ca+='--data-raw',$Body}
-    $mr=&'curl.exe'$ca 2>&1; $et=Get-Date
+    try { $mr=&'curl.exe'$ca 2>&1 } catch { Write-Warning "[Invoke-CurlCapture] curl.exe failed: $_"; return $null }; $et=Get-Date
     $ml=$mr-split"`n"|Where-Object{$_-match'^\d{3}\|\|'}|Select-Object-First 1
     $hc='';$tt='';$sd='';$rct=''
     if($ml){$p=$ml-split'\|\|';$hc=$p[0];$tt=$p[1];$sd=$p[2];$rct=$p[3]}
