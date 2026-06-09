@@ -32,10 +32,11 @@ CHECKBOX_RE = re.compile(r'\[ \]')
 DASH_PLACEHOLDER_RE = re.compile(r'(?<!\w)—(?!\w)')
 
 
-def discover_templates() -> List[Path]:
+def discover_templates(target_dir: Optional[Path] = None) -> List[Path]:
     files = []
-    for d in [STORAGE_DIR, MEMORY_DIR]:
-        if d.exists():
+    dirs = [target_dir] if target_dir else [STORAGE_DIR, MEMORY_DIR]
+    for d in dirs:
+        if d and d.exists():
             files.extend(sorted(d.glob("*.md")))
     return files
 
@@ -82,12 +83,14 @@ def hydrate_all(
     values: Dict[str, str],
     output_dir: Optional[Path] = None,
     add_timestamp: bool = True,
+    target_dir: Optional[Path] = None,
 ) -> List[str]:
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
 
+    templates = discover_templates(target_dir)
     hydrated = []
-    for fp in discover_templates():
+    for fp in templates:
         result = hydrate_file(fp, values, output_dir, add_timestamp)
         hydrated.append(result)
     return hydrated
@@ -112,10 +115,14 @@ def load_json_data(path: str) -> Dict[str, str]:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Hydrate storage/*.md and memory/*.md templates with session data",
+        description="Hydrate .md templates with session data across any module folder",
     )
     parser.add_argument("--hydrate", type=str, help="Hydrate a single template file")
     parser.add_argument("--hydrate-all", action="store_true", help="Hydrate all templates")
+    parser.add_argument(
+        "--dir", type=str, default=None,
+        help="Target directory to hydrate all .md files in (overrides default storage/memory)",
+    )
     parser.add_argument(
         "--data", type=str, help="JSON file with key=value hydration data",
     )
@@ -147,14 +154,17 @@ def parse_args():
 def main():
     args = parse_args()
 
+    target_path = Path(args.dir).resolve() if args.dir else None
+    templates = discover_templates(target_path) if target_path else discover_templates()
+
     if args.list_templates:
-        for fp in discover_templates():
+        for fp in templates:
             rel = fp.relative_to(BASE_DIR)
             print(f"{rel} ({fp.stat().st_size} bytes)")
         return
 
     if args.list_placeholders:
-        results = list_all_placeholders()
+        results = [list_placeholders(f) for f in templates]
         for entry in results:
             print(f"\n{entry['file']}:")
             for p in entry["placeholders"]:
@@ -186,13 +196,13 @@ def main():
         print("Dry run — would hydrate with values:")
         for k, v in sorted(values.items()):
             print(f"  [{k}] = {v}")
-        target = [args.hydrate] if args.hydrate else [str(f) for f in discover_templates()]
+        target = [args.hydrate] if args.hydrate else [str(f) for f in templates]
         for t in target:
             print(f"  -> {t}")
         return
 
     if args.in_place:
-        output_dir = None  # disable output dir — write back to original
+        output_dir = None
 
     if args.hydrate:
         fp = Path(args.hydrate)
@@ -211,7 +221,7 @@ def main():
 
     elif args.hydrate_all:
         if args.in_place:
-            for fp in discover_templates():
+            for fp in templates:
                 hydrate_file(fp, values, output_dir=fp.parent, add_timestamp=True)
                 print(f"In-place hydrated: {fp}")
         else:
