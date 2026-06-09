@@ -55,7 +55,7 @@ class JsExtractor {
     ];
     this.secretPatterns = [
       { name: 'AWS Access Key', regex: /AKIA[0-9A-Z]{16}/g, severity: 'critical' },
-      { name: 'AWS Secret Key', regex: /(?i)aws[_-]?secret[_-]?key["'\s:=]+([a-zA-Z0-9\/+]{40})/g, severity: 'critical' },
+      { name: 'AWS Secret Key', regex: /aws[_-]?secret[_-]?key["'\s:=]+([a-zA-Z0-9\/+]{40})/gi, severity: 'critical' },
       { name: 'Google API Key', regex: /AIza[0-9A-Za-z\-_]{35}/g, severity: 'high' },
       { name: 'Google OAuth', regex: /[0-9]+-[0-9A-Za-z_]{32}\.apps\.googleusercontent\.com/g, severity: 'high' },
       { name: 'Slack Token', regex: /xox[baprs]-[0-9A-Za-z\-_]{10,}/g, severity: 'critical' },
