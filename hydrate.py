@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""hydrate.py — Load ALL .md files in the project root for context.
+"""Load ALL .md files in the project root for context.
 
 Usage:
     python hydrate.py [--load | --count | --list | --search <term> | --tree]
@@ -17,11 +17,10 @@ def get_all_md_files():
 
 def load_all():
     files = get_all_md_files()
-    print(f"=== root/ — {len(files)} .md files ===\n")
+    print(f"=== root/ - {len(files)} .md files ===\n")
     for f in files:
-        content = f.read_text(encoding="utf-8")
         print(f"--- {f.name} ---")
-        print(content)
+        print(f.read_text(encoding="utf-8"))
         print()
 
 

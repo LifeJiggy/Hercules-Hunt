@@ -1,29 +1,27 @@
 #!/usr/bin/env python3
-"""task-presistence/hydrate.py — Load ALL .md files in this folder for context.
+"""Load ALL .md files in task-presistence/ for context.
 
 Usage:
     python task-presistence/hydrate.py [--load | --count | --list | --search <term> | --tree]
-">
-import json
-import os
+"""
+
 import sys
 from pathlib import Path
 
-task-presistence = Path(__file__).resolve().parent
-MODULE_NAME = task-presistence.name
+HERE = Path(__file__).resolve().parent
+MODULE = HERE.name
 
 
 def get_all_md_files():
-    return sorted(task-presistence.glob("*.md"))
+    return sorted(HERE.glob("*.md"))
 
 
 def load_all():
     files = get_all_md_files()
-    print(f"=== {MODULE_NAME}/ — {len(files)} .md files ===\n")
+    print(f"=== {MODULE}/ - {len(files)} .md files ===\n")
     for f in files:
-        content = f.read_text(encoding="utf-8")
         print(f"--- {f.name} ---")
-        print(content)
+        print(f.read_text(encoding="utf-8"))
         print()
 
 
@@ -58,11 +56,10 @@ def search(term: str):
 
 def tree():
     files = get_all_md_files()
-    print(f"{MODULE_NAME}/")
+    print(f"{MODULE}/")
     for f in files:
-        size = f.stat().st_size
         lines = len(f.read_text(encoding="utf-8").splitlines())
-        print(f"  {f.name} ({lines} lines, {size} bytes)")
+        print(f"  {f.name} ({lines} lines, {f.stat().st_size} bytes)")
 
 
 if __name__ == "__main__":
