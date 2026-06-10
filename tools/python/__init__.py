@@ -38,8 +38,14 @@ All modules share a common interface:
     __main__             — CLI entry point, run module.py --help
 """
 
+import importlib
+import sys as _sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+
+# python-hunter has a hyphen in filename, load via importlib
+_python_hunter = importlib.import_module('python-hunter')
+_sys.modules['tools.python.python_hunter'] = _python_hunter
 
 __version__ = "3.0.0"
 __author__ = "Jiggy Security Team"
@@ -61,6 +67,7 @@ __all__ = [
     "ssrf_hunter",
     "xxe_hunter",
     "file_upload_hunter",
+    "python_hunter",
     "js_analyzer",
     "url_collector",
     "endpoint_fuzzer",

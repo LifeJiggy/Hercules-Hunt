@@ -225,3 +225,33 @@ Each agent entry follows:
 - **tools:** Read, Write, Bash, Glob, Grep, WebFetch
 - **file:** agents/ssti-hunter.md
 - **invoke:** "Hunt SSTI on target.com"
+
+### chain-validator
+- **description:** Validates exploit chains before submission. Checks chain primitives exist, verifies each link is independently reproducible, tests chain stability across retries, and rejects theoretical chains that can't be demonstrated end-to-end.
+- **tools:** Read, Bash, WebFetch
+- **file:** agents/chain-validator.md
+- **invoke:** "Validate this exploit chain before reporting"
+
+### p1-validator
+- **description:** P1 finding pre-flight validator. Runs findings through the 7-Question Gate, 4-gate checklist, and CVSS 3.1 calculation before they reach the primary validator. Prevents obvious N/A findings from wasting validator time.
+- **tools:** Read, Bash
+- **file:** agents/p1-validator.md
+- **invoke:** "Validate this P1 finding before report writing"
+
+### scope-enforcer
+- **description:** Scope boundary enforcer. Checks every finding against program scope, wildcard rules, and out-of-scope definitions before hunting begins. Prevents wasted effort on OOS targets and flags scope-adjacent assets for potential chain expansion.
+- **tools:** Read, Bash, WebFetch, Grep
+- **file:** agents/scope-enforcer.md
+- **invoke:** "Check scope boundaries for target.com"
+
+### target-onboarding-agent
+- **description:** Target onboarding specialist. Gathers initial intelligence on a new target: program rules, scope, disclosed reports, tech stack, DNS records, and SSL certificates. Produces a structured target brief for the hunting pipeline.
+- **tools:** Read, Write, Bash, WebFetch, Grep
+- **file:** agents/target-onboarding-agent.md
+- **invoke:** "Onboard target.com for hunting"
+
+### triage-readiness
+- **description:** Triage readiness checker. Reviews evidence, PoC reproducibility, report clarity, and severity justification before submission. Simulates triager review and flags potential rejection reasons. Prevents premature submissions.
+- **tools:** Read, Write, Bash
+- **file:** agents/triage-readiness.md
+- **invoke:** "Check triage readiness for finding on target.com"
