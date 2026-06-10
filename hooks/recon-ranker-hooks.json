@@ -442,7 +442,247 @@
     },
     {
       "event": "Stop",
-      "command": "Write-Host '[RANKER STOP] Ranking run complete. Audit: input_hash={hash}, targets_ranked={count}, p1_assigned={count}, p2_assigned={count}, p3_assigned={count}, info_assigned={count}, confidence_high={count}, confidence_medium={count}, confidence_low={count}, dau_tier={tier}.' -ForegroundColor Yellow"
+      "command": "Write-Host '[RANKER STOP] Output files written: ranked_targets.json (canonical), ranked_targets_backup_{timestamp}.json (backup), ranker_audit.jsonl (audit), confidence_report.md (summary). All files signed with checksum in output/checksums.txt.' -ForegroundColor Green"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Context7 integration: resolving framework/library docs at ranking time. Load framework-specific Vuln patterns from context7 for accurate tech_stack_match scoring. Each framework mapped to known Vuln classes and CVE IDs.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Framework Vuln pattern library: WordPress (SQLi via WP_Meta_Query, XSS via comment field, auth bypass via REST API), Django (SSRF via URL validation bypass, template injection, debug mode exposure), Rails (mass assignment via unpermitted params, auth bypass via remember_me), Laravel (mass assignment, debug mode, SQL via raw queries).' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Endpoint pattern library for bug class matching: /api/users/{id} -> IDOR, /api/search?q= -> SQLi/NoSQLi, /api/upload -> file upload bugs, /proxy?url= -> SSRF, /admin -> auth bypass, /graphql -> introspection leak, /oauth/callback -> redirect / token theft.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] API richness scoring: REST with Swagger spec = +20, REST without spec = +10, GraphQL introspection enabled = +15, GraphQL disabled = +5, SOAP/WSDL = +10, gRPC/Protobuf = +8, WebSocket heavy = +7. More discoverable API = more attack surface = higher rank.' -ForegroundColor Gray"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Tech stack Vuln database lookup: for each detected tech, query Vuln DB (NVD + GitHub Advisory + Exploit-DB). Match CVEs with PoC availability. CVEs with public PoC get +5 bonus over CVEs without. Exploit-DB entries = +3. Metasploit modules = +3.' -ForegroundColor Magenta"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Target clustering: group targets by (1) tech stack similarity, (2) infrastructure (same CDN, same hosting), (3) codebase similarity (same framework version). Cluster analysis identifies which targets get highest benefit from joint security-reviewer scan.' -ForegroundColor Cyan"
+    },
+    {
+      "event": "SessionStart",
+      "command": "Write-Host '[RANKER] Alert fatigue prevention: suppress targets with >=10 existing low-value findings. These targets likely not worth full hunting unless new data suggests otherwise. Suppressed targets ranked but deprioritized to P3 unless new nuclei result.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'jq.*bug_class|jq.*attack_vector|python.*classify|python.*categorize') { Write-Host '[RANKER PRE] Bug class classification detected. Classifying endpoints: REST/GraphQL/SOAP, numeric IDs present, file ops, auth endpoints, admin panels, query/export endpoints.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nvd|NVD|nvd.*nvd|nvd.*api|github.*advisory|advisory.*database') { Write-Host '[RANKER PRE] External Vuln database lookup detected. Matching detected tech stack versions against NVD and GitHub Advisory DB. Results feed tech_stack_match dimension.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'wayback|waybackurls|commoncrawl|cc-index|urlscan|otx|shodan.*crawler') { Write-Host '[RANKER PRE] Historical URL discovery detected. Found URLs feed feature_age scoring. Wayback URLs older than 3 years = +12 feature_age bonus. Cross-reference with current live endpoints.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'crt\\.sh|certificate.*transparency|cert.*search|censys.*cert|teams.*cymru') { Write-Host '[RANKER PRE] Certificate transparency log search detected. Results reveal subdomain history, wildcard certificates, and certificate transparency coverage. Missing CT coverage = potential visibility gap.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'wafw00f|whatwaf|wafdetect|identywaf|waf.*finger') { Write-Host '[RANKER PRE] WAF fingerprinting detected. WAF presence = mature security posture ranking penalty (-5). WAF type documented for p1-warrior WAF bypass planning. WAF bypass adds time cost to estimates.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'retire|retire\\.js|retire.*-j|retire.*--jshint|check.*vulnerable.*js') { Write-Host '[RANKER PRE] JS vulnerability scanner detected. Checking front-end libraries for known CVEs. Results can shift target ranking if framework found vulnerable. Document found library versions for Vuln DB lookup.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PreToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastCommand -match 'nikto|dirbuster|dirb|gobuster|ffuf|feroxbuster|dirsearch|fuzz') { Write-Host '[RANKER PRE] Directory/file brute-force detected. Findings feed into api_surface_score. Brute-force results reveal hidden/admin endpoints. Cross-reference with nuclei templates for Vuln scoring.' -ForegroundColor DarkYellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'vulnerable.*version|outdated|EOL|end.of.life|unsupported|deprecated|CVE-[0-9]{4}-[0-9]{4,7}') { Write-Host '[RANKER POST] Outdated/vulnerable version detected. Tech stack match score boosted. CVE references passed to exploit-researcher for PoC retrieval. Outdated components = highest predicted yield.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'wp-admin|wp-login|wp-json|xmlrpc\\.php|wp-content|wp-includes') { Write-Host '[RANKER POST] WordPress fingerprint detected. WordPress endpoints = known Vuln patterns. wp-json REST API = unauthenticated enumeration. xmlrpc.php = SSRF/auth bypass. Track for p1-warrior WordPress-specific testing.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Laravel|Symfony|CodeIgniter|CakePHP|Yii|Zend|Phalcon|Slim|FuelPHP|PHPixie') { Write-Host '[RANKER POST] PHP framework detected. Laravel debug mode = immediate +10. Symfony profiler = +8. SQL via raw queries = +5. File upload in PHP = +5. Track framework-specific payloads for hunter.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Django|Flask|FastAPI|Tornado|Bottle|Pyramid|Sanic|Falcon|Hug') { Write-Host '[RANKER POST] Python framework detected. Django debug mode = +10. Flask debug mode = +8. Jinja2 SSTI = +10. PyYAML load = +8. Track Python-specific bug class payloads for hunter.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Spring|SpringBoot|Quarkus|Micronaut|Vert\.x|Play|Jakarta|Hibernate') { Write-Host '[RANKER POST] Java framework detected. Spring Actuator exposed = +10. JNDI lookup (Log4Shell) = +15 if version vulnerable. Deserialization via Jackson = +8. SQL via JdbcTemplate = +5. Track Java-specific payloads for hunter.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'Express|Koa|Hapi|Fastify|NestJS|Sails|Feathers|Restify|Adonis') { Write-Host '[RANKER POST] Node.js framework detected. Express apps = prototype pollution risk. JWT common. Check for: helmet usage, rate limiting, CORS config. NestJS = TypeScript = better type safety. Track Node-specific payloads for hunter.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'kubernetes|k8s|docker|container|nomad|consul|vault|istio|envoy|service.mesh') { Write-Host '[RANKER POST] Container/orchestration detected. Kubernetes API server exposed = critical. Vault exposed = critical. Docker socket = critical. Service mesh = lateral movement risk. Container targets get infrastructure priority boost +8.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'jenkins|gitlab|github|bitbucket|travis|circleCI|argoCD|spinnaker|tekton') { Write-Host '[RANKER POST] CI/CD system detected. CI/CD = secrets in env vars, build tokens, deployment creds. Access to CI/CD = entire supply chain compromise. +10 priority. Flag for security-reviewer + p1-warrior.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'elastic|kibana|grafana|prometheus|jaeger|zipkin|opentelemetry|APM|NewRelic|Datadog') { Write-Host '[RANKER POST] Observability stack detected. Grafana default admin/admin = +15. Kibana = +10. /metrics endpoint = info leak. APM traces may contain sensitive data in spans. Observability tools often overlooked security-wise.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'reseller|partner|affiliate|marketplace|merchant|multi.tenant|customer.portal|vendor.portal') { Write-Host '[RANKER POST] Multi-tenant architecture detected. Multi-tenant = IDOR goldmine. Each tenant data isolation boundary = potential IDOR testing location. Cross-tenant data leakage = high bounty. +8 IDOR boost for all endpoints.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'openid|oauth2|oidc|saml|sso|keycloak|auth0|okta|cognito|azure.ad|google.identity') { Write-Host '[RANKER POST] Identity/SSO detected. OAuth misconfig = high bounty. redirect_uri manipulation = open redirect chain. Common bugs: redirect_uri not strict, PKCE missing, scope escalation, token leakage via referrer.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'stripe|braintree|square|adyen|razorpay|mollie|checkout|payment_intent|billing|subscription|invoice') { Write-Host '[RANKER POST] Payment/checkout stack detected. Payment bugs = highest bounty category. Check: (1) payment amount manipulation, (2) status bypass, (3) webhook signature, (4) coupon/ promo abuse, (5) currency arbitrage. +15 payment bonus.' -ForegroundColor Red }"
+    },
+    {
+      "event": "PostToolUse",
+      "matcher": "Bash",
+      "command": "if ($lastOutput -match 'mail|smtp|sendgrid|mailgun|ses|postmark|postal|mailhog|mailtrap|debug.*email') { Write-Host '[RANKER POST] Email service detected. Email flows = password reset token leakage, email enumeration, MX injection. Check: (1) password reset token in URL, (2) email enumeration via response timing, (3) email content injection, (4) SMTP open relay.' -ForegroundColor Yellow }"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Re-ranking trigger conditions: (1) p1-warrior reports new subdomain/endpoint found, (2) nuclei new result on ranked target, (3) exploit-researcher finds new CVE for detected tech, (4) js-analysis finds new API endpoint, (5) security-reviewer finds new trust boundary violation.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Ranker output contract: output file format strictly defined in output/contract/ranker_output_schema.json. All fields required. Consumers (p1-warrior, chain-builder, etc.) validate against schema before processing. Schema versioning handled in filename.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Dynamic score adjustment: ranker tracks per-target difficulty_estimate (1-5). Difficult targets get time_estimate multiplier. Easy targets with high score = P1 first. Hard targets deferred if easier P1s exist. Hunter efficiency optimization.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Novel finding premium: targets with tech stacks that have no existing recon-ranker history get novelty_bonus=+5. Novel targets may have less-tested code paths. Risk/reward: potentially uncaught bugs vs potentially hardened code.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Competition mode: if multiple hunters work same program, ranker adjusts for non-overlapping target assignment. Hunter A gets targets not assigned to Hunter B. Coordination via state/knowledge/hunter_assignments.json.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Program bounty history integration: if program has bounty history in state/programs/{name}/bounty_history.json, weight targets by historical payout. High-yield targets boost priority. Low/zero-yield targets deprioritized even if Vuln-rich.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Temporal decay: recon data decays over time. Live host data from >72h ago = -3 confidence tier. Tech stack from >7 days = revert to safe assumption. Nuclei from >7 days = rerun. Fresh data always preferred over cached data.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[RANKER STOP] Ranking complete. Audit: input_hash={hash}, targets_ranked={count}, p1_assigned={count}, p2_assigned={count}, p3_assigned={count}, info_assigned={count}, confidence_high={count}, confidence_medium={count}, confidence_low={count}, dau_tier={tier}.' -ForegroundColor Yellow"
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[RANKER STOP] Output files written: ranked_targets.json (canonical), ranked_targets_backup_{timestamp}.json (backup), ranker_audit.jsonl (audit), confidence_report.md (summary). All files signed with checksum in output/checksums.txt.' -ForegroundColor Green"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Automated re-ranking triggers: (1) new nuclei result on ranked target = immediate re-rank, (2) new CVE for detected tech = re-rank affected targets, (3) p1-warrior discovers new endpoint = re-rank that target, (4) js-analysis finds new secret = re-rank. Re-ranking is O(n log n) and fast.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Cross-program intelligence sharing: if same tech stack found across programs, cross-reference findings. Bug class yield from Program A applicable to Program B with same stack. Ranker shares non-sensitive intel via state/knowledge/tech_stack_intel/{framework}.json.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Statistical confidence intervals: for each target, compute 95% CI on priority_score. Wide CI = uncertain (data quality issues). Narrow CI = high confidence. Hunter should prioritize targets with narrow CI first for efficiency.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Cluster differentiation: within a cluster of similar targets, identify the least-tested member as primary. Least-tested member gets +3 priority (novel attack surface). Cluster leader (most comprehensive recon) also ranked but secondary.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Negative signal handling: targets with WAF + recent security audit + mature framework = negative signals reduce priority. Negative signals: WAF (-5), security audit within 6 months (-3), mature framework with recent updates (-2). Negative signals do not drop below P3.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Multi-hunter coordination protocol: each hunter registers assigned target list in state/knowledge/hunter_assignments.json. Hunter A and Hunter B target sets non-overlapping. Hunter completion = targets released back to pool. Hunter failure = targets re-queued for next hunter.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Program bounty profile integration: load state/programs/{program}/bounty_profile.json which contains: avg_payout_per_severity, historical_findings, hunter_leaderboard, time_to_first_bounty. Profile adjusts target scoring: programs with quick payouts = bump time-sensitive targets.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Time-box adaptation: ranking estimates time per target based on complexity score. Simple target = 20 min, medium = 40 min, complex = 90 min. Time estimates feed into autopilot phase budget. Targets exceeding budget get deferred in normal mode.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Alert deduplication: before ranking, normalize URLs (strip ports, www, trailing slashes). Deduplicate across all input files. Duplicate URLs with conflicting data = merged with most recent source winning. Dedup reduces noise in ranking.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Target posture scoring: independently score target security posture. Posture = (has_WAF, has_CDN_WAF, has_modsecurity, has_rate_limit, has_CAPTCHA, has_security_team, has_bug_bounty_program_active). Mature posture = targets harder to hack = lower priority for hunters seeking quick wins.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Outcome tracking: tie ranking decisions back to actual findings via audit.jsonl. Correlation: did top P1 targets yield bugs? If not, adjust weighting. Feedback loop: ranking algorithm improvements from actual hunter win rates. Measured by: P1 yield rate, time-to-first-bug, false positive rate of ranked targets.' -ForegroundColor DarkGray"
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Integration with network-analyst: if network-analyst captures suspicious traffic patterns, flag related hosts/IPs in ranking for security-reviewer. Network anomalies + ranked target = suspicious activity warranting deep source review.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Integration with redteam-planner: ranker provides ranked target list to redteam-planner for campaign design. Redteam-planner maps attack paths: initial access target -> pivot target -> crown jewel. Ranker inputs prioritize which target gets initial access treatment.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Integration with reverse-engineer: if binary/firmware analysis is in scope, ranker includes firmware endpoints/binary targets in ranking. Firmware-only targets get separate ranking track with specialized scoring (protocol reverse engineering difficulty).' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] CISA KEV integration: cross-reference ranked targets against CISA Known Exploited Vulnerabilities catalog. KEV match = +10 priority (known active exploitation). CISA KEV also feeds exploit-researcher for PoC retrieval. KEV = prioritize before next CISA advisory update.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Threat actor TTP correlation: if threat actor TTPs relevant to target\'s sector/geography are known (MITRE ATT&CK), rank targets facing those TTPs higher. Sector-specific TTP database in state/knowledge/threat_intel/ttp_sector_map.json.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Ranking algorithm versioning: current algorithm version tagged in output. Algorithm changes require A/B test against historical rankings. Algorithm v1 baseline stored in state/algorithms/baseline_v1.json. New algorithm v2 tested against same data, compared for yield improvement.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "PromptSend",
+      "command": "Write-Host '[RANKER CTX] Fallback ranking: if recon data severely limited (only domain, no subdomain scan), use fallback ranking based on (1) TLD reputation (.gov=high, .com=medium, .xyz=low), (2) known tech stack from passive sources, (3) similar target historical data. Fallback ranking marked with confidence=low.' -ForegroundColor DarkGray'
+    },
+    {
+      "event": "Stop",
+      "command": "Write-Host '[RANKER STOP] Ranking complete. Audit: input_hash={hash}, targets_ranked={count}, p1_assigned={count}, p2_assigned={count}, p3_assigned={count}, info_assigned={count}, confidence_high={count}, confidence_medium={count}, confidence_low={count}, dau_tier={tier}.' -ForegroundColor Yellow"
     },
     {
       "event": "Stop",

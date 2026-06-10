@@ -3,8 +3,8 @@
 ## PROMPT — Full Engagement Task
 
 **Date:** June 2026  
-**Toolset:** curl.exe, PowerShell, Python, `C:\Users\ADMIN\Python_Project\Prompt_AI-Support\Jiggy-2026` known as Hercules-Hunt  
-**Workspace:** `C:\Users\ADMIN\Python_Project\Prompt_AI-Support\Jiggy-2026`
+**Toolset:** curl.exe, PowerShell, Python, Javascript, Bash, Markdown. `C:\Users\ADMIN\Python_Project\Prompt_AI-Support\Jiggy-2026` known as Hercules-Hunt  
+**Workspace:** `C:\Users\ADMIN\Python_Project\Prompt_AI-Support\Jiggy-2026` known as Hercules-Hunt
 
 ```
 Target: [INSERT TARGET DOMAIN]

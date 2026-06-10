@@ -20,6 +20,7 @@ provides motivation through visible progress indicators.
 10. [Quarterly Review](#10-quarterly-review)
 11. [Progress Templates](#11-progress-templates)
 12. [Maintenance](#12-maintenance)
+13. [Task Persistence Files Reference](#13-task-persistence-files-reference)
 
 ---
 
@@ -618,6 +619,30 @@ QUARTERLY:
   [ ] Update long-term goals
   [ ] Reassess skill priorities
   [ ] Check if pace matches annual goal
+```
+
+---
+
+## 13. Task Persistence Files Reference
+
+```
+TASK PERSISTENCE MODULE:
+  progress-tracker.md  — Long-term progress tracking (this file)
+  active-tasks.md      — Current in-flight tasks, priorities, blockers
+  continuity-log.md    — Session handoff notes and in-flight payloads
+  session-states.md    — Full session state dumps (tools, accounts, payloads)
+  task-history.md      — Historical record of completed / cancelled tasks
+  finding-dossier.md   — Per-finding lifecycle tracker (discovery -> triage)
+  recon-register.md    — Per-target recon completion tracker
+  session-protocol.md  — Pre/during/post session SOP and quality gates
+  retrospective.md     — Post-session and weekly review framework
+  hydrate.py           — Context hydration script (loads all .md files)
+
+USAGE:
+  Start session: python task-presistence/hydrate.py --list
+  Update state:  edit relevant .md file (append, don't rewrite)
+  End session:   run session-protocol.md checklist
+  Weekly review: run retrospective.md
 ```
 
 ---
