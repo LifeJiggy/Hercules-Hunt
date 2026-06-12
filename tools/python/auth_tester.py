@@ -47,8 +47,17 @@ import time
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse, parse_qs
+
+_MAX_URL_LENGTH = 8192
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
 
 logging.basicConfig(
     level=logging.INFO,
@@ -701,7 +710,7 @@ class BypassTester:
         {"X-Debug": "true"},
     ]
 
-    def __init__(self, session: Optional[Any] = None):
+    def __init__(self, session: Optional[Any] = None, allow_insecure: bool = False):
         """Initialize the bypass tester.
 
         Args:
@@ -710,6 +719,7 @@ class BypassTester:
         self.results: List[AuthTestResult] = []
         self.finding_types: Set[str] = set()
         self._session = session
+        self.allow_insecure = allow_insecure
 
     def _request(
         self,
@@ -745,8 +755,9 @@ class BypassTester:
                 result.size = len(resp.content)
             else:
                 ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
+                if self.allow_insecure:
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
                 req = urllib.request.Request(url, headers=headers or {}, method=method.upper())
                 if data:
                     req.data = urllib.parse.urlencode(data).encode("utf-8")
@@ -970,7 +981,7 @@ class RateLimitDetector:
         ],
     }
 
-    def __init__(self, request_func: Optional[Callable] = None):
+    def __init__(self, request_func: Optional[Callable] = None, allow_insecure: bool = False):
         """Initialize the rate limit detector.
 
         Args:
@@ -981,6 +992,7 @@ class RateLimitDetector:
         self.rate_limit_type: str = "none"
         self.request_limit: Optional[int] = None
         self.window_seconds: Optional[int] = None
+        self.allow_insecure = allow_insecure
         self._request_func = request_func or self._default_request
 
     def _default_request(self, url: str, timeout: int = 10) -> Tuple[int, Dict[str, str], str]:
@@ -995,8 +1007,9 @@ class RateLimitDetector:
         """
         try:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            if self.allow_insecure:
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
             req = urllib.request.Request(url, method="GET")
             start = time.time()
             resp = urllib.request.urlopen(req, timeout=timeout, context=ctx)
@@ -1155,6 +1168,7 @@ class AuthTester:
         target_url: str,
         timeout: int = 15,
         threads: int = 5,
+        allow_insecure: bool = False,
     ):
         """Initialize the auth tester.
 
@@ -1166,11 +1180,12 @@ class AuthTester:
         self.target_url = target_url.rstrip("/")
         self.timeout = timeout
         self.threads = max(1, threads)
+        self.allow_insecure = allow_insecure
 
         self.login_detector = LoginDetector()
         self.session_analyzer = SessionAnalyzer()
-        self.bypass_tester = BypassTester()
-        self.rate_limit_detector = RateLimitDetector()
+        self.bypass_tester = BypassTester(allow_insecure=allow_insecure)
+        self.rate_limit_detector = RateLimitDetector(allow_insecure=allow_insecure)
         self.jwt_analyzers: List[JwtAnalyzer] = []
 
         self.results: List[AuthTestResult] = []
@@ -1193,8 +1208,8 @@ class AuthTester:
             logger.warning("requests library not available")
             self.session = None
 
-        self.bypass_tester = BypassTester(self.session)
-        self.rate_limit_detector = RateLimitDetector()
+        self.bypass_tester = BypassTester(self.session, allow_insecure=self.allow_insecure)
+        self.rate_limit_detector = RateLimitDetector(allow_insecure=self.allow_insecure)
 
     def detect_login_form(self, login_url: str = "") -> Dict[str, Any]:
         """Detect and analyze login forms on the target.
@@ -1215,8 +1230,9 @@ class AuthTester:
                 set_cookies = resp.headers.get_all("Set-Cookie") or [resp.headers.get("Set-Cookie", "")] if hasattr(resp.headers, "get_all") else [resp.headers.get("Set-Cookie", "")]
             else:
                 ctx = ssl.create_default_context()
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
+                if self.allow_insecure:
+                    ctx.check_hostname = False
+                    ctx.verify_mode = ssl.CERT_NONE
                 req = urllib.request.Request(url)
                 resp = urllib.request.urlopen(req, timeout=self.timeout, context=ctx)
                 html = resp.read().decode("utf-8", errors="ignore")
@@ -1367,6 +1383,7 @@ class AuthTester:
         Raises:
             OSError: If the file cannot be written
         """
+        filepath = _validate_output_path(filepath)
         try:
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         except OSError:
@@ -1394,6 +1411,7 @@ class AuthTester:
         Raises:
             OSError: If the file cannot be written
         """
+        filepath = _validate_output_path(filepath)
         try:
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         except OSError:
@@ -1518,6 +1536,10 @@ def setup_argparse() -> argparse.ArgumentParser:
         version="%(prog)s 2.0.0",
         help="Show version and exit",
     )
+    parser.add_argument(
+        "--allow-insecure", action="store_true",
+        help="Allow insecure SSL connections (skip certificate verification)",
+    )
     return parser
 
 
@@ -1540,6 +1562,7 @@ def main() -> None:
         target_url=args.target,
         timeout=args.timeout,
         threads=args.threads,
+        allow_insecure=args.allow_insecure,
     )
 
     print("\n" + "=" * 60)

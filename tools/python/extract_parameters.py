@@ -45,6 +45,15 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlencode, urlparse, parse_qs, quote, unquote_plus
 
+_MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 logger = logging.getLogger("extract_parameters")
 LOG_FMT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
@@ -1027,6 +1036,10 @@ class ParameterExtractor:
         report = ExtractionReport()
         report.extraction_time = datetime.datetime.utcnow().isoformat()
         try:
+            file_size = os.path.getsize(filepath)
+            if file_size > _MAX_FILE_SIZE:
+                self.logger.error("File too large (%d > %d): %s", file_size, _MAX_FILE_SIZE, filepath)
+                return report
             with open(filepath, "r", encoding="utf-8") as f:
                 content = f.read()
             report = self._parse_raw_http(content)
@@ -1274,15 +1287,16 @@ def main() -> None:
 
     if args.output:
         try:
-            dirname = os.path.dirname(os.path.abspath(args.output))
+            output_path = _validate_output_path(args.output)
+            dirname = os.path.dirname(os.path.abspath(output_path))
             if dirname:
                 os.makedirs(dirname, exist_ok=True)
-            with open(args.output, "w", encoding="utf-8") as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 if args.json:
                     f.write(output)
                 else:
                     f.write(output)
-            logger.info("Report written to %s", args.output)
+            logger.info("Report written to %s", output_path)
         except OSError as exc:
             logger.error("Failed to write output: %s", exc)
 

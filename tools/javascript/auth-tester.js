@@ -7,6 +7,9 @@ const https = require('https');
 const { URL } = require('url');
 const crypto = require('crypto');
 
+const MAX_URL_LENGTH = 8192;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 /**
  * @typedef {Object} LoginForm
  * @property {string} action - Form action URL
@@ -732,6 +735,14 @@ class AuthTester {
    */
   async run(options) {
     const startTime = Date.now();
+    if (options.target && typeof options.target === 'string') {
+      if (options.target.trim().length === 0) throw new Error('Target must not be empty');
+      if (options.target.length > MAX_URL_LENGTH) throw new Error(`Target URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+    }
+    if (options.loginUrl && typeof options.loginUrl === 'string') {
+      if (options.loginUrl.trim().length === 0) throw new Error('Login URL must not be empty');
+      if (options.loginUrl.length > MAX_URL_LENGTH) throw new Error(`Login URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+    }
     let credentials = null;
     let jwtAnalysis = null;
     let loginResult = null;
@@ -747,7 +758,15 @@ class AuthTester {
     if (options.analyzeJwt && options.credentials) {
       try {
         let jwtToken = '';
-        if (fs.existsSync(options.credentials)) {
+        if (typeof options.credentials === 'string' && fs.existsSync(options.credentials)) {
+          const resolvedPath = path.resolve(options.credentials);
+          if (!resolvedPath.startsWith(process.cwd())) {
+            throw new Error('Path traversal detected: ' + options.credentials);
+          }
+          const st = fs.statSync(options.credentials);
+          if (st.size > MAX_FILE_SIZE) {
+            throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB (${st.size} bytes)`);
+          }
           jwtToken = fs.readFileSync(options.credentials, 'utf-8').trim();
         } else {
           jwtToken = options.credentials;
@@ -762,7 +781,15 @@ class AuthTester {
     if (options.credentials && options.loginUrl) {
       try {
         let creds;
-        if (fs.existsSync(options.credentials)) {
+        if (typeof options.credentials === 'string' && fs.existsSync(options.credentials)) {
+          const resolvedPath = path.resolve(options.credentials);
+          if (!resolvedPath.startsWith(process.cwd())) {
+            throw new Error('Path traversal detected: ' + options.credentials);
+          }
+          const st = fs.statSync(options.credentials);
+          if (st.size > MAX_FILE_SIZE) {
+            throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB (${st.size} bytes)`);
+          }
           creds = JSON.parse(fs.readFileSync(options.credentials, 'utf-8'));
         } else {
           creds = JSON.parse(options.credentials);
@@ -806,6 +833,10 @@ class AuthTester {
 
     if (options.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
       this.log(`Report written to ${outPath}`);

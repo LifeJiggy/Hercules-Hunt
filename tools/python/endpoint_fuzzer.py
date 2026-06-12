@@ -50,6 +50,15 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse, parse_qs
 
+_MAX_URL_LENGTH = 8192
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -599,6 +608,7 @@ class EndpointFuzzer:
         timeout: int = 15,
         filter_size: Optional[int] = None,
         filter_code: Optional[Set[int]] = None,
+        allow_insecure: bool = False,
     ):
         """Initialize the endpoint fuzzer.
 
@@ -618,6 +628,7 @@ class EndpointFuzzer:
         self.timeout = max(1, timeout)
         self.filter_size = filter_size
         self.filter_code = filter_code or set()
+        self.allow_insecure = allow_insecure
 
         self.wordlist_manager = WordlistManager(wordlist_path)
         self.response_analyzer = ResponseAnalyzer()
@@ -728,10 +739,14 @@ class EndpointFuzzer:
             FuzzResult with response data
         """
         result = FuzzResult(url=url, method=method.upper())
+        if len(url) > _MAX_URL_LENGTH:
+            result.error = f"URL exceeds max length ({len(url)} > {_MAX_URL_LENGTH})"
+            return result
         try:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            if self.allow_insecure:
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
 
             req = urllib.request.Request(url, headers=headers, method=method.upper())
 
@@ -1198,6 +1213,7 @@ class EndpointFuzzer:
         Raises:
             OSError: If the file cannot be written
         """
+        filepath = _validate_output_path(filepath)
         try:
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         except OSError:
@@ -1225,6 +1241,7 @@ class EndpointFuzzer:
         Raises:
             OSError: If the file cannot be written
         """
+        filepath = _validate_output_path(filepath)
         try:
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         except OSError:
@@ -1361,6 +1378,10 @@ def setup_argparse() -> argparse.ArgumentParser:
         version="%(prog)s 2.0.0",
         help="Show version and exit",
     )
+    parser.add_argument(
+        "--allow-insecure", action="store_true",
+        help="Allow insecure SSL connections (skip certificate verification)",
+    )
     return parser
 
 
@@ -1413,6 +1434,7 @@ def main() -> None:
         timeout=args.timeout,
         filter_size=args.filter_size,
         filter_code=filter_codes,
+        allow_insecure=args.allow_insecure,
     )
 
     all_variants: List[FuzzResult] = []

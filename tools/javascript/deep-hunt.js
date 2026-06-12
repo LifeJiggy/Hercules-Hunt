@@ -6,6 +6,8 @@ const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 
+const MAX_URL_LENGTH = 8192;
+
 /**
  * @typedef {Object} DeepHuntOptions
  * @property {string} target - Target URL base
@@ -560,7 +562,11 @@ class DeepHunter {
    */
   async run(options) {
     const startTime = Date.now();
-    if (options.target) this.target = options.target.replace(/\/+$/, '');
+    if (options.target && typeof options.target === 'string') {
+      if (options.target.trim().length === 0) throw new Error('Target must not be empty');
+      if (options.target.length > MAX_URL_LENGTH) throw new Error(`Target URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+      this.target = options.target.replace(/\/+$/, '');
+    }
     if (options.endpoints) this.endpointList = options.endpoints;
     if (options.cookies) this.cookieStr = options.cookies;
     if (options.timeout) this.timeout = options.timeout;
@@ -589,6 +595,10 @@ class DeepHunter {
     const report = this.generateReport(allFindings, { elapsed: Date.now() - startTime });
     if (options.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
       this.log(`Report written to ${outPath}`);

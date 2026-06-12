@@ -41,6 +41,16 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+_MAX_URL_LENGTH = 8192
+_MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 
 @dataclass
 class Finding:
@@ -380,10 +390,11 @@ class JsExtractor:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
     ]
 
-    def __init__(self, silent: bool = False, timeout: float = 30, depth: int = 2):
+    def __init__(self, silent: bool = False, timeout: float = 30, depth: int = 2, allow_insecure: bool = False):
         self.silent = silent
         self.timeout = timeout
         self.max_depth = depth
+        self.allow_insecure = allow_insecure
         self.findings: List[Finding] = []
         self.external_js_urls: List[str] = []
         self.inline_js_blocks: List[str] = []
@@ -410,14 +421,18 @@ class JsExtractor:
 
     def _create_ssl_context(self) -> ssl.SSLContext:
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        if self.allow_insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
     def _get_user_agent(self) -> str:
         return random.choice(self.USER_AGENTS)
 
     def fetch_content(self, url: str) -> Optional[str]:
+        if len(url) > _MAX_URL_LENGTH:
+            self._log(f"URL exceeds max length ({len(url)} > {_MAX_URL_LENGTH}): {url[:100]}...", "warn")
+            return None
         try:
             req = urllib.request.Request(
                 url,
@@ -722,6 +737,10 @@ class JsExtractor:
     def analyze_file(self, filepath: str, source_url: str = "") -> List[Finding]:
         self._log(f"Analyzing local file: {filepath}")
         try:
+            file_size = os.path.getsize(filepath)
+            if file_size > _MAX_FILE_SIZE:
+                self._log(f"File too large ({file_size} > {_MAX_FILE_SIZE}): {filepath}", "error")
+                return []
             with open(filepath, "r", encoding="utf-8", errors="ignore") as f:
                 content = f.read()
         except Exception as e:
@@ -746,6 +765,7 @@ class JsExtractor:
         }
         output = json.dumps(data, indent=2, default=str)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(output)
@@ -753,6 +773,7 @@ class JsExtractor:
         return output
 
     def output_csv(self, filepath: str) -> None:
+        filepath = _validate_output_path(filepath)
         os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         if not self.findings:
             self._log("No findings to write", "warn")
@@ -792,6 +813,7 @@ class JsExtractor:
 
         report = "\n".join(lines)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(report)
@@ -849,6 +871,8 @@ def build_argparse() -> argparse.ArgumentParser:
     parser.add_argument("--json", action="store_true",
                         help="Output in JSON format")
     parser.add_argument("--csv", type=str, default=None, help="Write CSV output")
+    parser.add_argument("--allow-insecure", action="store_true",
+                        help="Allow insecure SSL connections (skip certificate verification)")
     return parser
 
 
@@ -860,7 +884,7 @@ def main() -> None:
         parser.print_help()
         sys.exit(1)
 
-    extractor = JsExtractor(silent=args.silent, timeout=args.timeout, depth=args.depth)
+    extractor = JsExtractor(silent=args.silent, timeout=args.timeout, depth=args.depth, allow_insecure=args.allow_insecure)
 
     try:
         if args.url:

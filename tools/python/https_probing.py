@@ -38,6 +38,15 @@ import xml.etree.ElementTree
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+_MAX_URL_LENGTH = 8192
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 logger = logging.getLogger("https_probing")
 LOG_FMT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
 
@@ -199,8 +208,9 @@ class TlsProbeResult:
 class CertificateAnalyzer:
     """Parses and analyzes X.509 SSL/TLS certificate chains."""
 
-    def __init__(self, timeout: float = _DEFAULT_TIMEOUT):
+    def __init__(self, timeout: float = _DEFAULT_TIMEOUT, allow_insecure: bool = False):
         self.timeout = timeout
+        self.allow_insecure = allow_insecure
         self.logger = logging.getLogger(f"{__name__}.CertificateAnalyzer")
 
     def analyze(self, host: str, port: int = 443) -> List[CertificateInfo]:
@@ -208,8 +218,9 @@ class CertificateAnalyzer:
         results: List[CertificateInfo] = []
         try:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            if self.allow_insecure:
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
             ctx.load_default_certs()
             raw_sock = socket.create_connection((host, port), timeout=self.timeout)
             with ctx.wrap_socket(raw_sock, server_hostname=host) as ssock:
@@ -585,7 +596,8 @@ class CipherScanner:
 class HeaderAnalyzer:
     """Analyzes HTTP response security headers."""
 
-    def __init__(self):
+    def __init__(self, allow_insecure: bool = False):
+        self.allow_insecure = allow_insecure
         self.logger = logging.getLogger(f"{__name__}.HeaderAnalyzer")
 
     def analyze(self, host: str, port: int = 443, timeout: float = _DEFAULT_TIMEOUT) -> Dict[str, SecurityHeaderResult]:
@@ -593,8 +605,9 @@ class HeaderAnalyzer:
         results: Dict[str, SecurityHeaderResult] = {}
         try:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            if self.allow_insecure:
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
             conn = http.client.HTTPSConnection(host, port, timeout=timeout, context=ctx)
             conn.request("GET", "/", headers={
                 "User-Agent": _DEFAULT_USER_AGENT,
@@ -751,12 +764,14 @@ class TlsProber:
         self,
         timeout: float = _DEFAULT_TIMEOUT,
         verbose: bool = False,
+        allow_insecure: bool = False,
     ):
         self.timeout = timeout
         self.verbose = verbose
-        self.cert_analyzer = CertificateAnalyzer(timeout=timeout)
+        self.allow_insecure = allow_insecure
+        self.cert_analyzer = CertificateAnalyzer(timeout=timeout, allow_insecure=allow_insecure)
         self.cipher_scanner = CipherScanner(timeout=timeout)
-        self.header_analyzer = HeaderAnalyzer()
+        self.header_analyzer = HeaderAnalyzer(allow_insecure=allow_insecure)
         self.logger = logging.getLogger(f"{__name__}.TlsProber")
 
     def probe(
@@ -986,6 +1001,7 @@ class SecurityReport:
     def export_json(self, filepath: str) -> None:
         """Write JSON report to a file."""
         try:
+            filepath = _validate_output_path(filepath)
             dirname = os.path.dirname(os.path.abspath(filepath))
             if dirname:
                 os.makedirs(dirname, exist_ok=True)
@@ -998,6 +1014,7 @@ class SecurityReport:
     def export_text(self, filepath: str) -> None:
         """Write text report to a file."""
         try:
+            filepath = _validate_output_path(filepath)
             dirname = os.path.dirname(os.path.abspath(filepath))
             if dirname:
                 os.makedirs(dirname, exist_ok=True)
@@ -1068,6 +1085,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         "--verbose", "-v", action="store_true", default=False,
         help="Enable verbose debug logging",
     )
+    parser.add_argument(
+        "--allow-insecure", action="store_true",
+        help="Allow insecure SSL connections (skip certificate verification)",
+    )
     return parser.parse_args(argv)
 
 
@@ -1091,7 +1112,7 @@ def main() -> None:
 
     logger.info("Starting TLS probe — %s:%d (cert=%s, cipher=%s)", host, port, check_cert, cipher_scan)
 
-    prober = TlsProber(timeout=args.timeout, verbose=args.verbose)
+    prober = TlsProber(timeout=args.timeout, verbose=args.verbose, allow_insecure=args.allow_insecure)
     result = prober.probe(host, port, check_cert=check_cert, cipher_scan=cipher_scan)
     report = SecurityReport(result)
 

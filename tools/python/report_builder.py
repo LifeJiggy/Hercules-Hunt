@@ -48,6 +48,15 @@ from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Set, Tuple
 from urllib.parse import urlparse
 
+_MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -935,6 +944,10 @@ class BatchProcessor:
         Returns:
             Number of findings loaded from this file
         """
+        file_size = os.path.getsize(filepath)
+        if file_size > _MAX_FILE_SIZE:
+            self.errors.append(f"File too large ({file_size} > {_MAX_FILE_SIZE}): {filepath}")
+            return 0
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -1264,6 +1277,7 @@ class ReportBuilder:
         Raises:
             OSError: If the file cannot be written
         """
+        filepath = _validate_output_path(filepath)
         if not format:
             if filepath.endswith(".json"):
                 format = "json"
@@ -1297,6 +1311,10 @@ class ReportBuilder:
             Number of findings loaded
         """
         try:
+            file_size = os.path.getsize(filepath)
+            if file_size > _MAX_FILE_SIZE:
+                logger.error("File too large (%d > %d): %s", file_size, _MAX_FILE_SIZE, filepath)
+                return 0
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
         except (json.JSONDecodeError, FileNotFoundError, OSError) as e:

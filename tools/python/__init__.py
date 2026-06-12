@@ -39,12 +39,19 @@ All modules share a common interface:
 """
 
 import importlib
+import os as _os
 import sys as _sys
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-# python-hunter has a hyphen in filename, load via importlib
-_python_hunter = importlib.import_module('python-hunter')
+# python-hunter has a hyphen in filename, load via importlib.util
+import importlib.util as _importlib_util
+_python_hunter_spec = _importlib_util.spec_from_file_location(
+    "python_hunter",
+    _os.path.join(_os.path.dirname(__file__), "python-hunter.py")
+)
+_python_hunter = _importlib_util.module_from_spec(_python_hunter_spec)
+_python_hunter_spec.loader.exec_module(_python_hunter)
 _sys.modules['tools.python.python_hunter'] = _python_hunter
 
 __version__ = "3.0.0"

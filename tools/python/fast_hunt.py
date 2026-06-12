@@ -44,6 +44,15 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+_MAX_URL_LENGTH = 8192
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 
 # Terminal color codes
 class Colors:
@@ -390,10 +399,11 @@ class FastHunter:
         ],
     }
 
-    def __init__(self, silent: bool = False, aggressive: bool = False, quick: bool = False):
+    def __init__(self, silent: bool = False, aggressive: bool = False, quick: bool = False, allow_insecure: bool = False):
         self.silent = silent
         self.aggressive = aggressive
         self.quick = quick
+        self.allow_insecure = allow_insecure
         self.collector = ResultCollector()
         self._ssl_ctx = self._create_ssl_context()
         self._scan_stats: Dict[str, Any] = {
@@ -416,8 +426,9 @@ class FastHunter:
 
     def _create_ssl_context(self) -> ssl.SSLContext:
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        if self.allow_insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
     def _color_status(self, code: int) -> str:
@@ -445,6 +456,8 @@ class FastHunter:
 
     def fetch(self, url: str, method: str = "GET",
               headers: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        if len(url) > _MAX_URL_LENGTH:
+            return {"status": 0, "body": "", "headers": {}, "size": 0, "elapsed": 0.0, "error": f"URL exceeds max length ({len(url)} > {_MAX_URL_LENGTH})"}
         start = time.time()
         result: Dict[str, Any] = {
             "status": 0, "body": "", "headers": {}, "size": 0,
@@ -875,6 +888,7 @@ class FastHunter:
         }
         output = json.dumps(data, indent=2, default=str)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(output)
@@ -882,6 +896,7 @@ class FastHunter:
         return output
 
     def output_csv(self, filepath: str) -> None:
+        filepath = _validate_output_path(filepath)
         os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         rows = []
         for r in self.collector.results:
@@ -929,6 +944,7 @@ class FastHunter:
 
         report = "\n".join(lines)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(report)
@@ -965,6 +981,8 @@ def build_argparse() -> argparse.ArgumentParser:
     parser.add_argument("--silent", action="store_true", help="Suppress terminal output")
     parser.add_argument("--json", action="store_true", help="Output in JSON format")
     parser.add_argument("--csv", type=str, default=None, help="Write CSV output")
+    parser.add_argument("--allow-insecure", action="store_true",
+                        help="Allow insecure SSL connections (skip certificate verification)")
     return parser
 
 
@@ -972,7 +990,7 @@ def main() -> None:
     parser = build_argparse()
     args = parser.parse_args()
 
-    hunter = FastHunter(silent=args.silent, aggressive=args.aggressive, quick=args.quick)
+    hunter = FastHunter(silent=args.silent, aggressive=args.aggressive, quick=args.quick, allow_insecure=args.allow_insecure)
 
     try:
         hunter.full_scan(args.target)

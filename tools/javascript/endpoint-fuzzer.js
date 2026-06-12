@@ -7,6 +7,9 @@ const https = require('https');
 const { URL } = require('url');
 const readline = require('readline');
 
+const MAX_URL_LENGTH = 8192;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 /**
  * @typedef {Object} FuzzResult
  * @property {string} url - Fuzzed URL
@@ -131,9 +134,20 @@ class EndpointFuzzer {
    * @returns {Promise<string[]>}
    */
   async loadWordlist(filePath) {
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid wordlist path: must be a non-empty string');
+    }
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(process.cwd())) {
+      throw new Error('Path traversal detected: ' + filePath);
+    }
     const lines = [];
     if (!fs.existsSync(filePath)) {
       throw new Error(`Wordlist file not found: ${filePath}`);
+    }
+    const st = fs.statSync(filePath);
+    if (st.size > MAX_FILE_SIZE) {
+      throw new Error(`Wordlist file exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB (${st.size} bytes)`);
     }
     const rl = readline.createInterface({
       input: fs.createReadStream(filePath),
@@ -507,6 +521,10 @@ class EndpointFuzzer {
    */
   async run(options) {
     this.startTime = Date.now();
+    if (this.target && typeof this.target === 'string') {
+      if (this.target.trim().length === 0) throw new Error('Target must not be empty');
+      if (this.target.length > MAX_URL_LENGTH) throw new Error(`Target URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+    }
     this.log(`Starting endpoint fuzzer against ${this.target}`);
 
     if (this.wordlistPath) {
@@ -517,7 +535,12 @@ class EndpointFuzzer {
     }
 
     if (options.output) {
-      fs.mkdirSync(path.dirname(path.resolve(options.output)), { recursive: true });
+      const outDirPath = path.resolve(options.output);
+      if (!outDirPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
+      fs.mkdirSync(path.dirname(outDirPath), { recursive: true });
     }
 
     this.log(`Phase 1: Path fuzzing with ${this.wordlist.length} paths (${this.threads} threads)`);
@@ -557,6 +580,10 @@ class EndpointFuzzer {
 
     if (options.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
       this.log(`Report written to ${outPath}`);
     }

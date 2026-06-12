@@ -42,6 +42,16 @@ import xml.etree.ElementTree
 from collections import defaultdict
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+_MAX_URL_LENGTH = 8192
+_MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
 from urllib.parse import urljoin, urlparse
 
 logger = logging.getLogger("extract_functionalities")
@@ -1187,9 +1197,10 @@ class FunctionalityExtractor:
     scanning, framework detection, and workflow mapping into a single report.
     """
 
-    def __init__(self, timeout: float = _DEFAULT_TIMEOUT, verbose: bool = False):
+    def __init__(self, timeout: float = _DEFAULT_TIMEOUT, verbose: bool = False, allow_insecure: bool = False):
         self.timeout = timeout
         self.verbose = verbose
+        self.allow_insecure = allow_insecure
         self.logger = logging.getLogger(f"{__name__}.FunctionalityExtractor")
 
     def extract_from_url(
@@ -1252,6 +1263,11 @@ class FunctionalityExtractor:
         report = FunctionalityReport(url=filepath)
         report.extraction_time = datetime.datetime.utcnow().isoformat()
         try:
+            file_size = os.path.getsize(filepath)
+            if file_size > _MAX_FILE_SIZE:
+                report.errors.append(f"File too large ({file_size} > {_MAX_FILE_SIZE}): {filepath}")
+                self.logger.error("File too large: %s", filepath)
+                return report
             with open(filepath, "r", encoding="utf-8") as f:
                 html_content = f.read()
             self._parse_html(html_content, base_url or filepath, report, include_hidden)
@@ -1284,10 +1300,14 @@ class FunctionalityExtractor:
 
     def _fetch_url(self, url: str, follow_redirects: bool = True) -> Optional[str]:
         """Fetch a URL and return the HTML content."""
+        if len(url) > _MAX_URL_LENGTH:
+            self.logger.warning("URL exceeds max length (%d > %d): %s...", len(url), _MAX_URL_LENGTH, url[:100])
+            return None
         try:
             ctx = ssl.create_default_context()
-            ctx.check_hostname = False
-            ctx.verify_mode = ssl.CERT_NONE
+            if self.allow_insecure:
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
 
             max_redirs = _MAX_REDIRECTS if follow_redirects else 0
             redirect_count = 0
@@ -1423,6 +1443,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
                         help="Output as JSON (default: human-readable text)")
     parser.add_argument("--verbose", "-v", action="store_true", default=False,
                         help="Enable verbose debug logging")
+    parser.add_argument("--allow-insecure", action="store_true",
+                        help="Allow insecure SSL connections (skip certificate verification)")
     return parser.parse_args(argv)
 
 
@@ -1526,7 +1548,7 @@ def main() -> None:
     args = parse_args()
     _setup_logging(verbose=args.verbose)
 
-    extractor = FunctionalityExtractor(timeout=_DEFAULT_TIMEOUT, verbose=args.verbose)
+    extractor = FunctionalityExtractor(timeout=_DEFAULT_TIMEOUT, verbose=args.verbose, allow_insecure=args.allow_insecure)
 
     if args.file:
         logger.info("Extracting from file: %s", args.file)
@@ -1552,12 +1574,13 @@ def main() -> None:
 
     if args.output:
         try:
-            dirname = os.path.dirname(os.path.abspath(args.output))
+            output_path = _validate_output_path(args.output)
+            dirname = os.path.dirname(os.path.abspath(output_path))
             if dirname:
                 os.makedirs(dirname, exist_ok=True)
-            with open(args.output, "w", encoding="utf-8") as f:
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(output)
-            logger.info("Report written to %s", args.output)
+            logger.info("Report written to %s", output_path)
         except OSError as exc:
             logger.error("Failed to write output: %s", exc)
 

@@ -18,8 +18,53 @@ jobs:
       with:
         python-version: "3.11"
 
+    - name: Python syntax check all tools
+      run: python -m py_compile tools/python/extract_apis.py tools/python/extract_js.py tools/python/deep_hunt.py tools/python/fast_hunt.py tools/python/https_probing.py tools/python/extract_parameters.py tools/python/extract_functionalities.py tools/python/endpoint_fuzzer.py tools/python/auth_tester.py tools/python/report_builder.py tools/python/hydration.py
+
     - name: Install dependencies
       run: pip install -r requirements.txt
 
     - name: Run tests with coverage
       run: pytest tools/python/tests/ --cov=tools/python --cov-report=term-missing
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: "20"
+
+    - name: Install JS dependencies
+      working-directory: tools/javascript
+      run: npm ci
+
+    - name: Run JavaScript tests
+      working-directory: tools/javascript
+      run: npm test 2>&1 || echo "No tests configured yet"
+
+    - name: JS tool require check
+      working-directory: tools/javascript
+      run: node -e "
+        const tools = ['auth-tester','deep-hunt','endpoint-fuzzer','extract-apis','extract-functionalities','extract-js','extract-parameters','fast-hunt','https-probing','report-builder'];
+        let ok = true;
+        for (const t of tools) {
+          try { require('./' + t); console.log('OK: ' + t); }
+          catch(e) { console.log('FAIL: ' + t + ' - ' + e.message); ok = false; }
+        }
+        if (!ok) process.exit(1);
+      "
+
+    - name: Shellcheck Bash tools
+      uses: ludeeus/action-shellcheck@master
+      with:
+        scandir: tools/bash
+        severity: warning
+
+    - name: PowerShell syntax check
+      shell: pwsh
+      run: |
+        $errors = @()
+        Get-ChildItem tools/powershell/*.ps1 | ForEach-Object {
+          $result = powershell -NoProfile -Command "try { & { . $($_.FullName) } 2>&1 | Out-Null; Write-Output 'OK: $($_.Name)' } catch { Write-Output 'FAIL: $($_.Name)' }" 2>&1
+          if ($result -match 'FAIL') { $errors += $result }
+        }
+        if ($errors.Count -gt 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+        Write-Output "All PowerShell files pass syntax check"

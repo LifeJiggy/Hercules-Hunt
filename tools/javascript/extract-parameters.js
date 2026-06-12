@@ -6,6 +6,9 @@ const http = require('http');
 const https = require('https');
 const { URL } = require('url');
 
+const MAX_URL_LENGTH = 8192;
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 /**
  * @typedef {Object} ParameterInfo
  * @property {string} name - Parameter name
@@ -361,6 +364,20 @@ class ParameterExtractor {
    * @returns {ParameterInfo[]}
    */
   extractFromFile(filePath) {
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid file path: must be a non-empty string');
+    }
+    const resolvedPath = path.resolve(filePath);
+    if (!resolvedPath.startsWith(process.cwd())) {
+      throw new Error('Path traversal detected: ' + filePath);
+    }
+    if (!fs.existsSync(filePath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+    const st = fs.statSync(filePath);
+    if (st.size > MAX_FILE_SIZE) {
+      throw new Error(`File exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB (${st.size} bytes)`);
+    }
     this.log(`Reading file: ${filePath}`);
     const content = fs.readFileSync(filePath, 'utf-8');
     const params = [];
@@ -481,6 +498,13 @@ class ParameterExtractor {
    * @returns {Promise<Object>}
    */
   async run(options) {
+    if (options.url && typeof options.url === 'string') {
+      if (options.url.trim().length === 0) throw new Error('URL must not be empty');
+      if (options.url.length > MAX_URL_LENGTH) throw new Error(`URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+    }
+    if (options.file && typeof options.file === 'string') {
+      if (options.file.trim().length === 0) throw new Error('File path must not be empty');
+    }
     let allParams = [];
     let fuzzResults = null;
     if (options.file) {
@@ -538,6 +562,10 @@ class ParameterExtractor {
     const report = this.generateReport(allParams, fuzzResults);
     if (options.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
       this.log(`Report written to ${outPath}`);

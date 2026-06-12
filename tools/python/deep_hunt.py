@@ -42,6 +42,16 @@ import urllib.request
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
+_MAX_URL_LENGTH = 8192
+_MAX_FILE_SIZE = 100 * 1024 * 1024
+
+
+def _validate_output_path(filepath: str) -> str:
+    normalized = os.path.normpath(filepath)
+    if ".." in normalized.split(os.sep):
+        raise ValueError(f"Invalid output path: {filepath}")
+    return normalized
+
 
 @dataclass
 class Finding:
@@ -283,14 +293,16 @@ class ProbeEngine:
         "level": "admin",
     }
 
-    def __init__(self, timeout: float = 15):
+    def __init__(self, timeout: float = 15, allow_insecure: bool = False):
         self.timeout = timeout
+        self.allow_insecure = allow_insecure
         self._ssl_ctx = self._create_ssl_context()
 
     def _create_ssl_context(self) -> ssl.SSLContext:
         ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        if self.allow_insecure:
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
         return ctx
 
     def send_request(self, url: str, method: str = "GET",
@@ -298,6 +310,8 @@ class ProbeEngine:
                      headers: Optional[Dict[str, str]] = None,
                      data: Optional[Union[str, Dict]] = None,
                      cookies: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        if len(url) > _MAX_URL_LENGTH:
+            return {"success": False, "error": f"URL exceeds max length ({len(url)} > {_MAX_URL_LENGTH})", "status": 0, "body": "", "headers": {}, "elapsed": 0.0, "size": 0, "url": url}
         start = time.time()
         result: Dict[str, Any] = {
             "success": False, "status": 0, "body": "", "headers": {},
@@ -818,12 +832,13 @@ class ProbeEngine:
 
 
 class DeepHunter:
-    def __init__(self, threads: int = 5, timeout: float = 15, silent: bool = False):
+    def __init__(self, threads: int = 5, timeout: float = 15, silent: bool = False, allow_insecure: bool = False):
         self.threads = threads
         self.timeout = timeout
         self.silent = silent
+        self.allow_insecure = allow_insecure
         self.findings: List[Finding] = []
-        self.probe_engine = ProbeEngine(timeout=timeout)
+        self.probe_engine = ProbeEngine(timeout=timeout, allow_insecure=allow_insecure)
         self.response_analyzer = ResponseAnalyzer()
         self._scan_stats: Dict[str, Any] = {
             "urls_tested": 0,
@@ -932,6 +947,7 @@ class DeepHunter:
         }
         output = json.dumps(data, indent=2, default=str)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(output)
@@ -939,6 +955,7 @@ class DeepHunter:
         return output
 
     def output_csv(self, filepath: str) -> None:
+        filepath = _validate_output_path(filepath)
         os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
         if not self.findings:
             self._log("No findings to export", "warn")
@@ -977,6 +994,7 @@ class DeepHunter:
             lines.append(f"  curl:      {f.curl_command[:150]}")
         report = "\n".join(lines)
         if filepath:
+            filepath = _validate_output_path(filepath)
             os.makedirs(os.path.dirname(os.path.abspath(filepath)) or ".", exist_ok=True)
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(report)
@@ -1018,6 +1036,8 @@ def build_argparse() -> argparse.ArgumentParser:
                         help="Comma-separated parameter names to test")
     parser.add_argument("--method", type=str, default="GET",
                         help="HTTP method (GET, POST, PUT, etc. default: GET)")
+    parser.add_argument("--allow-insecure", action="store_true",
+                        help="Allow insecure SSL connections (skip certificate verification)")
     return parser
 
 
@@ -1053,11 +1073,14 @@ def main() -> None:
                 k, v = part.strip().split(":", 1)
                 headers[k.strip()] = v.strip()
 
-    hunter = DeepHunter(threads=args.threads, timeout=args.timeout, silent=args.silent)
+    hunter = DeepHunter(threads=args.threads, timeout=args.timeout, silent=args.silent, allow_insecure=args.allow_insecure)
 
     try:
         if args.endpoints:
             try:
+                if os.path.getsize(args.endpoints) > _MAX_FILE_SIZE:
+                    print(f"[!] Endpoints file too large", file=sys.stderr)
+                    sys.exit(1)
                 with open(args.endpoints, "r", encoding="utf-8") as f:
                     endpoints_data = json.load(f)
                 ep_list = endpoints_data.get("endpoints", endpoints_data) if isinstance(endpoints_data, dict) else endpoints_data
@@ -1081,9 +1104,10 @@ def main() -> None:
     if args.curl:
         curl_report = hunter.generate_curl_report()
         if args.output:
-            with open(args.output, "w", encoding="utf-8") as f:
+            output_path = _validate_output_path(args.output)
+            with open(output_path, "w", encoding="utf-8") as f:
                 f.write(curl_report)
-            print(f"[+] Curl report written to {args.output}")
+            print(f"[+] Curl report written to {output_path}")
         else:
             print(curl_report)
     elif args.json or (args.output and args.output.endswith(".json")):

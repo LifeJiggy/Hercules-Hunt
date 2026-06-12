@@ -3,6 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 /**
  * @typedef {Object} Finding
  * @property {string} title - Finding title
@@ -75,6 +77,20 @@ class ReportBuilder {
    * @returns {Finding[]}
    */
   loadFindings(inputPath) {
+    if (!inputPath || typeof inputPath !== 'string') {
+      throw new Error('Invalid input path: must be a non-empty string');
+    }
+    const resolvedPath = path.resolve(inputPath);
+    if (!resolvedPath.startsWith(process.cwd())) {
+      throw new Error('Path traversal detected: ' + inputPath);
+    }
+    if (!fs.existsSync(inputPath)) {
+      throw new Error(`Input file not found: ${inputPath}`);
+    }
+    const st = fs.statSync(inputPath);
+    if (st.size > MAX_FILE_SIZE) {
+      throw new Error(`Input file exceeds maximum size of ${MAX_FILE_SIZE / 1024 / 1024}MB (${st.size} bytes)`);
+    }
     this.log(`Loading findings from ${inputPath}`);
     const raw = fs.readFileSync(inputPath, 'utf-8');
     let data;
@@ -658,6 +674,10 @@ class ReportBuilder {
 
     if (this.output) {
       const outPath = path.resolve(this.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', this.output);
+        process.exit(1);
+      }
       const ext = path.extname(outPath);
       const baseName = path.basename(outPath, ext);
       const dirName = path.dirname(outPath);
@@ -666,6 +686,10 @@ class ReportBuilder {
         const f = allFindings[i];
         const safeName = f.title.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 50);
         const filePath = path.join(dirName, `${baseName}_${i + 1}_${safeName}${ext}`);
+        if (!filePath.startsWith(process.cwd())) {
+          console.error('Path traversal detected:', filePath);
+          process.exit(1);
+        }
         fs.mkdirSync(dirName, { recursive: true });
         fs.writeFileSync(filePath, reports[i].report);
         reports[i].outputPath = filePath;
@@ -674,6 +698,10 @@ class ReportBuilder {
 
       if (allFindings.length > 1) {
         const consolidatedPath = path.join(dirName, `${baseName}_CONSOLIDATED${ext}`);
+        if (!consolidatedPath.startsWith(process.cwd())) {
+          console.error('Path traversal detected:', consolidatedPath);
+          process.exit(1);
+        }
         const consolidated = this.generateMultiReport(allFindings);
         fs.writeFileSync(consolidatedPath, consolidated);
         this.log(`Consolidated report written to ${consolidatedPath}`);
@@ -704,6 +732,10 @@ class ReportBuilder {
 
       if (this.output && inputPaths.length === 1) {
         const outPath = path.resolve(options.output);
+        if (!outPath.startsWith(process.cwd())) {
+          console.error('Path traversal detected:', options.output);
+          process.exit(1);
+        }
         fs.mkdirSync(path.dirname(outPath), { recursive: true });
         const content = this.generateMultiReport(result.findings);
         fs.writeFileSync(outPath, content);
@@ -725,6 +757,10 @@ class ReportBuilder {
 
     if (this.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, outputContent);
       this.log(`Report written to ${outPath}`);

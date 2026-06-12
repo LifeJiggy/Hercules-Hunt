@@ -8,6 +8,8 @@ const tls = require('tls');
 const crypto = require('crypto');
 const { URL } = require('url');
 
+const MAX_URL_LENGTH = 8192;
+
 /**
  * @typedef {Object} HttpsProbingOptions
  * @property {string} target - Target hostname
@@ -490,8 +492,16 @@ class HttpsProber {
    * @returns {Promise<Object>}
    */
   async run(options) {
-    if (options.target) this.target = options.target;
-    if (options.url) this.targetUrl = options.url;
+    if (options.target && typeof options.target === 'string') {
+      if (options.target.trim().length === 0) throw new Error('Target must not be empty');
+      if (options.target.length > MAX_URL_LENGTH) throw new Error(`Target exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+      this.target = options.target;
+    }
+    if (options.url && typeof options.url === 'string') {
+      if (options.url.trim().length === 0) throw new Error('URL must not be empty');
+      if (options.url.length > MAX_URL_LENGTH) throw new Error(`URL exceeds maximum length of ${MAX_URL_LENGTH} characters`);
+      this.targetUrl = options.url;
+    }
     if (options.port) this.port = options.port;
     if (options.timeout) this.timeout = options.timeout;
     if (options.checkCert !== undefined) this.checkCert = options.checkCert;
@@ -551,6 +561,10 @@ class HttpsProber {
 
     if (options.output) {
       const outPath = path.resolve(options.output);
+      if (!outPath.startsWith(process.cwd())) {
+        console.error('Path traversal detected:', options.output);
+        process.exit(1);
+      }
       fs.mkdirSync(path.dirname(outPath), { recursive: true });
       fs.writeFileSync(outPath, JSON.stringify(report, null, 2));
       this.log(`Report written to ${outPath}`);

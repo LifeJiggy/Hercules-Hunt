@@ -3,7 +3,7 @@
 MCP (Model Context Protocol) client configurations for integrating
 Hercules-Hunt with web security tools and AI coding assistants.
 
-## MCP Clients (10)
+## MCP Clients (20)
 
 | Client | Directory | Tools | Purpose |
 |--------|-----------|-------|---------|
@@ -17,6 +17,16 @@ Hercules-Hunt with web security tools and AI coding assistants.
 | Payloads | `payload-mcp/` | 8 | XSS/SQLi/SSRF/XXE/CMDi/SSTI/NoSQLi + encoding |
 | Reports | `report-mcp/` | 6 | Findings CRUD, reports (json/csv/html), summary |
 | Recon | `recon-mcp/` | 5 | Subdomain discovery, live probe, fingerprint, port scan |
+| JS Analysis | `js-analysis-mcp/` | 5 | JS bundle endpoint extraction, secret scan, functionality |
+| Deep Hunt | `deep-hunt-mcp/` | 5 | Deep hunt pipeline: start/status/results/phase/stop |
+| Fast Hunt | `fast-hunt-mcp/` | 4 | Fast hunt: start/status/results/endpoints |
+| Orchestrator | `orchestrator-mcp/` | 4 | Full pipeline orchestration with checkpoints |
+| Batch | `batch-mcp/` | 4 | Multi-target batch scanning with rate limiting |
+| Hydration | `hydration-mcp/` | 3 | Enrich recon data with vulnerability context |
+| Auth Tester | `auth-tester-mcp/` | 5 | JWT, OAuth, MFA, CSRF, session testing |
+| HTTPS Probe | `https-mcp/` | 4 | SSL/TLS analysis, certificate, headers |
+| Evidence | `evidence-mcp/` | 4 | Evidence packaging, sanitization, validation, export |
+| Validation | `validation-mcp/` | 5 | 7-Question Gate, 4-Gate Checklist, CVSS scoring |
 
 ## Setup (all MCP servers)
 
@@ -31,7 +41,17 @@ Add to your AI client settings (`~/.claude/settings.json`, `opencode.json`, etc.
     "url-crawl":    { "command": "python3", "args": ["mcp/url-crawl-mcp/server.py"] },
     "payloads":     { "command": "python3", "args": ["mcp/payload-mcp/server.py"] },
     "reports":      { "command": "python3", "args": ["mcp/report-mcp/server.py"] },
-    "recon":        { "command": "python3", "args": ["mcp/recon-mcp/server.py"] }
+    "recon":        { "command": "python3", "args": ["mcp/recon-mcp/server.py"] },
+    "js-analysis":  { "command": "python3", "args": ["mcp/js-analysis-mcp/server.py"] },
+    "deep-hunt":    { "command": "python3", "args": ["mcp/deep-hunt-mcp/server.py"] },
+    "fast-hunt":    { "command": "python3", "args": ["mcp/fast-hunt-mcp/server.py"] },
+    "orchestrator": { "command": "python3", "args": ["mcp/orchestrator-mcp/server.py"] },
+    "batch":        { "command": "python3", "args": ["mcp/batch-mcp/server.py"] },
+    "hydration":    { "command": "python3", "args": ["mcp/hydration-mcp/server.py"] },
+    "auth-tester":  { "command": "python3", "args": ["mcp/auth-tester-mcp/server.py"] },
+    "https-probe":  { "command": "python3", "args": ["mcp/https-mcp/server.py"] },
+    "evidence":     { "command": "python3", "args": ["mcp/evidence-mcp/server.py"] },
+    "validation":   { "command": "python3", "args": ["mcp/validation-mcp/server.py"] }
   }
 }
 ```
@@ -106,6 +126,89 @@ Add to your AI client settings (`~/.claude/settings.json`, `opencode.json`, etc.
 | `fingerprint` | Tech stack identification |
 | `port_scan` | Common port scan |
 | `full_recon` | All-in-one pipeline |
+
+### JS Analysis MCP (5 tools)
+| Tool | Description |
+|------|-------------|
+| `analyze_js_bundle` | Full JS bundle analysis (endpoints + secrets + funcs) |
+| `extract_endpoints` | Extract API endpoints from JS bundle |
+| `scan_secrets` | Scan for hardcoded secrets (regex + entropy) |
+| `extract_functionalities` | Extract functional modules from bundle |
+| `batch_analyze_bundles` | Analyze all bundles in a directory |
+
+### Deep Hunt MCP (5 tools)
+| Tool | Description |
+|------|-------------|
+| `deep_hunt_start` | Start full deep hunt session |
+| `deep_hunt_status` | Get session status and progress |
+| `deep_hunt_results` | Retrieve findings from session |
+| `deep_hunt_phase` | Run specific hunt phase |
+| `deep_hunt_stop` | Stop running session |
+
+### Fast Hunt MCP (4 tools)
+| Tool | Description |
+|------|-------------|
+| `fast_hunt_start` | Start fast hunt session |
+| `fast_hunt_status` | Get session status |
+| `fast_hunt_results` | Get results from session |
+| `fast_hunt_endpoints` | Quick endpoint discovery |
+
+### Orchestrator MCP (4 tools)
+| Tool | Description |
+|------|-------------|
+| `orchestrate_start` | Start full pipeline orchestration |
+| `orchestrate_status` | Get pipeline status |
+| `orchestrate_checkpoint` | Save/load checkpoint |
+| `orchestrate_resume` | Resume from checkpoint |
+
+### Batch MCP (4 tools)
+| Tool | Description |
+|------|-------------|
+| `batch_start` | Start batch scan on multiple targets |
+| `batch_status` | Get batch job status |
+| `batch_results` | Retrieve batch results |
+| `batch_stop` | Stop running batch job |
+
+### Hydration MCP (3 tools)
+| Tool | Description |
+|------|-------------|
+| `hydrate_recon` | Hydrate recon file with vulnerability context |
+| `hydrate_endpoint` | Hydrate single endpoint with bug classes |
+| `hydrate_batch` | Batch hydrate multiple recon files |
+
+### Auth Tester MCP (5 tools)
+| Tool | Description |
+|------|-------------|
+| `auth_test_jwt` | Test JWT: alg:none, weak secrets, RS256->HS256, kid |
+| `auth_test_oauth` | Test OAuth: redirect_uri manipulation, state bypass |
+| `auth_test_mfa` | Test MFA/2FA bypass, brute force, session fixation |
+| `auth_test_csrf` | Test CSRF protection on sensitive actions |
+| `auth_test_session` | Test session handling |
+
+### HTTPS Probe MCP (4 tools)
+| Tool | Description |
+|------|-------------|
+| `https_probe` | Probe HTTPS endpoint and collect SSL/TLS info |
+| `https_certificate` | Extract SSL certificate details |
+| `https_tls_version` | Check supported TLS versions and ciphers |
+| `https_headers` | Analyze HTTPS security headers |
+
+### Evidence MCP (4 tools)
+| Tool | Description |
+|------|-------------|
+| `evidence_create_package` | Create evidence package for finding |
+| `evidence_sanitize` | Sanitize: redact tokens, cookies, PII |
+| `evidence_validate` | Validate package completeness |
+| `evidence_export` | Export to zip/tar.gz/json |
+
+### Validation MCP (5 tools)
+| Tool | Description |
+|------|-------------|
+| `validate_finding` | Full validation: 7-Question + 4-Gate |
+| `validate_gate7` | Run only 7-Question Gate |
+| `validate_gate4` | Run only 4-Gate Checklist |
+| `cvss_score` | Calculate CVSS score from vector |
+| `severity_guide` | Get severity guide for bug class |
 
 ## Test any server
 
