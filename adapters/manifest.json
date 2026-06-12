@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/opencode-plugin.json",
   "name": "jiggy-2026-adapters",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Portable adapter map for Hercules-Hunt bug bounty system across all 18+ agentic CLIs.",
   "author": "Jiggy",
   "license": "MIT",
@@ -28,8 +28,8 @@
   "components": {
     "agents": {
       "path": "agents/",
-      "description": "17 AI agent definitions (recon, p1-warrior, chain-builder, js-analysis, report-writer, validator, autopilot, token-auditor, web3-auditor, exploit-researcher, network-analyst, redteam-planner, reverse-engineer, security-reviewer, ai-researcher, recon-ranker, js-deobfuscation)",
-      "count": 17
+      "description": "40 AI agent definitions: recon-agent, recon-ranker, p1-warrior, chain-builder, js-analysis, js-deobfuscation, report-writer, validator, autopilot, exploit-researcher, network-analyst, redteam-planner, reverse-engineer, security-reviewer, ai-researcher, token-auditor, web3-auditor, mobile-testing-agent, windows-workflow-agent, chain-rules-agent, program-researcher, orchestrator, browser-automator, evidence-reviewer, triage-defender, idor-hunter, ssrf-hunter, xss-hunter, auth-bypass-hunter, race-condition-hunter, business-logic-hunter, file-upload-hunter, api-misconfig-hunter, graphql-hunter, ssti-hunter, chain-validator, p1-validator, scope-enforcer, target-onboarding-agent, triage-readiness",
+      "count": 40
     },
     "rules": {
       "path": "rules/",
@@ -38,8 +38,8 @@
     },
     "tools": {
       "path": "tools/",
-      "description": "8 executable hunting tools (curl-hunter, js-analyzer, powershell-lib, python-hunter, recon-toolkit, fuzzer-toolkit, evidence-toolkit, jiggy)",
-      "count": 8
+      "description": "87 executable hunting tools across Python (25): extract_apis, extract_js, deep_hunt, fast_hunt, https_probing, extract_parameters, extract_functionalities, endpoint_fuzzer, auth_tester, report_builder, rce_hunter, sqli_hunter, idor_hunter, auth_hunter, ssrf_hunter, xxe_hunter, file_upload_hunter, python-hunter, js_analyzer, url_collector, base64_utils, batch_processor, secret_scanner, payload_generator, network_utils; JavaScript (27): extract-apis, extract-js, deep-hunt, fast-hunt, https-probing, extract-parameters, extract-functionalities, endpoint-fuzzer, auth-tester, report-builder, api-fuzzer, browser-automation, client-side-scanner, csrf-tester, dom-manipulation, endpoint-collector, event-inspector, launcher, parameters, postmessage-explorer, prototype-pollution, session-hijacker, storage-auditor, token-analyzer, user-functionalities, xss-hunter, index; PowerShell (18): extract-apis.ps1, extract-js.ps1, deep-hunt.ps1, fast-hunt.ps1, https-probing.ps1, extract-parameters.ps1, extract-functionalities.ps1, endpoint-fuzzer.ps1, auth-tester.ps1, report-builder.ps1, curl-hunter.ps1, evidence-toolkit.ps1, fuzzer-toolkit.ps1, js-analyzer.ps1, recon-toolkit.ps1, jiggy.ps1, powershell-lib.ps1, index.ps1; Bash (19): extract-apis.sh, extract-js.sh, deep-hunt.sh, fast-hunt.sh, https-probing.sh, extract-parameters.sh, extract-functionalities.sh, endpoint-fuzzer.sh, auth-tester.sh, report-builder.sh, curl-hunter.sh, evidence-toolkit.sh, fuzzer-toolkit.sh, js-analyzer.sh, recon-toolkit.sh, jiggy.sh, lib.sh, scope-validator.sh, index.sh",
+      "count": 87
     },
     "skills": {
       "path": "SKILL.md + sub-skill dirs",
@@ -55,7 +55,29 @@
     },
     "mcp": {
       "path": "mcp/",
-      "description": "MCP client configurations (Burp Suite, Caido, HackerOne)"
+      "description": "MCP client configurations for all 20 integrated servers: auth-tester-mcp, batch-mcp, burp-mcp-client, caido-mcp-client, deep-hunt-mcp, dns-recon-mcp, evidence-mcp, fast-hunt-mcp, hackerone-mcp, hercules-hunt-mcp, https-mcp, hydration-mcp, interactsh-mcp, js-analysis-mcp, orchestrator-mcp, payload-mcp, recon-mcp, report-mcp, url-crawl-mcp, validation-mcp",
+      "servers": [
+        "auth-tester-mcp",
+        "batch-mcp",
+        "burp-mcp-client",
+        "caido-mcp-client",
+        "deep-hunt-mcp",
+        "dns-recon-mcp",
+        "evidence-mcp",
+        "fast-hunt-mcp",
+        "hackerone-mcp",
+        "hercules-hunt-mcp",
+        "https-mcp",
+        "hydration-mcp",
+        "interactsh-mcp",
+        "js-analysis-mcp",
+        "orchestrator-mcp",
+        "payload-mcp",
+        "recon-mcp",
+        "report-mcp",
+        "url-crawl-mcp",
+        "validation-mcp"
+      ]
     }
   },
   "platforms": {

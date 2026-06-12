@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "jiggy-2026",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "Comprehensive bug bounty hunting skill system — recon, vulnerability hunting, chaining, reporting. Compatible with Claude Code, OpenCode, Codex CLI, and any agentic coding CLI.",
   "author": "Jiggy",
   "license": "MIT",
@@ -26,7 +26,26 @@
     "js-analysis",
     "windows-hunting",
     "powershell",
-    "curl"
+    "curl",
+    "graphql",
+    "ssti",
+    "race-condition",
+    "business-logic",
+    "file-upload",
+    "api-misconfig",
+    "prototype-pollution",
+    "mfa-bypass",
+    "ato",
+    "csrf",
+    "cache-poison",
+    "http-smuggling",
+    "xxe",
+    "command-injection",
+    "template-injection",
+    "rate-limiting",
+    "ssrf-bypass",
+    "cors",
+    "mass-assignment"
   ],
   "categories": [
     "security",
@@ -51,12 +70,19 @@
     },
     "generic": {
       "tools_dir": "tools/",
-      "rules_dir": "rules/"
+      "rules_dir": "rules/",
+      "agents_dir": "agents/",
+      "mcp_dir": "mcp/",
+      "scripts_dir": "scripts/",
+      "config_dir": "config/",
+      "hooks_dir": "hooks/"
     }
   },
   "entry_points": {
+    "python": "tools/python/python-hunter.py",
     "powershell": "tools/powershell/jiggy.ps1",
-    "python": "tools/jiggy.py"
+    "bash": "tools/bash/jiggy.sh",
+    "javascript": "tools/javascript/index.js"
   },
   "install": {
     "windows": "powershell -ExecutionPolicy Bypass -File install.ps1",
@@ -64,111 +90,249 @@
     "macos": "bash install.sh"
   },
   "dependencies": {
-    "runtime": ["powershell 5.1+", "python 3.8+", "curl.exe"],
-    "optional": ["Burp Suite", "node.js", "git"]
+    "runtime": ["python 3.8+", "powershell 5.1+", "bash 4+", "node.js 18+"],
+    "optional": ["Burp Suite", "curl.exe", "git"]
   },
   "skills": [
     {
       "id": "recon-agent",
       "name": "Recon Agent",
-      "description": "Subdomain enumeration, live host discovery, URL crawling, technology fingerprinting. Use for initial recon on new targets.",
+      "description": "Subdomain enumeration and live host discovery specialist. Produces prioritized attack surface for a target domain.",
       "path": "agents/recon-agent.md"
     },
     {
+      "id": "recon-ranker",
+      "name": "Recon Ranker",
+      "description": "Attack surface ranking and prioritization agent. Ranks by IDOR likelihood, API surface, tech stack match, feature age, and nuclei findings.",
+      "path": "agents/recon-ranker.md"
+    },
+    {
       "id": "p1-warrior",
-      "name": "P1-Warrior",
-      "description": "Priority-1 systematic bug hunter. Tests IDOR, SSRF, XSS, auth bypass, mass assignment, business logic across P1 targets.",
+      "name": "P1 Warrior",
+      "description": "Priority-1 bug hunter coordinator. Delegates to specialist sub-agents and time-boxes hunting for maximum coverage.",
       "path": "agents/p1-warrior.md"
     },
     {
       "id": "chain-builder",
       "name": "Chain Builder",
-      "description": "Exploit chain builder. Takes bug A and finds B and C to chain for higher severity. Covers IDOR, SSRF, XSS, OAuth, JWT chains.",
+      "description": "Exploit chain builder. Takes confirmed bugs and chains them for higher severity across IDOR, SSRF, XSS, and OAuth primitives.",
       "path": "agents/chain-builder.md"
     },
     {
       "id": "js-analysis",
       "name": "JS Analysis",
-      "description": "JavaScript bundle analysis. Extracts hidden endpoints, API keys, secrets, feature flags, cloud credentials, OAuth tokens from JS.",
+      "description": "JavaScript bundle analysis specialist. Extracts hidden API endpoints, hardcoded secrets, feature flags, cloud keys, and OAuth tokens.",
       "path": "agents/js-analysis.md"
     },
     {
       "id": "js-deobfuscation",
       "name": "JS Deobfuscation",
-      "description": "Reverse minified/obfuscated JS bundles. Handles webpack, array obfuscation, string encoding, control flow obfuscation.",
+      "description": "JavaScript deobfuscation and reverse engineering specialist. Reverses minified, obfuscated, and webpack bundles to recover hidden logic.",
       "path": "agents/js-deobfuscation.md"
     },
     {
       "id": "report-writer",
       "name": "Report Writer",
-      "description": "Professional bug bounty report generator. HackerOne, Bugcrowd, Intigriti, Immunefi formats. Impact-first writing, CVSS 4.0.",
+      "description": "Professional bug bounty report writer. Generates HackerOne, Bugcrowd, Intigriti, and Immunefi reports with CVSS 4.0 scoring.",
       "path": "agents/report-writer.md"
     },
     {
       "id": "validator",
       "name": "Validator",
-      "description": "7-Question Gate finding validator. Kills weak/theoretical findings fast. Prevents N/A submissions.",
+      "description": "Finding validator that runs the 7-Question Gate and 4-gate checklist. Kills weak and theoretical findings before report writing.",
       "path": "agents/validator.md"
     },
     {
       "id": "autopilot",
       "name": "Autopilot",
-      "description": "Autonomous hunt loop. Full cycle: scope → recon → rank → hunt → validate → report. Configurable paranoid/normal/yolo modes.",
+      "description": "Autonomous hunt loop agent. Runs full recon-to-report cycle with configurable paranoid, normal, or yolo checkpoint modes.",
       "path": "agents/autopilot.md"
-    },
-    {
-      "id": "token-auditor",
-      "name": "Token Auditor",
-      "description": "Meme coin and token security auditor. Checks hidden mint, honeypot, fee manipulation, LP drain, fake renounce. EVM + Solana.",
-      "path": "agents/token-auditor.md"
-    },
-    {
-      "id": "web3-auditor",
-      "name": "Web3 Auditor",
-      "description": "Smart contract security auditor. 10 bug classes: accounting desync, access control, reentrancy, oracle manipulation, etc.",
-      "path": "agents/web3-auditor.md"
     },
     {
       "id": "exploit-researcher",
       "name": "Exploit Researcher",
-      "description": "CVE research, patch diffing, exploit development, mitigation bypass. Researches known and unknown vulnerabilities.",
+      "description": "Vulnerability research agent. Identifies CVEs, finds exploit PoCs, maps attack chains, and develops custom exploitation strategies.",
       "path": "agents/exploit-researcher.md"
     },
     {
       "id": "network-analyst",
       "name": "Network Analyst",
-      "description": "Packet analysis, protocol dissection, IDS/IPS rules, firewall auditing, traffic correlation, C2 detection.",
+      "description": "Deep network analysis agent. Packet inspection, protocol dissection, traffic anomaly detection, IDS/IPS rule creation, and firewall auditing.",
       "path": "agents/network-analyst.md"
     },
     {
       "id": "redteam-planner",
       "name": "Red Team Planner",
-      "description": "Red team engagement planner. Attack paths, C2 infrastructure, persistence, OPSEC, MITRE ATT&CK mapping.",
+      "description": "Red team engagement planner. Designs attack paths, C2 infrastructure, persistence strategies, OPSEC, and MITRE ATT&CK mapping.",
       "path": "agents/redteam-planner.md"
     },
     {
       "id": "reverse-engineer",
       "name": "Reverse Engineer",
-      "description": "Binary analysis, disassembly, decompilation, firmware extraction, protocol reverse engineering. IDA/Ghidra/Frida/angr.",
+      "description": "Binary analysis and reverse engineering specialist. Static and dynamic analysis, firmware extraction, protocol reversing with IDA, Ghidra, Frida.",
       "path": "agents/reverse-engineer.md"
     },
     {
       "id": "security-reviewer",
       "name": "Security Reviewer",
-      "description": "Code audit against OWASP Top 10, CWE Top 25. Language-specific patterns for JS, Python, Ruby, Java, C#, Go.",
+      "description": "Deep security audit agent. Reviews code against OWASP Top 10 and CWE Top 25 with language-specific patterns for JS, Python, Ruby, Java, C#, Go.",
       "path": "agents/security-reviewer.md"
     },
     {
       "id": "ai-researcher",
       "name": "AI Researcher",
-      "description": "LLM security testing, prompt injection, model architecture analysis, training optimization, safety alignment.",
+      "description": "AI and ML security research specialist. LLM red-teaming, prompt injection testing, system prompt extraction, and safety alignment assessment.",
       "path": "agents/ai-researcher.md"
     },
     {
-      "id": "recon-ranker",
-      "name": "Recon Ranker",
-      "description": "Attack surface ranking and prioritization. Scores endpoints by IDOR likelihood, API surface, tech stack match, feature age.",
-      "path": "agents/recon-ranker.md"
+      "id": "token-auditor",
+      "name": "Token Auditor",
+      "description": "Meme coin and token security auditor. Checks hidden mint, honeypot, fee manipulation, LP drain, bonding curve exploits, and fake renounce on EVM and Solana.",
+      "path": "agents/token-auditor.md"
+    },
+    {
+      "id": "web3-auditor",
+      "name": "Web3 Auditor",
+      "description": "Smart contract security auditor. Checks 10 bug classes including accounting desync, access control, reentrancy, flash loan oracle manipulation, and proxy issues.",
+      "path": "agents/web3-auditor.md"
+    },
+    {
+      "id": "mobile-testing-agent",
+      "name": "Mobile Testing Agent",
+      "description": "Mobile application security testing specialist. APK and IPA acquisition, decompilation, static analysis, Frida instrumentation, SSL pinning bypass, and deep-link injection.",
+      "path": "agents/mobile-testing-agent.md"
+    },
+    {
+      "id": "windows-workflow-agent",
+      "name": "Windows Workflow Agent",
+      "description": "Windows-native bug bounty hunting workflow specialist. curl.exe mastery, PowerShell alternatives, Burp Suite setup, and WSL integration.",
+      "path": "agents/windows-workflow-agent.md"
+    },
+    {
+      "id": "chain-rules-agent",
+      "name": "Chain Rules Agent",
+      "description": "Vulnerability chaining methodology specialist. Chain philosophy, decision trees, chain primitive taxonomy, and severity multiplication patterns.",
+      "path": "agents/chain-rules-agent.md"
+    },
+    {
+      "id": "program-researcher",
+      "name": "Program Researcher",
+      "description": "Bug bounty program researcher. Analyzes scope, rules, past disclosed reports, tech stack, and produces a target brief before hunting begins.",
+      "path": "agents/program-researcher.md"
+    },
+    {
+      "id": "orchestrator",
+      "name": "Orchestrator",
+      "description": "Recon-to-report pipeline orchestrator. Runs the full hunting cycle end-to-end by delegating each phase to the appropriate specialist agent.",
+      "path": "agents/orchestrator.md"
+    },
+    {
+      "id": "browser-automator",
+      "name": "Browser Automator",
+      "description": "Browser automation specialist. Uses Playwright for multi-step login flows, blind XSS callback detection, DOM testing, and OAuth flow analysis.",
+      "path": "agents/browser-automator.md"
+    },
+    {
+      "id": "evidence-reviewer",
+      "name": "Evidence Reviewer",
+      "description": "Evidence quality control agent. Reviews PoC screenshots, HAR files, curl commands, and enforces cookie redaction and PII masking before submission.",
+      "path": "agents/evidence-reviewer.md"
+    },
+    {
+      "id": "triage-defender",
+      "name": "Triage Defender",
+      "description": "Triage defense agent. Anticipates triager objections, rebuts OOS claims, counters severity downgrades, and prevents rejections with triage-ready evidence.",
+      "path": "agents/triage-defender.md"
+    },
+    {
+      "id": "idor-hunter",
+      "name": "IDOR Hunter",
+      "description": "IDOR specialist. Hunts horizontal and vertical IDOR across API endpoints, file downloads, profile pages, invoice IDs, and UUID-based access patterns.",
+      "path": "agents/idor-hunter.md"
+    },
+    {
+      "id": "ssrf-hunter",
+      "name": "SSRF Hunter",
+      "description": "SSRF specialist. Hunts SSRF in file uploads, URL fetch endpoints, PDF generators, webhook callbacks, redirect followers, and image processing services.",
+      "path": "agents/ssrf-hunter.md"
+    },
+    {
+      "id": "xss-hunter",
+      "name": "XSS Hunter",
+      "description": "XSS specialist. Hunts reflected, stored, DOM-based, and blind XSS across all input vectors including URL params, form fields, headers, and file uploads.",
+      "path": "agents/xss-hunter.md"
+    },
+    {
+      "id": "auth-bypass-hunter",
+      "name": "Auth Bypass Hunter",
+      "description": "Auth bypass specialist. Hunts auth flaws across login flows, password resets, MFA, session handling, JWT validation, OAuth flows, and role-based access control.",
+      "path": "agents/auth-bypass-hunter.md"
+    },
+    {
+      "id": "race-condition-hunter",
+      "name": "Race Condition Hunter",
+      "description": "Race condition specialist. Hunts TOCTOU bugs, concurrent request races on coupon and balance endpoints, and parallel action exploits.",
+      "path": "agents/race-condition-hunter.md"
+    },
+    {
+      "id": "business-logic-hunter",
+      "name": "Business Logic Hunter",
+      "description": "Business logic vulnerability specialist. Hunts logic flaws in multi-step workflows, state transitions, privilege escalation, financial operations, and checkout flows.",
+      "path": "agents/business-logic-hunter.md"
+    },
+    {
+      "id": "file-upload-hunter",
+      "name": "File Upload Hunter",
+      "description": "File upload vulnerability specialist. Hunts RCE via webshell, XSS via SVG, SSRF via XXE in DOCX, and path traversal via filename injection.",
+      "path": "agents/file-upload-hunter.md"
+    },
+    {
+      "id": "api-misconfig-hunter",
+      "name": "API Misconfig Hunter",
+      "description": "API misconfiguration specialist. Hunts mass assignment, JWT attacks, prototype pollution, CORS misconfigs, HTTP verb tampering, and GraphQL introspection leaks.",
+      "path": "agents/api-misconfig-hunter.md"
+    },
+    {
+      "id": "graphql-hunter",
+      "name": "GraphQL Hunter",
+      "description": "GraphQL vulnerability specialist. Hunts introspection leaks, batching attacks, query depth abuse, mass assignment, IDOR in queries, and auth flaws in resolvers.",
+      "path": "agents/graphql-hunter.md"
+    },
+    {
+      "id": "ssti-hunter",
+      "name": "SSTI Hunter",
+      "description": "SSTI specialist. Hunts template injection in Jinja2, Twig, Freemarker, ERB, Velocity, Mako, Thymeleaf, Smarty, and Pug. Escalates from detection to RCE.",
+      "path": "agents/ssti-hunter.md"
+    },
+    {
+      "id": "chain-validator",
+      "name": "Chain Validator",
+      "description": "Exploit chain validator. Checks chain primitives exist, verifies reproducibility, tests stability across retries, and rejects theoretical chains.",
+      "path": "agents/chain-validator.md"
+    },
+    {
+      "id": "p1-validator",
+      "name": "P1 Validator",
+      "description": "P1 finding pre-flight validator. Runs 7-Question Gate, 4-gate checklist, and CVSS 3.1 calculation before report writing to prevent N/A submissions.",
+      "path": "agents/p1-validator.md"
+    },
+    {
+      "id": "scope-enforcer",
+      "name": "Scope Enforcer",
+      "description": "Scope boundary enforcer. Checks every finding against program scope, wildcard rules, and OOS definitions to prevent wasted effort on out-of-scope targets.",
+      "path": "agents/scope-enforcer.md"
+    },
+    {
+      "id": "target-onboarding-agent",
+      "name": "Target Onboarding Agent",
+      "description": "Target onboarding specialist. Gathers initial intelligence including program rules, scope, DNS records, SSL certificates, and produces structured target briefs.",
+      "path": "agents/target-onboarding-agent.md"
+    },
+    {
+      "id": "triage-readiness",
+      "name": "Triage Readiness",
+      "description": "Triage readiness checker. Reviews evidence, PoC reproducibility, report clarity, and severity justification. Simulates triager review before submission.",
+      "path": "agents/triage-readiness.md"
     }
   ],
   "rules": [
@@ -187,12 +351,196 @@
     { "id": "windows-workflow", "path": "rules/windows-workflow.md", "description": "Windows-specific hunting" }
   ],
   "tools": [
-    { "name": "curl-hunter.ps1", "path": "tools/powershell/curl-hunter.ps1", "description": "curl.exe master toolkit" },
-    { "name": "js-analyzer.ps1", "path": "tools/powershell/js-analyzer.ps1", "description": "JS bundle analysis toolkit" },
-    { "name": "powershell-lib.ps1", "path": "tools/powershell/powershell-lib.ps1", "description": "PowerShell one-liner library" },
-    { "name": "python-hunter.py", "path": "tools/python/python-hunter.py", "description": "Python hunting toolkit" },
-    { "name": "recon-toolkit.ps1", "path": "tools/powershell/recon-toolkit.ps1", "description": "Recon automation pipeline" },
-    { "name": "fuzzer-toolkit.ps1", "path": "tools/powershell/fuzzer-toolkit.ps1", "description": "HTTP fuzzing toolkit" },
-    { "name": "evidence-toolkit.ps1", "path": "tools/powershell/evidence-toolkit.ps1", "description": "Evidence capture and sanitization" }
+    { "name": "extract-apis.sh", "path": "tools/bash/extract-apis.sh", "description": "API endpoint extraction from JavaScript bundles and HTML", "type": "bash" },
+    { "name": "extract-js.sh", "path": "tools/bash/extract-js.sh", "description": "JavaScript file discovery and download from target domains", "type": "bash" },
+    { "name": "deep-hunt.sh", "path": "tools/bash/deep-hunt.sh", "description": "Deep vulnerability scanning with comprehensive payload sets", "type": "bash" },
+    { "name": "fast-hunt.sh", "path": "tools/bash/fast-hunt.sh", "description": "Rapid target assessment with common vulnerability checks", "type": "bash" },
+    { "name": "https-probing.sh", "path": "tools/bash/https-probing.sh", "description": "HTTPS endpoint probing with certificate and header analysis", "type": "bash" },
+    { "name": "extract-parameters.sh", "path": "tools/bash/extract-parameters.sh", "description": "URL parameter extraction and analysis from target endpoints", "type": "bash" },
+    { "name": "extract-functionalities.sh", "path": "tools/bash/extract-functionalities.sh", "description": "Application functionality mapping from discovered endpoints", "type": "bash" },
+    { "name": "endpoint-fuzzer.sh", "path": "tools/bash/endpoint-fuzzer.sh", "description": "High-performance endpoint fuzzing with custom wordlists", "type": "bash" },
+    { "name": "auth-tester.sh", "path": "tools/bash/auth-tester.sh", "description": "Authentication and authorization bypass testing suite", "type": "bash" },
+    { "name": "report-builder.sh", "path": "tools/bash/report-builder.sh", "description": "Bug bounty report generation and formatting toolkit", "type": "bash" },
+    { "name": "curl-hunter.sh", "path": "tools/bash/curl-hunter.sh", "description": "curl-based hunting toolkit for Windows and Linux environments", "type": "bash" },
+    { "name": "evidence-toolkit.sh", "path": "tools/bash/evidence-toolkit.sh", "description": "Evidence capture, sanitization, and PoC reproducibility tools", "type": "bash" },
+    { "name": "fuzzer-toolkit.sh", "path": "tools/bash/fuzzer-toolkit.sh", "description": "Comprehensive HTTP fuzzing and parameter discovery toolkit", "type": "bash" },
+    { "name": "js-analyzer.sh", "path": "tools/bash/js-analyzer.sh", "description": "JavaScript bundle analysis for endpoints, secrets, and tokens", "type": "bash" },
+    { "name": "recon-toolkit.sh", "path": "tools/bash/recon-toolkit.sh", "description": "Reconnaissance automation with subdomain and asset discovery", "type": "bash" },
+    { "name": "jiggy.sh", "path": "tools/bash/jiggy.sh", "description": "Main Jiggy entry point for bash-based hunting workflows", "type": "bash" },
+    { "name": "lib.sh", "path": "tools/bash/lib.sh", "description": "Shared bash library with common utility functions", "type": "bash" },
+    { "name": "scope-validator.sh", "path": "tools/bash/scope-validator.sh", "description": "Scope boundary validation and target eligibility checker", "type": "bash" },
+    { "name": "index.sh", "path": "tools/bash/index.sh", "description": "Bash tool index and command dispatch handler", "type": "bash" },
+    { "name": "extract-apis.ps1", "path": "tools/powershell/extract-apis.ps1", "description": "API endpoint extraction from JavaScript and HTML", "type": "powershell" },
+    { "name": "extract-js.ps1", "path": "tools/powershell/extract-js.ps1", "description": "JavaScript file discovery and download toolkit", "type": "powershell" },
+    { "name": "deep-hunt.ps1", "path": "tools/powershell/deep-hunt.ps1", "description": "Deep vulnerability scanning for Windows environments", "type": "powershell" },
+    { "name": "fast-hunt.ps1", "path": "tools/powershell/fast-hunt.ps1", "description": "Rapid preliminary assessment and target triage", "type": "powershell" },
+    { "name": "https-probing.ps1", "path": "tools/powershell/https-probing.ps1", "description": "HTTPS endpoint probing with PowerShell-native requests", "type": "powershell" },
+    { "name": "extract-parameters.ps1", "path": "tools/powershell/extract-parameters.ps1", "description": "URL parameter extraction and fuzzing target generation", "type": "powershell" },
+    { "name": "extract-functionalities.ps1", "path": "tools/powershell/extract-functionalities.ps1", "description": "Application functionality and feature discovery", "type": "powershell" },
+    { "name": "endpoint-fuzzer.ps1", "path": "tools/powershell/endpoint-fuzzer.ps1", "description": "Windows-native endpoint fuzzing with Invoke-WebRequest", "type": "powershell" },
+    { "name": "auth-tester.ps1", "path": "tools/powershell/auth-tester.ps1", "description": "Authentication bypass testing for Windows workflows", "type": "powershell" },
+    { "name": "report-builder.ps1", "path": "tools/powershell/report-builder.ps1", "description": "Bug bounty report generation for Windows", "type": "powershell" },
+    { "name": "curl-hunter.ps1", "path": "tools/powershell/curl-hunter.ps1", "description": "curl.exe master toolkit for Windows bug bounty hunting", "type": "powershell" },
+    { "name": "evidence-toolkit.ps1", "path": "tools/powershell/evidence-toolkit.ps1", "description": "Evidence capture and HAR sanitization toolkit", "type": "powershell" },
+    { "name": "fuzzer-toolkit.ps1", "path": "tools/powershell/fuzzer-toolkit.ps1", "description": "HTTP fuzzing and parameter discovery toolkit", "type": "powershell" },
+    { "name": "js-analyzer.ps1", "path": "tools/powershell/js-analyzer.ps1", "description": "JavaScript bundle analysis and secret extraction", "type": "powershell" },
+    { "name": "recon-toolkit.ps1", "path": "tools/powershell/recon-toolkit.ps1", "description": "Reconnaissance automation for Windows environments", "type": "powershell" },
+    { "name": "jiggy.ps1", "path": "tools/powershell/jiggy.ps1", "description": "Main Jiggy entry point for PowerShell-based hunting", "type": "powershell" },
+    { "name": "powershell-lib.ps1", "path": "tools/powershell/powershell-lib.ps1", "description": "PowerShell one-liner library with reusable hunting functions", "type": "powershell" },
+    { "name": "index.ps1", "path": "tools/powershell/index.ps1", "description": "PowerShell tool index and command dispatch handler", "type": "powershell" },
+    { "name": "extract-apis.js", "path": "tools/javascript/extract-apis.js", "description": "API endpoint extraction from document and script content", "type": "javascript" },
+    { "name": "extract-js.js", "path": "tools/javascript/extract-js.js", "description": "JavaScript file discovery and content retrieval", "type": "javascript" },
+    { "name": "deep-hunt.js", "path": "tools/javascript/deep-hunt.js", "description": "Deep vulnerability scanning with Node.js automation", "type": "javascript" },
+    { "name": "fast-hunt.js", "path": "tools/javascript/fast-hunt.js", "description": "Rapid target triage and vulnerability screening", "type": "javascript" },
+    { "name": "https-probing.js", "path": "tools/javascript/https-probing.js", "description": "HTTPS endpoint probing with TLS certificate inspection", "type": "javascript" },
+    { "name": "extract-parameters.js", "path": "tools/javascript/extract-parameters.js", "description": "URL parameter extraction and analysis toolkit", "type": "javascript" },
+    { "name": "extract-functionalities.js", "path": "tools/javascript/extract-functionalities.js", "description": "Application functionality mapping from endpoint analysis", "type": "javascript" },
+    { "name": "endpoint-fuzzer.js", "path": "tools/javascript/endpoint-fuzzer.js", "description": "Node.js endpoint fuzzing with configurable payload sources", "type": "javascript" },
+    { "name": "auth-tester.js", "path": "tools/javascript/auth-tester.js", "description": "Authentication and authorization testing automation", "type": "javascript" },
+    { "name": "report-builder.js", "path": "tools/javascript/report-builder.js", "description": "Bug bounty report generation with template support", "type": "javascript" },
+    { "name": "api-fuzzer.js", "path": "tools/javascript/api-fuzzer.js", "description": "REST API fuzzing with parameter mutation and payload injection", "type": "javascript" },
+    { "name": "browser-automation.js", "path": "tools/javascript/browser-automation.js", "description": "Playwright-based browser automation for login and DOM testing", "type": "javascript" },
+    { "name": "client-side-scanner.js", "path": "tools/javascript/client-side-scanner.js", "description": "Browser-side vulnerability scanning and DOM inspection", "type": "javascript" },
+    { "name": "csrf-tester.js", "path": "tools/javascript/csrf-tester.js", "description": "Cross-site request forgery detection and validation toolkit", "type": "javascript" },
+    { "name": "dom-manipulation.js", "path": "tools/javascript/dom-manipulation.js", "description": "DOM manipulation analysis and mutation-based testing", "type": "javascript" },
+    { "name": "endpoint-collector.js", "path": "tools/javascript/endpoint-collector.js", "description": "Automated endpoint collection from page navigation and crawling", "type": "javascript" },
+    { "name": "event-inspector.js", "path": "tools/javascript/event-inspector.js", "description": "DOM event listener inspection and analysis toolkit", "type": "javascript" },
+    { "name": "launcher.js", "path": "tools/javascript/launcher.js", "description": "JavaScript tool launcher and environment initialization", "type": "javascript" },
+    { "name": "parameters.js", "path": "tools/javascript/parameters.js", "description": "Parameter parsing and manipulation utility library", "type": "javascript" },
+    { "name": "postmessage-explorer.js", "path": "tools/javascript/postmessage-explorer.js", "description": "Window postMessage communication inspection and exploitation", "type": "javascript" },
+    { "name": "prototype-pollution.js", "path": "tools/javascript/prototype-pollution.js", "description": "JavaScript prototype pollution detection and exploitation toolkit", "type": "javascript" },
+    { "name": "session-hijacker.js", "path": "tools/javascript/session-hijacker.js", "description": "Session token analysis and hijacking vulnerability tester", "type": "javascript" },
+    { "name": "storage-auditor.js", "path": "tools/javascript/storage-auditor.js", "description": "Browser storage audit for localStorage, sessionStorage, and cookies", "type": "javascript" },
+    { "name": "token-analyzer.js", "path": "tools/javascript/token-analyzer.js", "description": "JWT, OAuth token, and session token security analysis", "type": "javascript" },
+    { "name": "user-functionalities.js", "path": "tools/javascript/user-functionalities.js", "description": "User role and privilege enumeration via functional analysis", "type": "javascript" },
+    { "name": "xss-hunter.js", "path": "tools/javascript/xss-hunter.js", "description": "Client-side XSS testing with payload generation and injection", "type": "javascript" },
+    { "name": "index.js", "path": "tools/javascript/index.js", "description": "JavaScript tool index and module export handler", "type": "javascript" },
+    { "name": "extract_apis.py", "path": "tools/python/extract_apis.py", "description": "API endpoint extraction from JavaScript bundles and HTML content", "type": "python" },
+    { "name": "extract_js.py", "path": "tools/python/extract_js.py", "description": "JavaScript file discovery, download, and URL collection", "type": "python" },
+    { "name": "deep_hunt.py", "path": "tools/python/deep_hunt.py", "description": "Deep vulnerability scanning with comprehensive payload sets", "type": "python" },
+    { "name": "fast_hunt.py", "path": "tools/python/fast_hunt.py", "description": "Rapid target assessment with common vulnerability checks", "type": "python" },
+    { "name": "https_probing.py", "path": "tools/python/https_probing.py", "description": "HTTPS endpoint probing with TLS and header analysis", "type": "python" },
+    { "name": "extract_parameters.py", "path": "tools/python/extract_parameters.py", "description": "URL parameter extraction and fuzzing entry generation", "type": "python" },
+    { "name": "extract_functionalities.py", "path": "tools/python/extract_functionalities.py", "description": "Application functionality mapping from discovered endpoints", "type": "python" },
+    { "name": "endpoint_fuzzer.py", "path": "tools/python/endpoint_fuzzer.py", "description": "Endpoint fuzzing with configurable wordlists and payloads", "type": "python" },
+    { "name": "auth_tester.py", "path": "tools/python/auth_tester.py", "description": "Authentication bypass and privilege escalation testing", "type": "python" },
+    { "name": "report_builder.py", "path": "tools/python/report_builder.py", "description": "Bug bounty report generation with platform-specific templates", "type": "python" },
+    { "name": "rce_hunter.py", "path": "tools/python/rce_hunter.py", "description": "Remote code execution detection and exploitation toolkit", "type": "python" },
+    { "name": "sqli_hunter.py", "path": "tools/python/sqli_hunter.py", "description": "SQL injection detection with time-based and error-based techniques", "type": "python" },
+    { "name": "idor_hunter.py", "path": "tools/python/idor_hunter.py", "description": "Insecure direct object reference detection and testing", "type": "python" },
+    { "name": "auth_hunter.py", "path": "tools/python/auth_hunter.py", "description": "Advanced authentication flaw detection across multiple vectors", "type": "python" },
+    { "name": "ssrf_hunter.py", "path": "tools/python/ssrf_hunter.py", "description": "Server-side request forgery detection with callback verification", "type": "python" },
+    { "name": "xxe_hunter.py", "path": "tools/python/xxe_hunter.py", "description": "XML external entity injection detection and exploitation", "type": "python" },
+    { "name": "file_upload_hunter.py", "path": "tools/python/file_upload_hunter.py", "description": "File upload vulnerability testing with bypass technique library", "type": "python" },
+    { "name": "python-hunter.py", "path": "tools/python/python-hunter.py", "description": "Main Python hunting toolkit entry point with modular design", "type": "python" },
+    { "name": "js_analyzer.py", "path": "tools/python/js_analyzer.py", "description": "JavaScript bundle analysis for endpoints, secrets, and tokens", "type": "python" },
+    { "name": "url_collector.py", "path": "tools/python/url_collector.py", "description": "URL collection from multiple sources including wayback and crawls", "type": "python" },
+    { "name": "base64_utils.py", "path": "tools/python/base64_utils.py", "description": "Base64 encoding, decoding, and detection utility functions", "type": "python" },
+    { "name": "batch_processor.py", "path": "tools/python/batch_processor.py", "description": "Parallel batch processing for large-scale endpoint and URL lists", "type": "python" },
+    { "name": "secret_scanner.py", "path": "tools/python/secret_scanner.py", "description": "Hardcoded secret detection including API keys, tokens, and credentials", "type": "python" },
+    { "name": "payload_generator.py", "path": "tools/python/payload_generator.py", "description": "Vulnerability-specific payload generation with encoding variants", "type": "python" },
+    { "name": "network_utils.py", "path": "tools/python/network_utils.py", "description": "Network utility functions for HTTP, DNS, and connection testing", "type": "python" }
+  ],
+  "mcp_servers": [
+    {
+      "id": "auth-tester-mcp",
+      "path": "mcp/auth-tester-mcp/",
+      "description": "Authentication testing MCP server for automated auth bypass detection"
+    },
+    {
+      "id": "batch-mcp",
+      "path": "mcp/batch-mcp/",
+      "description": "Batch processing MCP server for parallel task execution and coordination"
+    },
+    {
+      "id": "burp-mcp-client",
+      "path": "mcp/burp-mcp-client/",
+      "description": "Burp Suite integration MCP client for intercepting proxy automation"
+    },
+    {
+      "id": "caido-mcp-client",
+      "path": "mcp/caido-mcp-client/",
+      "description": "Caido integration MCP client for web application testing workflows"
+    },
+    {
+      "id": "deep-hunt-mcp",
+      "path": "mcp/deep-hunt-mcp/",
+      "description": "Deep vulnerability hunting MCP server with comprehensive scan capabilities"
+    },
+    {
+      "id": "dns-recon-mcp",
+      "path": "mcp/dns-recon-mcp/",
+      "description": "DNS reconnaissance MCP server for subdomain and record enumeration"
+    },
+    {
+      "id": "evidence-mcp",
+      "path": "mcp/evidence-mcp/",
+      "description": "Evidence collection and management MCP server for PoC preservation"
+    },
+    {
+      "id": "fast-hunt-mcp",
+      "path": "mcp/fast-hunt-mcp/",
+      "description": "Rapid target triage MCP server for quick vulnerability assessment"
+    },
+    {
+      "id": "hackerone-mcp",
+      "path": "mcp/hackerone-mcp/",
+      "description": "HackerOne API integration MCP server for program and submission management"
+    },
+    {
+      "id": "hercules-hunt-mcp",
+      "path": "mcp/hercules-hunt-mcp/",
+      "description": "Hercules Hunt MCP server for orchestrated hunting pipeline execution"
+    },
+    {
+      "id": "https-mcp",
+      "path": "mcp/https-mcp/",
+      "description": "HTTPS probing and TLS analysis MCP server for endpoint inspection"
+    },
+    {
+      "id": "hydration-mcp",
+      "path": "mcp/hydration-mcp/",
+      "description": "Hydration MCP server for context loading and skill injection workflows"
+    },
+    {
+      "id": "interactsh-mcp",
+      "path": "mcp/interactsh-mcp/",
+      "description": "Interactsh integration MCP server for out-of-band vulnerability detection"
+    },
+    {
+      "id": "js-analysis-mcp",
+      "path": "mcp/js-analysis-mcp/",
+      "description": "JavaScript analysis MCP server for endpoint and secret extraction from bundles"
+    },
+    {
+      "id": "orchestrator-mcp",
+      "path": "mcp/orchestrator-mcp/",
+      "description": "Pipeline orchestrator MCP server for end-to-end hunting workflow coordination"
+    },
+    {
+      "id": "payload-mcp",
+      "path": "mcp/payload-mcp/",
+      "description": "Payload generation MCP server with vulnerability-specific payload libraries"
+    },
+    {
+      "id": "recon-mcp",
+      "path": "mcp/recon-mcp/",
+      "description": "Reconnaissance MCP server for subdomain, asset, and attack surface discovery"
+    },
+    {
+      "id": "report-mcp",
+      "path": "mcp/report-mcp/",
+      "description": "Report generation MCP server for bug bounty submission formatting"
+    },
+    {
+      "id": "url-crawl-mcp",
+      "path": "mcp/url-crawl-mcp/",
+      "description": "URL crawling MCP server for automated endpoint discovery and collection"
+    },
+    {
+      "id": "validation-mcp",
+      "path": "mcp/validation-mcp/",
+      "description": "Finding validation MCP server running 7-Question Gate and severity checks"
+    }
   ]
 }
