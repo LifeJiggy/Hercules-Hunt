@@ -2,7 +2,7 @@
 
 **An operating system for AI-augmented bug bounty hunting.**
 
-Not a tool. Not a scanner. A **hunter's operating system** — 202 source files, 44 directories, ~118K lines across Python, PowerShell, JavaScript, Bash, MCP, and 1,800+ pages of markdown methodology. Designed to work with OpenCode, Claude Code, Codex CLI, Cursor, and any agentic coding CLI.
+Not a tool. Not a scanner. A **hunter's operating system** — 300+ files, 44 directories, ~230K lines across Python, JavaScript, PowerShell, Bash, MCP, and 1,800+ pages of markdown methodology. Designed to work with OpenCode, Claude Code, Codex CLI, Cursor, and any agentic coding CLI.
 
 ---
 
@@ -24,7 +24,7 @@ Read the full philosophy: [`soul.md`](soul.md), [`purpose.md`](purpose.md), [`go
 
 ## What's Inside
 
-### 17 AI Agents
+### 40 AI Agents
 
 Every agent is a complete, self-contained workflow — invoke it and the AI knows exactly what to do:
 
@@ -32,130 +32,88 @@ Every agent is a complete, self-contained workflow — invoke it and the AI know
 |---|---|---|
 | **recon-agent** | Subdomain enumeration, live host discovery, tech fingerprinting | [`agents/recon-agent.md`](agents/recon-agent.md) |
 | **recon-ranker** | Attack surface prioritization by IDOR likelihood, API surface, tech stack | [`agents/recon-ranker.md`](agents/recon-ranker.md) |
-| **p1-warrior** | Systematic P1 hunting — cycles through bug classes, time-boxed | [`agents/p1-warrior.md`](agents/p1-warrior.md) |
-| **chain-builder** | Finds B for every A — chains primitives to Critical | [`agents/chain-builder.md`](agents/chain-builder.md) |
+| **p1-warrior** | Systematic P1 hunting — delegates to 10 specialist sub-agents | [`agents/p1-warrior.md`](agents/p1-warrior.md) |
+| **chain-builder** | Exploit chain builder — finds B and C for every A | [`agents/chain-builder.md`](agents/chain-builder.md) |
+| **chain-validator** | Validates exploit chains are independently reproducible | [`agents/chain-validator.md`](agents/chain-validator.md) |
+| **p1-validator** | Pre-flight validation before reaching primary validator | [`agents/p1-validator.md`](agents/p1-validator.md) |
+| **scope-enforcer** | Checks findings against program scope before hunting begins | [`agents/scope-enforcer.md`](agents/scope-enforcer.md) |
+| **target-onboarding** | Gathers initial intelligence on new targets | [`agents/target-onboarding-agent.md`](agents/target-onboarding-agent.md) |
+| **triage-readiness** | Reviews evidence and PoC reproducibility before submission | [`agents/triage-readiness.md`](agents/triage-readiness.md) |
 | **js-analysis** | Extracts endpoints, secrets, cloud keys from JS bundles | [`agents/js-analysis.md`](agents/js-analysis.md) |
-| **js-deobfuscation** | Reverses webpack bundles, eval-based obfuscation, VM-protected code | [`agents/js-deobfuscation.md`](agents/js-deobfuscation.md) |
-| **report-writer** | Generates H1/Bugcrowd/Intigriti/Immunefi reports with CVSS 4.0 | [`agents/report-writer.md`](agents/report-writer.md) |
+| **js-deobfuscation** | Reverses webpack bundles, eval-based obfuscation | [`agents/js-deobfuscation.md`](agents/js-deobfuscation.md) |
+| **report-writer** | H1/Bugcrowd/Intigriti/Immunefi reports with CVSS scoring | [`agents/report-writer.md`](agents/report-writer.md) |
 | **validator** | 7-Question Gate + 4-gate checklist — kills weak findings fast | [`agents/validator.md`](agents/validator.md) |
-| **autopilot** | Autonomous end-to-end hunt loop with configurable checkpoints | [`agents/autopilot.md`](agents/autopilot.md) |
-| **exploit-researcher** | CVE research, PoC matching, exploit development strategies | [`agents/exploit-researcher.md`](agents/exploit-researcher.md) |
-| **network-analyst** | Packet inspection, protocol dissection, IDS/IPS rule creation | [`agents/network-analyst.md`](agents/network-analyst.md) |
-| **redteam-planner** | Engagement design, C2 infrastructure, MITRE ATT&CK mapped | [`agents/redteam-planner.md`](agents/redteam-planner.md) |
+| **autopilot** | Autonomous end-to-end hunt loop with checkpoints | [`agents/autopilot.md`](agents/autopilot.md) |
+| **orchestrator** | Recon-to-report pipeline orchestrator | [`agents/orchestrator.md`](agents/orchestrator.md) |
+| **browser-automator** | Playwright-based browser automation for complex flows | [`agents/browser-automator.md`](agents/browser-automator.md) |
+| **exploit-researcher** | CVE research, PoC matching, exploit development | [`agents/exploit-researcher.md`](agents/exploit-researcher.md) |
+| **network-analyst** | Packet inspection, protocol dissection, IDS rules | [`agents/network-analyst.md`](agents/network-analyst.md) |
+| **redteam-planner** | Engagement design, C2, MITRE ATT&CK mapped | [`agents/redteam-planner.md`](agents/redteam-planner.md) |
 | **reverse-engineer** | Binary analysis, firmware RE, Frida instrumentation | [`agents/reverse-engineer.md`](agents/reverse-engineer.md) |
 | **security-reviewer** | Source code audit against OWASP Top 10 + CWE Top 25 | [`agents/security-reviewer.md`](agents/security-reviewer.md) |
-| **ai-researcher** | LLM red-teaming, prompt injection, system prompt extraction | [`agents/ai-researcher.md`](agents/ai-researcher.md) |
-| **token-auditor** | Meme coin/token security — honeypot, rug pull, LP drain (EVM + Solana) | [`agents/token-auditor.md`](agents/token-auditor.md) |
-| **web3-auditor** | Smart contract audit — 10 bug classes, DeFi focus | [`agents/web3-auditor.md`](agents/web3-auditor.md) |
+| **ai-researcher** | LLM red-teaming, prompt injection, jailbreak techniques | [`agents/ai-researcher.md`](agents/ai-researcher.md) |
+| **token-auditor** | Meme coin/token security — honeypot, rug pull, LP drain | [`agents/token-auditor.md`](agents/token-auditor.md) |
+| **web3-auditor** | Smart contract audit — 10 DeFi bug classes | [`agents/web3-auditor.md`](agents/web3-auditor.md) |
+| **mobile-testing-agent** | APK/iOS acquisition, decompilation, Frida instrumentation | [`agents/mobile-testing-agent.md`](agents/mobile-testing-agent.md) |
+| **windows-workflow-agent** | Windows-native hunting with curl.exe, PowerShell, WSL | [`agents/windows-workflow-agent.md`](agents/windows-workflow-agent.md) |
+| **chain-rules-agent** | Chain philosophy and primitive taxonomy | [`agents/chain-rules-agent.md`](agents/chain-rules-agent.md) |
+| **+ 10 specialist sub-agents** | IDOR, SSRF, XSS, auth-bypass, race-condition, business-logic, file-upload, api-misconfig, graphql, ssti | `agents/*-hunter.md` |
+| **+ 3 post-hunt agents** | program-researcher, evidence-reviewer, triage-defender | `agents/*.md` |
 
-### 13+ Behavioral Rules
+### 13 Behavioral Rules
 
 Rules are the AI's guardrails — always-active constraints loaded at session start:
 
-| Rule | Domain |
-|------|--------|
-| `rules/recon.md` | Subdomain enumeration, asset discovery, attack surface mapping (3,363 lines) |
-| `rules/api-testing.md` | Mass assignment, JWT attacks, prototype pollution, CORS, verb tampering (2,594 lines) |
-| `rules/auth-testing.md` | OAuth, SAML, MFA, password reset, session management (2,024 lines) |
-| `rules/mindset.md` | Red-team discipline, conservative-default corrections, stuck protocol |
-| `rules/scope.md` | Scope boundaries, wildcard discipline, safe harbor, OOS prevention |
-| `rules/evidence.md` | PoC standards, cookie redaction, PII masking, HAR sanitization |
-| `rules/chaining.md` | A→B→C chain methodology, primitive taxonomy, severity multiplication |
-| `rules/mobile.md` | Android/iOS APK analysis, Frida instrumentation, intent injection |
-| `rules/windows.md` | PowerShell-first workflow, curl.exe mastery, WSL integration |
-| `rules/web3.md` | DeFi audit methodology, Solidity patterns, flash loan exploit paths |
-| `rules/llm-ai.md` | Prompt injection, indirect injection, ASCII smuggling, agentic AI framework |
-| `rules/cloud-iam.md` | AWS/Azure/GCP IAM enumeration, privilege escalation, SSRF-to-cloud chains |
-| `rules/m365-entra.md` | M365/Entra ID credential attack, user enumeration, CA bypass |
-| `rules/js-deobfuscation.md` | Deobfuscation and reverse engineering of JavaScript bundles |
+`rules/hunting.md` · `rules/reporting.md` · `rules/scope.md` · `rules/recon.md` · `rules/chain-rules.md` · `rules/evidence.md` · `rules/mindset.md` · `rules/js-analysis.md` · `rules/js-deobfuscation.md` · `rules/auth-testing.md` · `rules/api-testing.md` · `rules/mobile-testing.md` · `rules/windows-workflow.md`
 
-### Executable Tools (4 Languages)
+### 89 Executable Tools (4 Languages × 10 Standard + Legacy)
 
-Tools are cross-platform — same capabilities on Windows (PowerShell), Linux/macOS (Bash), and anywhere (Python):
+10 standardized tools across all 4 runtimes plus legacy toolkit scripts:
 
-| Tool | Language | Size | Purpose |
-|------|----------|------|---------|
-| `curl-hunter` | PS1 + Bash | 2,275 + 404 lines | 15 curl-based endpoint testing functions |
-| `recon-toolkit` | PS1 + Bash | 2,071 + 460 lines | Automated recon pipeline (subfinder, httpx, wayback) |
-| `fuzzer-toolkit` | PS1 + Bash | 847 + 511 lines | Parameter fuzzing, wordlist-driven discovery |
-| `js-analyzer` | PS1 + Bash | 1,499 + 380 lines | Secret/URL/endpoint extraction from JS bundles |
-| `evidence-toolkit` | PS1 + Bash | 640 + 460 lines | Evidence capture, HAR sanitization, screenshots |
-| `lib` | PS1 + Bash | 734 + 576 lines | Shared helper functions (70+ PS, 20+ bash) |
-| `jiggy` | PS1 + Bash | 713 + 422 lines | CLI dispatcher — unified interface to all tools |
-| `python-hunter.py` | Python | — | Cross-platform scanner with 30+ secret patterns |
+**Standard Tools (10 × 4 = 40 files):**
 
-**CLI one-liners:**
-```powershell
-# PowerShell (Windows)
-.\tools\powershell\jiggy.ps1 recon target.com
-.\tools\powershell\jiggy.ps1 idor https://target.com/api/users/{id}
-.\tools\powershell\jiggy.ps1 fuzz https://target.com/api/endpoint
-.\tools\powershell\jiggy.ps1 js bundle.js
-```
+| Tool | Python | JS | PS | Bash | Purpose |
+|------|--------|-----|-----|-------|---------|
+| extract-apis | 889 | 741 | 1,058 | 702 | API endpoint discovery |
+| extract-js | 902 | 743 | 948 | 633 | JS extraction & secret scanning |
+| deep-hunt | 1,106 | 722 | 1,089 | 620 | Multi-pass systematic hunting |
+| fast-hunt | 999 | 597 | 815 | 606 | Quick surface probes |
+| https-probing | 1,129 | 676 | 831 | 599 | TLS/cert/header analysis |
+| extract-parameters | 1,303 | 666 | 1,007 | 708 | Parameter extraction |
+| extract-functionalities | 1,578 | 1,063 | 1,286 | 686 | User function mapping |
+| endpoint-fuzzer | 1,503 | 695 | 929 | 589 | Path/method/extension fuzzing |
+| auth-tester | 1,649 | 930 | 1,275 | 578 | Auth bypass & session testing |
+| report-builder | 1,520 | 848 | 1,498 | 633 | CVSS 3.1 report generation |
 
-```bash
-# Bash (Linux/macOS)
-./tools/bash/jiggy.sh recon target.com
-./tools/bash/jiggy.sh idor https://target.com/api/users/{id}
-./tools/bash/jiggy.sh fuzz https://target.com/api/endpoint
-./tools/bash/jiggy.sh js bundle.js
-```
+**Legacy Tools:** `curl-hunter`, `recon-toolkit`, `fuzzer-toolkit`, `js-analyzer`, `evidence-toolkit`, `powershell-lib`, `jiggy` (PS + Bash), `python-hunter.py`
 
-### 10 MCP Servers
+**Index/loaders:** `tools/bash/index.sh`, `tools/powershell/index.ps1`, `tools/javascript/index.js`, `tools/python/__init__.py`
+
+### 20 MCP Servers
 
 MCP (Model Context Protocol) servers bridge the AI with external services over JSON-RPC 2.0:
 
-| Server | Purpose | Tools |
-|--------|---------|-------|
-| `recon-mcp` | Subdomain enumeration, DNS resolution, technology fingerprinting | `resolve_subdomain`, `get_dns_records`, `fingerprint_tech` |
-| `dns-recon-mcp` | Deep DNS reconnaissance, zone transfers, record enumeration | `dns_bruteforce`, `dns_zonetransfer`, `dns_reverse_lookup` |
-| `url-crawl-mcp` | URL crawling, endpoint discovery, parameter extraction | `crawl_url`, `extract_endpoints`, `discover_parameters` |
-| `payload-mcp` | Payload generation, WAF bypass construction, encoding | `generate_payload`, `encode_payload`, `bypass_waf` |
-| `interactsh-mcp` | OOB interaction, callback capture, DNS/HTTP logging | `generate_callback`, `poll_interactions`, `get_logs` |
-| `report-mcp` | Report generation, CVSS scoring, template management | `calculate_cvss`, `generate_report`, `validate_report` |
-| `hercules-hunt-mcp` | Orchestration, session management, workflow dispatching | `start_engagement`, `invoke_agent`, `save_finding` |
-| `hackerone-mcp` | HackerOne API integration, submission management | `submit_report`, `check_status`, `list_programs` |
-| (2 additional internal servers) | | |
+`recon-mcp` · `dns-recon-mcp` · `url-crawl-mcp` · `payload-mcp` · `interactsh-mcp` · `report-mcp` · `hercules-hunt-mcp` · `hackerone-mcp` · `burp-mcp-client` · `caido-mcp-client` · `js-analysis-mcp` · `deep-hunt-mcp` · `fast-hunt-mcp` · `orchestrator-mcp` · `batch-mcp` · `hydration-mcp` · `auth-tester-mcp` · `https-mcp` · `evidence-mcp` · `validation-mcp`
 
-### 50+ Skills
+### 8 Shared Python Utilities (utils/)
 
-Methodology for every bug class, loaded on-demand during hunts:
+Zero-dependency utility library shared by all modules: `file_utils.py` · `network_utils.py` · `crypto_utils.py` · `logging_utils.py` · `validation_utils.py` · `config_utils.py` · `date_utils.py` · `report_utils.py`
 
-IDOR, SSRF, XSS, SQLi, auth bypass, race condition, file upload, GraphQL, HTTP smuggling, cache poisoning, OAuth, SAML, SSTI, JWT, prototype pollution, subdomain takeover, cloud misconfig, ATO chains, MFA bypass, LLM/AI injection, CSRF, business logic, RCE, XXE, NTLM info disclosure, SharePoint enumeration, ASP.NET testing, enterprise VPN attack, supply chain recon, memo coin audit, DeFi smart contracts, and more.
+### 50+ Skills & 15 Hydrate Scripts
+
+Methodology for every bug class, loaded on-demand. Hydration scripts (`hydrate.py`) in every module folder auto-discover all `.md` files.
 
 ### Session Lifecycle Hooks
 
-Hooks fire at key session events to keep the hunter disciplined:
-
-```json
-// hooks/hooks.json — 333 lines of targeted hooks
-{
-  "SessionStart": ["Check scope exists", "Verify tools installed", "Check environment"],
-  "PostToolUse": ["Evaluate chain potential", "Detect signal patterns"],
-  "SessionStop": ["Capture techniques", "Log dead ends", "Update memory"]
-}
-```
+Hooks fire at key session events. 6 JSON files: `hooks.json`, `autopilot-hooks.json`, `chain-builder-hooks.json`, `js-analysis-hooks.json`, `recon-ranker-hooks.json`, `security-reviewer-hooks.json`.
 
 ### Memory & Context System
 
-Persistent session memory so every session starts from the last session's endpoint:
-
-| File | Purpose |
-|------|---------|
-| `memory/session-state.md` | Heartbeats, phase transitions, next actions |
-| `memory/discoveries.md` | Running log of findings and leads |
-| `memory/technique-library.md` | Accumulated techniques, payloads, bypasses |
-| `storage/evidence.md` | Evidence schema, redaction protocol |
-| `storage/credentials.md` | Credential vault schema |
-| `storage/findings.md` | Finding schema with chain tracking |
-| `storage/tool-outputs.md` | Tool output normalization schemas |
-| `context/active-target.md` | Current engagement context |
+Persistent session memory across `memory/` (7 files), `storage/` (10 files), `context/` (7 files), and `task-presistence/` (9 files).
 
 ---
 
 ## Architecture
-
-The project expresses each security domain in **multiple formats for different consumption modes**:
 
 ```
                      ┌─────────────────┐
@@ -164,35 +122,21 @@ The project expresses each security domain in **multiple formats for different c
                               │
                     ┌─────────▼─────────┐
                     │   AI Agent Layer   │
-                    │   (17 agents)      │
+                    │   (40 agents)      │
                     └─────────┬─────────┘
                               │
          ┌────────────────────┼────────────────────┐
          │                    │                    │
    ┌─────▼─────┐      ┌──────▼──────┐      ┌──────▼──────┐
    │  Rules     │      │  Skills     │      │  Tools      │
-   │ (13 files) │      │ (50+ files) │      │ (PS/Py/JS/Bash) │
+   │ (13 files) │      │ (50+ files) │      │ (89 files)  │
    └───────────┘      └─────────────┘      └─────────────┘
          │                    │                    │
    ┌─────▼─────┐      ┌──────▼──────┐      ┌──────▼──────┐
    │  MCP       │      │  Hooks      │      │  Memory     │
-   │ (10 srv)   │      │ (6 files)   │      │  + Storage  │
+   │ (20 srv)   │      │ (6 files)   │      │  + Storage  │
    └───────────┘      └─────────────┘      └─────────────┘
 ```
-
-### Format Breakdown
-
-| Format | Role | Consumption Mode | Count |
-|--------|------|-----------------|-------|
-| `agents/*.md` | Agent instructions | Loaded on agent invocation | 17 |
-| `rules/*.md` | Behavioral guardrails | Always-active at session start | 14 |
-| `skills/*.md` | Skill definitions | Loaded on `/skill` invocation | 50+ |
-| `security-arsenal/*.md` | Reference payloads/bypasses | Looked up when needed | 8 |
-| `tools/*` | Executable code | Called by agents | 30+ files |
-| `mcp/*/server.py` | JSON-RPC 2.0 services | stdio-based, AI-initiated | 10 |
-| `hooks/*.json` | Session lifecycle events | Auto-fire by event | 6 |
-| `memory/*.md` | Persistent AI memory | Hydrated per session | 4 |
-| `storage/*.md` | Data schemas | Template + data | 5 |
 
 ---
 
@@ -214,9 +158,7 @@ chmod +x install.sh
 ### 2. Load the Agent Registry
 
 ```powershell
-# OpenCode loads AGENTS.md automatically
-# For manual reference:
-type AGENTS.md
+# OpenCode loads AGENTS.md automatically (40 agents)
 ```
 
 ### 3. Run Recon
@@ -224,7 +166,6 @@ type AGENTS.md
 ```powershell
 # Invoke the recon agent:
 # "Run recon on target.com"
-# This loads recon-agent.md → dispatches recon-toolkit → saves to storage/
 ```
 
 ```powershell
@@ -236,61 +177,36 @@ type AGENTS.md
 
 ```powershell
 # "Hunt target.com for high vulnerabilities"
-# p1-warrior cycles through: IDOR → SSRF → XSS → auth bypass → business logic
+# p1-warrior cycles through 10 bug classes
 ```
 
 ### 5. Report
 
 ```powershell
 # "Write report for this finding"
-# report-writer generates H1/Bugcrowd/Immunefi format with CVSS 4.0
-```
-
----
-
-## Installation Options
-
-### OpenCode
-`opencode.json` and `AGENTS.md` are read automatically. Agents are pre-registered.
-
-### Claude Code
-```bash
-cp .claude/settings.json ~/.claude/settings.json
-```
-
-### Codex CLI / Cursor / Windsurf
-The adapters directory contains manifests for each platform:
-```
-adapters/manifest.json          # Master manifest (18+ targets)
-adapters/opencode.jsonc         # OpenCode-specific config
-adapters/cursor.json            # Cursor rules
-adapters/windsurf.json          # Windsurf rules
+# report-writer generates H1/Bugcrowd/Immunefi format with CVSS
 ```
 
 ---
 
 ## Key Features
 
-### Cross-Platform Tools
-Every PowerShell tool has a Bash equivalent in `tools/bash/`. Same capabilities, same interface, different shell.
+### Cross-Platform 4-Language Tools
+Every standard tool exists in Python, JavaScript, PowerShell, and Bash — same capabilities, same interface, different runtime.
 
-### Language-Agnostic Architecture
-Tools are written in the best language for the job — PowerShell for Windows-native, Python for cross-platform, JavaScript for browser analysis. The agent layer abstracts the language choice.
+### 166 Passing Tests
+- 46 Jest tests for JS tools
+- 120 pytest tests for 15 Python modules
+- CI pipeline: Python syntax → pytest → Jest → Shellcheck → PS syntax
 
-### MCP Protocol Compliance
-Shared MCP protocol library (`mcp/mcp_lib.py`) with standard error codes, request/notification separation, progress notifications, resource subscriptions, and completion support.
-
-### 46/46 Tests Passing
-- Jest tests for JS tools (`helpers/browser-mock.js`)
-- Pytest tests for Python modules (`tools/python/tests/`)
-- CI pipeline in `.github/workflows/ci.yml`
-
-### Session Hydration
-- `--in-place` flag for writing back to template files
-- Per-folder scripts: `storage/hydrate.py`, `memory/hydrate.py`
+### Security-First Design
+- SSL verification enabled by default (`--allow-insecure` to override)
+- Path traversal protection on all `--output` parameters
+- Input size limits (8K URLs, 10MB files)
+- Subprocess call safety with argument arrays
 
 ### Validation Gates
-Every finding passes the "7-Question Gate" and "4 pre-submission gates" before a single word of the report is written. Weak findings are killed fast.
+Every finding passes "7-Question Gate" + "4 pre-submission gates" before a word of the report is written.
 
 ---
 
@@ -298,77 +214,58 @@ Every finding passes the "7-Question Gate" and "4 pre-submission gates" before a
 
 ```
 Hercules-Hunt/
-├── soul.md                    # Hunter philosophy (377 lines)
-├── purpose.md                 # Mission statement (355 lines)
-├── goal.md                    # 10 tiered goals (377 lines)
-├── scope.md                   # Scope parsing template (365 lines)
-├── ENGAGEMENT.md              # Engagement workflow (413 lines)
-├── Hercules.md                # Full directory catalog
-├── AGENTS.md                  # Agent registry (17 agents)
-├── SKILL.md                   # Skill registry (50+ skills)
-├── project-review.md          # Self-review and roadmap
-├── requirements.txt           # Python dependencies
+├── soul.md · purpose.md · goal.md     # Philosophy docs
+├── scope.md · ENGAGEMENT.md           # Workflow templates
+├── AGENTS.md                  (40)    # Agent registry
+├── SKILL.md · hydrate.py              # Skill + hydration
+├── plugin.json · opencode.json.bak    # Plugin configs
+├── project-review.md                  # Self-review
+├── requirements.txt                   # Python deps
 │
-├── agents/          (17)      # AI agent definitions
-├── rules/           (14)      # Behavioral guardrails
-├── skills/          (50+)     # Skill workflows
+├── agents/                  (40)      # AI agent definitions
+├── rules/                   (13)      # Behavioral guardrails
+├── bug-bounty/              (9)       # Skill definitions
+├── security-arsenal/        (15)      # Payloads, bypasses
+├── recon/                   (10)      # Recon methodology
+├── report-writing/          (5)       # Platform templates
+├── triage-validation/       (7)       # Finding validation
+├── tasks/                   (14)      # Task blueprints
+├── task-presistence/        (9)       # Session continuity
+├── context/                 (7)       # Session context
+├── memory/                  (7)       # Persistent memory
+├── storage/                 (10)      # Data schemas
 │
 ├── tools/
-│   ├── python/     (18 files) # Cross-platform hunting modules
-│   ├── powershell/ (7 files)  # Windows-native tools
-│   ├── javascript/ (17 files) # Browser DevTools snippets
-│   ├── bash/       (7 files)  # Linux/macOS equivalents
-│   └── helpers/               # Test mocks
+│   ├── python/     (27 files, 19.8K)  # Cross-platform
+│   ├── javascript/ (27 files, 12.9K)  # Browser + Node.js
+│   ├── powershell/ (18 files, 22.8K)  # Windows-native
+│   ├── bash/       (19 files, 7.7K)   # Linux/macOS
+│   └── helpers/                        # Test mocks
 │
-├── mcp/            (10)       # MCP servers (JSON-RPC 2.0)
-├── hooks/          (6)        # Session lifecycle hooks
+├── utils/                   (8)       # Shared Python lib
+├── mcp/                    (20)       # MCP servers
+├── hooks/                   (6)       # Session hooks
+├── config/                  (7)       # JSON configs
+├── adapters/                           # Cross-CLI manifests
+├── scripts/                            # Installers
 │
-├── memory/         (4)        # Persistent AI memory
-├── storage/        (5)        # Data schemas
-├── context/                   # Session context
-├── config/                    # Hunter configuration
-│
-├── report-writing/            # H1/Bugcrowd/Immunefi templates
-├── triage-validation/         # 7-Question Gate, validation methodology
-├── security-arsenal/          # Payloads, bypass tables, wordlists
-├── recon/                     # Reconnaissance methodology
-│
-├── adapters/                  # Cross-CLI manifests (18+ targets)
-├── scripts/                   # Installers, utility scripts
-│
-├── install.ps1                # Windows installer
-├── install.sh                 # Linux/macOS installer
-├── hunt.sh                    # Hercules-Hunt engagement launcher
-├── install-community-skills.sh # Community skill installer
-│
-├── .github/workflows/ci.yml   # CI pipeline
-├── .gitignore
-└── README.md                  # This file
+├── .github/workflows/ci.yml           # CI pipeline
+└── README.md                           # This file
 ```
 
 ---
 
 ## The Feedback Loop
 
-Every session improves the system:
-
 ```
 Hunt → Discover → Capture → Refine → Hunt (improved)
 ```
-
-1. **Hunt** — use agents, rules, and tools to test a target
-2. **Discover** — find a bug, a technique, a dead end, or a process improvement
-3. **Capture** — document in technique library, memory, or rules
-4. **Refine** — update agents, rules, or tools based on what you learned
-5. **Hunt (improved)** — next session starts from a higher baseline
 
 ---
 
 ## The North Star
 
 > **"Can an attacker do this RIGHT NOW against a real user who has taken NO unusual actions — and does it cause real harm?"**
-
-This is the only question that matters. Everything else — the agents, the rules, the tools, the checklists — exists to help you answer this question faster and more accurately.
 
 ---
 
@@ -385,23 +282,15 @@ This is the only question that matters. Everything else — the agents, the rule
 # JS tests (46/46)
 npx jest
 
-# Python tests
-cd tools/python && python -m pytest tests/
+# Python tests (166/166)
+python -m pytest tools/python/tests/
 
 # Python syntax check
 python -m py_compile tools/python/*.py
-
-# PowerShell syntax check
-powershell -Command "Get-ChildItem tools/powershell/*.ps1 | ForEach-Object { \$null = [System.Management.Automation.Language.Parser]::ParseFile(\$_.FullName, [ref]\$null, [ref]\$null) }"
 ```
 
 ### CI Pipeline
-`.github/workflows/ci.yml` runs on push to main:
-- Python syntax check
-- PowerShell syntax check  
-- Jest tests (JS)
-- Pytest (Python)
-- JSON validation (hooks/)
+`.github/workflows/ci.yml` (11 steps): Python syntax → pytest → npm ci → Jest → JS require check → Shellcheck → PowerShell syntax
 
 ---
 
