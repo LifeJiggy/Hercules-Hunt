@@ -2,78 +2,79 @@
 # =====================================================================
 # install.sh — Install Hercules-Hunt Bug Bounty Toolkit
 #
-# Copies all bundled content into ~/.jiggy/:
-#   - agents/*      → ~/.jiggy/agents/
-#   - rules/*       → ~/.jiggy/rules/
-#   - tools/*       → ~/.jiggy/tools/
-#   - scripts/hunt.sh → ~/.jiggy/scripts/hunt.sh + sourced from shell rc
+# Copies all modules into ~/.jiggy/, deploys to 18+ agentic CLI targets
+# via jiggy-adapter, sources shell entry points, and installs deps.
 #
 # Idempotent: safe to re-run.
-# Requires: bash, curl (optional), python3 (optional).
+# Requires: bash, python3, curl (optional).
 # =====================================================================
-
 set -e
 
 REPO_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 INSTALL_DIR="${JIGGY_HOME:-$HOME/.jiggy}"
-AGENTS_DEST="$INSTALL_DIR/agents"
-RULES_DEST="$INSTALL_DIR/rules"
-TOOLS_DEST="$INSTALL_DIR/tools"
-SCRIPTS_DEST="$INSTALL_DIR/scripts"
-
-mkdir -p "$AGENTS_DEST" "$RULES_DEST" "$TOOLS_DEST" "$SCRIPTS_DEST"
 
 echo ""
-echo "╔══════════════════════════════════════╗"
-echo "║     Hercules-Hunt Bug Bounty System  ║"
-echo "║     Version 1.0.0                    ║"
-echo "╚══════════════════════════════════════╝"
+echo "+----------------------------------------------+"
+echo "|     Hercules-Hunt Bug Bounty System           |"
+echo "|     Version 1.0.0                            |"
+echo "+----------------------------------------------+"
 echo ""
 
-# === Install agents ===
-echo "Agents →  $AGENTS_DEST"
-if [ -d "$REPO_DIR/agents" ]; then
-  for agent_file in "$REPO_DIR/agents"/*.md; do
-    [ -e "$agent_file" ] || continue
-    agent_name="$(basename "$agent_file")"
-    [ -f "$AGENTS_DEST/$agent_name" ] && [ ! -L "$AGENTS_DEST/$agent_name" ] && \
-      mv "$AGENTS_DEST/$agent_name" "$AGENTS_DEST/${agent_name%.md}.backup-$(date +%Y%m%d-%H%M%S).md"
-    cp "$agent_file" "$AGENTS_DEST/$agent_name"
-    echo "  ✓ Installed agent: ${agent_name%.md}"
-  done
-fi
-
-# === Install rules ===
-echo "Rules →  $RULES_DEST"
-if [ -d "$REPO_DIR/rules" ]; then
-  for rule_file in "$REPO_DIR/rules"/*.md; do
-    [ -e "$rule_file" ] || continue
-    rule_name="$(basename "$rule_file")"
-    [ -f "$RULES_DEST/$rule_name" ] && [ ! -L "$RULES_DEST/$rule_name" ] && \
-      mv "$RULES_DEST/$rule_name" "$RULES_DEST/${rule_name%.md}.backup-$(date +%Y%m%d-%H%M%S).md"
-    cp "$rule_file" "$RULES_DEST/$rule_name"
-    echo "  ✓ Installed rule: ${rule_name%.md}"
-  done
-fi
-
-# === Install tools ===
-echo "Tools →  $TOOLS_DEST"
-if [ -d "$REPO_DIR/tools" ]; then
-  cp -r "$REPO_DIR/tools"/* "$TOOLS_DEST/"
-  echo "  ✓ Tools copied"
-fi
-
-# === Install hunt shell command ===
-cp "$REPO_DIR/scripts/hunt.sh" "$SCRIPTS_DEST/hunt.sh"
-chmod +x "$SCRIPTS_DEST/hunt.sh"
-echo "  ✓ Installed hunt command at $SCRIPTS_DEST/hunt.sh"
-
-# === Copy root config ===
-for cfg in AGENTS.md Hercules.md opencode.json; do
-  [ -f "$REPO_DIR/$cfg" ] && cp "$REPO_DIR/$cfg" "$INSTALL_DIR/$cfg" && echo "  ✓ Config: $cfg"
+# Count resources
+echo "=== Module Inventory ==="
+count_files() {
+  local dir="$REPO_DIR/$1"
+  if [ -d "$dir" ]; then
+    if [ "$1" = "mcp" ]; then
+      find "$dir" -type f -not -path '*__pycache__*' 2>/dev/null | wc -l
+    else
+      find "$dir" -maxdepth 1 -type f 2>/dev/null | wc -l
+    fi
+  else
+    echo 0
+  fi
+}
+for mod in agents rules bug-bounty recon security-arsenal report-writing triage-validation context memory storage tasks task-presistence utils adapters config hooks mcp "tools/bash" "tools/python" "tools/powershell" "tools/javascript" "tools/markdown" doc scripts; do
+  c=$(count_files "$mod" | tr -d ' ')
+  printf "  %-25s %s\n" "${mod}" "$c"
 done
 
-# Detect shell rc file
+# --- Step 1: Copy all modules ---
+echo ""
+echo "=== Copying modules to $INSTALL_DIR ==="
+mkdir -p "$INSTALL_DIR"
+
+copy_dir() {
+  local src="$REPO_DIR/$1"
+  local dst="$INSTALL_DIR/$1"
+  if [ -d "$src" ]; then
+    mkdir -p "$(dirname "$dst")"
+    cp -r "$src" "$dst"
+  fi
+}
+
+for dir in agents rules bug-bounty recon security-arsenal report-writing triage-validation context memory storage tasks task-presistence utils adapters config hooks mcp doc scripts "tools/bash" "tools/python" "tools/powershell" "tools/javascript" "tools/markdown"; do
+  copy_dir "$dir"
+done
+
+# Copy root configs
+for cfg in Hercules.md opencode.json plugin.json AGENTS.md opencode.jsonc requirements.txt; do
+  [ -f "$REPO_DIR/$cfg" ] && cp "$REPO_DIR/$cfg" "$INSTALL_DIR/$cfg"
+done
+
+# Copy .claude settings
+mkdir -p "$INSTALL_DIR/.claude"
+[ -f "$REPO_DIR/.claude/settings.json" ] && cp "$REPO_DIR/.claude/settings.json" "$INSTALL_DIR/.claude/settings.json"
+
+# Copy hunt.sh
+cp "$REPO_DIR/scripts/hunt.sh" "$INSTALL_DIR/scripts/hunt.sh"
+chmod +x "$INSTALL_DIR/scripts/hunt.sh"
+
+echo "  [OK] All modules installed to $INSTALL_DIR"
+
+# --- Step 2: Shell rc setup ---
+echo ""
+echo "=== Shell rc setup ==="
 SHELL_RC=""
 if [ -n "${ZDOTDIR:-}" ] && [ -f "$ZDOTDIR/.zshrc" ]; then
   SHELL_RC="$ZDOTDIR/.zshrc"
@@ -86,35 +87,64 @@ elif [ -f "$HOME/.bash_profile" ]; then
 fi
 
 if [ -n "$SHELL_RC" ]; then
-  if grep -q "jiggy/scripts/hunt.sh" "$SHELL_RC" 2>/dev/null; then
-    echo "  ✓ hunt.sh already sourced from $SHELL_RC"
+  if grep -q "jiggy.sh" "$SHELL_RC" 2>/dev/null; then
+    echo "  [OK] jiggy.sh already sourced from $SHELL_RC"
   else
-    echo "" >> "$SHELL_RC"
-    echo "# Hercules-Hunt bug bounty toolkit" >> "$SHELL_RC"
-    echo "source ~/.jiggy/scripts/hunt.sh" >> "$SHELL_RC"
-    echo "  ✓ Added 'source ~/.jiggy/scripts/hunt.sh' to $SHELL_RC"
+    {
+      echo ""
+      echo "# Hercules-Hunt Bug Bounty Toolkit"
+      echo "source ~/.jiggy/tools/bash/jiggy.sh"
+    } >> "$SHELL_RC"
+    echo "  [OK] Added jiggy.sh to $SHELL_RC"
   fi
 else
-  echo "  ⚠ No shell rc detected. Add this line manually:"
-  echo "       source ~/.jiggy/scripts/hunt.sh"
+  echo "  [WARN] No shell rc found. Add manually:"
+  echo "       source ~/.jiggy/tools/bash/jiggy.sh"
+fi
+
+# --- Step 3: Dependencies ---
+echo ""
+echo "=== Dependencies ==="
+if command -v python3 &>/dev/null; then
+  if [ -f "$REPO_DIR/requirements.txt" ]; then
+    pip3 install -q -r "$REPO_DIR/requirements.txt" 2>/dev/null && echo "  [OK] Python deps installed" || echo "  [WARN] pip install had issues"
+  fi
+  # MCP server deps
+  for srv in "$REPO_DIR/mcp"/*/; do
+    [ -f "${srv}requirements.txt" ] && pip3 install -q -r "${srv}requirements.txt" 2>/dev/null
+  done
+fi
+
+if command -v npm &>/dev/null && [ -f "$REPO_DIR/tools/javascript/package.json" ]; then
+  (cd "$REPO_DIR/tools/javascript" && npm install --silent 2>/dev/null) && echo "  [OK] Node deps installed" || echo "  [WARN] npm install had issues"
+fi
+
+# --- Step 4: Deploy to agentic CLIs ---
+echo ""
+echo "=== Agentic CLI deployment ==="
+ADAPTER="$REPO_DIR/scripts/jiggy-adapter.py"
+if [ -f "$ADAPTER" ]; then
+  python3 "$ADAPTER" --target all --apply 2>&1 | tail -5
+  echo "  [OK] Deployed to all 18 CLI targets"
+else
+  echo "  [WARN] jiggy-adapter.py not found"
 fi
 
 # Source in current shell
 # shellcheck disable=SC1091
-source "$SCRIPTS_DEST/hunt.sh" 2>/dev/null || true
+source "$INSTALL_DIR/tools/bash/jiggy.sh" 2>/dev/null || true
 
 echo ""
 echo "============================================"
-echo "✓ Install complete"
+echo "  Install complete"
 echo "============================================"
 echo ""
-echo "Agents installed at: $AGENTS_DEST"
-echo "Rules installed at:  $RULES_DEST"
-echo "Tools installed at:  $TOOLS_DEST"
-echo "Hunt command at:     $SCRIPTS_DEST/hunt.sh"
+echo "  Modules:   $INSTALL_DIR"
+echo "  CLI tools: 18 agentic CLI targets"
 echo ""
-echo "Next: open a new terminal and try:"
-echo "    hunt target.com"
+echo "  Next: open a new terminal or run:"
+echo "    source ~/.jiggy/tools/bash/jiggy.sh"
+echo "    jiggy recon target.com"
 echo ""
-echo "On Windows, use:"
+echo "  On Windows:"
 echo "    powershell -File scripts/install.ps1"

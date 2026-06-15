@@ -2,7 +2,7 @@
 
 **An operating system for AI-augmented bug bounty hunting.**
 
-Not a tool. Not a scanner. A **hunter's operating system** — 300+ files, 44 directories, ~230K lines across Python, JavaScript, PowerShell, Bash, MCP, and 1,800+ pages of markdown methodology. Designed to work with OpenCode, Claude Code, Codex CLI, Cursor, and any agentic coding CLI.
+Not a tool. Not a scanner. A **hunter's operating system** — 360+ files across 23 modules, with Python, JavaScript, PowerShell, Bash, MCP, and 1,800+ pages of markdown methodology. Deploys to 18 agentic coding CLIs (OpenCode, Claude Code, Codex CLI, Cursor, Windsurf, Aider, and more) via a single installer.
 
 ---
 
@@ -146,45 +146,88 @@ Persistent session memory across `memory/` (7 files), `storage/` (10 files), `co
 
 ```powershell
 # Windows
-.\install.ps1
+.\scripts\install.ps1
+# Preview first:
+.\scripts\install.ps1 -DryRun
 ```
 
 ```bash
 # Linux / macOS / WSL
-chmod +x install.sh
-./install.sh
+chmod +x scripts/install.sh
+./scripts/install.sh
 ```
 
-### 2. Load the Agent Registry
+The installer:
+1. Copies all 23 modules (360+ files) to `~/.jiggy/`
+2. Installs Python dependencies (`pip install -r requirements.txt` + 10 MCP server reqs)
+3. Installs Node.js dependencies (`npm install` for JS tools)
+4. Sources the shell entry point (`jiggy.ps1` / `jiggy.sh`) in your profile
+5. **Deploys to all 18 agentic CLI targets** via `jiggy-adapter.py`:
+
+```
+codex       -> ~/.codex/plugins/jiggy-2026/
+claude-code -> ~/.claude/
+opencode    -> ~/.config/opencode/jiggy-2026/
+kilocode    -> ~/.config/kilocode/jiggy-2026/
+kimi-code   -> ~/.config/kimi-code/jiggy-2026/
+hermes-agent-> ~/.config/hermes-agent/jiggy-2026/
+aider       -> ~/.aider/jiggy-2026/
+gemini-cli  -> ~/.config/gemini-cli/jiggy-2026/
+goose       -> ~/.config/goose/jiggy-2026/
+cursor      -> ~/.cursor/jiggy-2026/
+windsurf    -> ~/.config/windsurf/jiggy-2026/
+cline       -> ~/.config/cline/jiggy-2026/
+roo-code    -> ~/.config/roo-code/jiggy-2026/
+continue    -> ~/.continue/jiggy-2026/
+zed         -> ~/.config/zed/jiggy-2026/
+sourcegraph-cody -> ~/.config/sourcegraph-cody/jiggy-2026/
+github-copilot   -> ~/.config/github-copilot/jiggy-2026/
+jetbrains-ai     -> ~/.config/JetBrains/jiggy-2026/
+```
+
+Standalone adapter usage (if you already have the files):
+```bash
+python scripts/jiggy-adapter.py --target all --apply    # All 18 CLIs
+python scripts/jiggy-adapter.py --target claude-code --apply  # Single
+python scripts/jiggy-adapter.py --list-targets                # List all
+```
+
+### 2. Start a Session
 
 ```powershell
-# OpenCode loads AGENTS.md automatically (40 agents)
+# PowerShell: open a new terminal (profile auto-loads jiggy.ps1)
+Invoke-ReconPipeline -Domain target.com
+
+# Or manually source:
+. "$env:USERPROFILE\.jiggy\tools\powershell\jiggy.ps1"
+```
+
+```bash
+# Bash: open a new terminal (rc auto-sources jiggy.sh)
+source ~/.jiggy/tools/bash/jiggy.sh
+jiggy recon target.com
 ```
 
 ### 3. Run Recon
 
-```powershell
-# Invoke the recon agent:
-# "Run recon on target.com"
 ```
-
-```powershell
-# Or use the CLI directly:
-.\tools\powershell\jiggy.ps1 recon target.com
+# In any agentic CLI that has Hercules-Hunt loaded:
+"Run recon on target.com"
+# → recon-agent handles subdomain enum, tech fingerprinting, live hosts
 ```
 
 ### 4. Hunt
 
-```powershell
-# "Hunt target.com for high vulnerabilities"
-# p1-warrior cycles through 10 bug classes
+```
+"Hunt target.com for high vulnerabilities"
+# → p1-warrior cycles through 10 bug classes via specialist sub-agents
 ```
 
 ### 5. Report
 
-```powershell
-# "Write report for this finding"
-# report-writer generates H1/Bugcrowd/Immunefi format with CVSS
+```
+"Write report for this IDOR finding on target.com"
+# → report-writer generates H1/Bugcrowd/Immunefi format with CVSS 3.1
 ```
 
 ---
@@ -214,43 +257,56 @@ Every finding passes "7-Question Gate" + "4 pre-submission gates" before a word 
 
 ```
 Hercules-Hunt/
-├── soul.md · purpose.md · goal.md     # Philosophy docs
-├── scope.md · ENGAGEMENT.md           # Workflow templates
-├── AGENTS.md                  (40)    # Agent registry
+├── AGENTS.md                  (41)    # Agent registry
 ├── SKILL.md · hydrate.py              # Skill + hydration
-├── plugin.json · opencode.json.bak    # Plugin configs
-├── project-review.md                  # Self-review
-├── requirements.txt                   # Python deps
+├── plugin.json · opencode.json        # Plugin configs
+├── Hercules.md                         # Universal AI context
+├── requirements.txt                    # Python deps
+├── soul.md · goal.md                   # Philosophy
 │
-├── agents/                  (40)      # AI agent definitions
-├── rules/                   (13)      # Behavioral guardrails
-├── bug-bounty/              (9)       # Skill definitions
-├── security-arsenal/        (15)      # Payloads, bypasses
-├── recon/                   (10)      # Recon methodology
-├── report-writing/          (5)       # Platform templates
-├── triage-validation/       (7)       # Finding validation
-├── tasks/                   (14)      # Task blueprints
-├── task-presistence/        (9)       # Session continuity
-├── context/                 (7)       # Session context
-├── memory/                  (7)       # Persistent memory
-├── storage/                 (10)      # Data schemas
+├── agents/                  (41)      # AI agent definitions
+├── rules/                   (14)      # Behavioral guardrails
+├── bug-bounty/              (11)      # Bug bounty methodology
+├── security-arsenal/        (16)      # Payloads, bypasses
+├── recon/                   (11)      # Recon methodology
+├── report-writing/          (7)       # Platform templates
+├── triage-validation/       (9)       # Finding validation
+├── tasks/                   (16)      # Task blueprints
+├── task-presistence/        (11)      # Session continuity
+├── context/                 (9)       # Session context
+├── memory/                  (9)       # Persistent memory
+├── storage/                 (12)      # Data schemas
+├── adapters/                (3)       # Cross-CLI adapter manifests
+├── config/                  (8)       # JSON runtime configs
+├── hooks/                   (7)       # Session lifecycle hooks
+├── doc/                     (3)       # Documentation
+├── scripts/                 (6)       # Installers + adapters
+│   ├── install.ps1                     # Windows installer
+│   ├── install.sh                      # Linux/macOS installer
+│   ├── jiggy-adapter.py                # 18-CLI universal adapter
+│   └── hunt.sh                         # Hunt launcher
 │
 ├── tools/
-│   ├── python/     (27 files, 19.8K)  # Cross-platform
-│   ├── javascript/ (27 files, 12.9K)  # Browser + Node.js
-│   ├── powershell/ (18 files, 22.8K)  # Windows-native
-│   ├── bash/       (19 files, 7.7K)   # Linux/macOS
-│   └── helpers/                        # Test mocks
+│   ├── python/     (29 files)         # Python tool suite
+│   ├── javascript/ (31 files)         # Browser + Node.js tools
+│   ├── powershell/ (18 files)         # Windows-native tools
+│   ├── bash/       (19 files)         # Linux/macOS tools
+│   └── markdown/   (1 file)           # Tool index
 │
-├── utils/                   (8)       # Shared Python lib
-├── mcp/                    (20)       # MCP servers
-├── hooks/                   (6)       # Session hooks
-├── config/                  (7)       # JSON configs
-├── adapters/                           # Cross-CLI manifests
-├── scripts/                            # Installers
+├── utils/                   (9)       # Shared Python library
+├── mcp/                    (20 srv)   # MCP servers
+│   ├── recon-mcp, dns-recon-mcp, url-crawl-mcp
+│   ├── payload-mcp, interactsh-mcp
+│   ├── auth-tester-mcp, https-mcp, evidence-mcp
+│   ├── deep-hunt-mcp, fast-hunt-mcp, hydration-mcp
+│   ├── js-analysis-mcp, batch-mcp, orchestrator-mcp
+│   ├── validation-mcp, report-mcp
+│   ├── burp-mcp-client, caido-mcp-client
+│   ├── hackerone-mcp, hercules-hunt-mcp
 │
-├── .github/workflows/ci.yml           # CI pipeline
-└── README.md                           # This file
+├── .claude/settings.json               # Claude Code config
+├── .github/workflows/ci.yml            # CI pipeline
+└── README.md                            # This file
 ```
 
 ---

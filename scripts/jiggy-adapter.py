@@ -69,7 +69,7 @@ def repo_root() -> Path:
         root / "SKILL.md",
         root / "agents" / "recon-agent.md",
         root / "rules" / "hunting.md",
-        root / "tools" / "curl-hunter.ps1",
+        root / "tools" / "powershell" / "curl-hunter.ps1",
     ]
     missing = [str(p) for p in required if not p.is_file()]
     if missing:
@@ -147,7 +147,7 @@ def _subtree_files(root: Path, rel: str) -> list[Path]:
         return []
     result = []
     for p in sorted(d.rglob("*")):
-        if p.is_file():
+        if p.is_file() and "__pycache__" not in p.parts:
             result.append(p)
     return result
 
@@ -161,7 +161,14 @@ def _rule_files(root: Path) -> list[Path]:
 
 
 def _tool_files(root: Path) -> list[Path]:
-    return _list_dir(root, "tools", {".ps1", ".py"})
+    result = []
+    tool_root = root / "tools"
+    if not tool_root.is_dir():
+        return result
+    for p in sorted(tool_root.rglob("*")):
+        if p.is_file() and p.suffix in {".ps1", ".py", ".sh", ".js"}:
+            result.append(p)
+    return result
 
 
 def _skill_files(root: Path) -> list[Path]:
