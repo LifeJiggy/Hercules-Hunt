@@ -2,7 +2,7 @@
 
 **An operating system for AI-augmented bug bounty hunting.**
 
-Not a tool. Not a scanner. A **hunter's operating system** — 360+ files across 23 modules, with Python, JavaScript, PowerShell, Bash, MCP, and 1,800+ pages of markdown methodology. Deploys to 18 agentic coding CLIs (OpenCode, Claude Code, Codex CLI, Cursor, Windsurf, Aider, and more) via a single installer.
+Not a tool. Not a scanner. A **hunter's operating system** — 370+ files across 23 modules, with Python, JavaScript, PowerShell, Bash, MCP, and 2,500+ pages of markdown methodology. Deploys to 18 agentic coding CLIs (OpenCode, Claude Code, Codex CLI, Cursor, Windsurf, Aider, and more) via a single installer.
 
 ---
 
@@ -262,9 +262,21 @@ Hercules-Hunt/
 ├── plugin.json · opencode.json        # Plugin configs
 ├── Hercules.md                         # Universal AI context
 ├── requirements.txt                    # Python deps
-├── soul.md · goal.md                   # Philosophy
+├── soul.md · purpose.md · scope.md     # Philosophy & scope
+├── project-review.md · ENGAGEMENT.md   # Project reviews
+├── walkthrough-prompt.md               # Walkthrough guide
+├── understanding-user-data-flow.md     # Data flow methodology
+├── 0-day-deep-analysis.md              # 0-day research & exploit dev
+├── Enhanced-Triage-Anti-Duplicate.md   # Duplicate prevention
+├── finding-checklist.md                # Pre-submission validation
+├── recon-and-prep.md                   # Recon & preparation
+├── waf-identification-bypass.md        # WAF ID & bypass
+├── sanitization-validation.md          # Sanitization testing
+├── advanced-bypass-techniques.md       # Advanced bypasses
+├── exploit-chain-construction.md       # Exploit chain building
+├── bug-bounty-research-methodology.md  # Complete methodology
 │
-├── agents/                  (41)      # AI agent definitions
+├── agents/                  (42)      # AI agent definitions
 ├── rules/                   (14)      # Behavioral guardrails
 ├── bug-bounty/              (11)      # Bug bounty methodology
 ├── security-arsenal/        (16)      # Payloads, bypasses
@@ -279,7 +291,7 @@ Hercules-Hunt/
 ├── adapters/                (3)       # Cross-CLI adapter manifests
 ├── config/                  (8)       # JSON runtime configs
 ├── hooks/                   (7)       # Session lifecycle hooks
-├── doc/                     (3)       # Documentation
+├── doc/                    (14)      # Methodology documents
 ├── scripts/                 (6)       # Installers + adapters
 │   ├── install.ps1                     # Windows installer
 │   ├── install.sh                      # Linux/macOS installer
