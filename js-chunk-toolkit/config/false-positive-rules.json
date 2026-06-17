@@ -1,0 +1,287 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "False positive filtering rules for JS vulnerability scanning",
+    "categories": 8,
+    "total_rules": 48
+  },
+  "minified_library_patterns": {
+    "description": "Patterns inside minified libraries (100% FP rate for standalone matches)",
+    "exact_strings": [
+      "react", "react-dom", "react/jsx", "next/dist", "next/router", "next/link",
+      "@sentry", "@datadog", "@amplitude", "@segment", "@fullstory",
+      "lodash", "underscore", "moment", "dayjs", "date-fns",
+      "axios", "superagent", "got", "node-fetch",
+      "express", "koa", "fastify", "hapi",
+      "mongoose", "sequelize", "typeorm", "prisma",
+      "webpack", "terser", "esbuild", "rollup",
+      "babel", "typescript", "core-js", "regenerator-runtime",
+      "stripe", "stripe-js", "@stripe",
+      "firebase", "firebase/app", "firebase/auth",
+      "@aws-sdk", "aws-amplify",
+      "i18next", "react-i18next",
+      "immer", "zustand", "redux", "mobx", "recoil",
+      "tailwindcss", "emotion", "styled-components",
+      "@radix-ui", "@headlessui", "@mui"
+    ],
+    "action": "DOWNGRADE_TO_INFO"
+  },
+  "webpack_runtime_patterns": {
+    "description": "Webpack runtime boilerplate — never real vulnerabilities",
+    "patterns": [
+      "__webpack_require__",
+      "__webpack_exports__",
+      "__webpack_module__",
+      "webpackChunk",
+      "webpackJsonp",
+      "__esModule",
+      "getDefaultExport",
+      "getAugmentedNamespace",
+      "defineProperty"
+    ],
+    "action": "REMOVE"
+  },
+  "known_false_positive_regexes": {
+    "description": "Contextual FP filters that check surrounding code or variable names",
+    "rules": [
+      {
+        "id": "FP-CONSOLE-LOG-NEXT",
+        "match_pattern": "console\\.(?:log|info|warn|error|debug)",
+        "condition": "surrounding_contains",
+        "value": "(?:next/dist|react-dom|@sentry|webpack)",
+        "action": "DOWNGRADE_TO_INFO",
+        "reason": "Next.js or React dev logging, not production vulnerability"
+      },
+      {
+        "id": "FP-INNERHTML-REACT",
+        "match_pattern": "\\.innerHTML\\s*=",
+        "condition": "preceding_line_contains",
+        "value": "function|const|let|var|=>\\s*\\{",
+        "action": "DOWNGRADE_TO_LOW",
+        "reason": "innerHTML assignment likely inside a component — check if actually user-input driven"
+      },
+      {
+        "id": "FP-LOCALSTORAGE-TOKEN-LIB",
+        "match_pattern": "localStorage\\.(?:getItem|setItem)",
+        "condition": "preceding_var_contains",
+        "value": "(?:cookie|token|auth|session)",
+        "action": "KEEP_BUT_DOWNGRADE",
+        "reason": "Standard auth pattern — check if httpOnly cookie alternative exists"
+      },
+      {
+        "id": "FP-EVAL-TERSER",
+        "match_pattern": "eval\\s*\\(",
+        "condition": "surrounding_contains",
+        "value": "terser|webpack|minif(?:y|ied)|compressor",
+        "action": "REMOVE",
+        "reason": "eval from minifier, not application code"
+      },
+      {
+        "id": "FP-SELECT-ORM",
+        "match_pattern": "\\bSELECT\\b",
+        "condition": "surrounding_contains",
+        "value": "typeorm|sequelize|prisma|knex|querybuilder",
+        "action": "DOWNGRADE_TO_LOW",
+        "reason": "ORM query syntax, not raw SQL injection"
+      },
+      {
+        "id": "FP-FETCH-SSRF-LIB",
+        "match_pattern": "fetch\\s*\\([^)]*req",
+        "condition": "surrounding_contains",
+        "value": "(?:next/dist|react-dom|node_modules)",
+        "action": "DOWNGRADE_TO_INFO",
+        "reason": "Framework-internal fetch, not application SSRF"
+      },
+      {
+        "id": "FP-FINDONE-ORM",
+        "match_pattern": "findOne\\s*\\(",
+        "condition": "preceding_var_contains",
+        "value": "Model|model|Schema|schema|Repository|repository",
+        "action": "REMOVE",
+        "reason": "Standard ORM pattern, requires auth context to exploit"
+      },
+      {
+        "id": "FP-DANGEROUS-SET-INNER-HTML-NEXT",
+        "match_pattern": "dangerouslySetInnerHTML",
+        "condition": "surrounding_contains",
+        "value": "next/dist|__next_s|script-loader",
+        "action": "KEEP_CRITICAL",
+        "reason": "Next.js script loader — real XSS pattern, keep as CRITICAL"
+      },
+      {
+        "id": "FP-OBJECT-ASSIGN-LIB",
+        "match_pattern": "Object\\.assign\\s*\\(",
+        "condition": "surrounding_contains",
+        "value": "(?:react-dom|redux|immer|mobx|next/dist)",
+        "action": "DOWNGRADE_TO_INFO",
+        "reason": "Framework internal Object.assign, not mass assignment"
+      },
+      {
+        "id": "FP-EXEC-BABEL",
+        "match_pattern": "(?:exec|execSync)\\s*\\(",
+        "condition": "surrounding_contains",
+        "value": "babel|typescript|esbuild",
+        "action": "REMOVE",
+        "reason": "Build tool in bundle, not application exec"
+      },
+      {
+        "id": "FP-PATH-JOIN-ROUTER",
+        "match_pattern": "path\\.(?:join|resolve)\\s*\\(",
+        "condition": "surrounding_contains",
+        "value": "(?:next/router|react-router|express\\s*Route)",
+        "action": "REMOVE",
+        "reason": "Router path join, not file system traversal"
+      },
+      {
+        "id": "FP-JWT-DECODE-CLIENT",
+        "match_pattern": "jwt\\.decode|jwtDecode",
+        "condition": "preceding_var_contains",
+        "value": "token|jwt|auth|session",
+        "action": "KEEP_BUT_DOWNGRADE",
+        "reason": "Standard JWT decode on login — check if stored in httpOnly cookie"
+      }
+    ]
+  },
+  "false_positive_context_rules": {
+    "description": "Context-level rules based on file or variable patterns",
+    "file_pattern_rules": [
+      {
+        "pattern": "\\.(?:min|bundle|chunk)\\.[a-z0-9]+\\.js$",
+        "description": "Minified bundle file — most patterns are legitimate library code",
+        "action": "LABEL_AS_MINIFIED"
+      },
+      {
+        "pattern": "^[a-f0-9]{8,16}\\.[a-f0-9]+\\.js$",
+        "description": "Webpack content-hash chunk — high FP rate for standalone regex",
+        "action": "LABEL_AS_CHUNK"
+      },
+      {
+        "pattern": "framework-|[.-]vendor\\.",
+        "description": "Framework/vendor chunk — nearly all findings are library code",
+        "action": "DOWNGRADE_ALL_TO_LOW"
+      },
+      {
+        "pattern": "polyfill|regenerator|core-js",
+        "description": "Polyfill file — no application code",
+        "action": "REMOVE_ALL"
+      }
+    ],
+    "variable_name_exceptions": [
+      {
+        "variable_match": "(?:test|mock|sample|example|dummy|fake|placeholder)",
+        "description": "Test/mock variables — never real vulnerabilities",
+        "action": "REMOVE"
+      },
+      {
+        "variable_match": "(?:key|apiKey|token|secret|auth)",
+        "description": "Sensitive-named variables — keep as-is (real secrets likely)",
+        "action": "KEEP"
+      }
+    ]
+  },
+  "false_positive_callbacks": {
+    "description": "Callbacks assigned to variables that are clearly not user input",
+    "patterns": [
+      "\\w+\\s*=\\s*(?:function\\s*\\(|=>\\s*\\{)[^}]{0,300}(?:error|err|e|data|res|result)\\s*\\)?\\s*=>?",
+      "\\w+\\.on\\s*\\(\\s*['\"]\\w+['\"]\\s*,",
+      "\\w+\\.addEventListener\\s*\\(\\s*['\"]\\w+['\"]"
+    ],
+    "action": "SKIP_CONTEXT_CHECK"
+  },
+  "severity_downgrade_rules": {
+    "description": "Context-based severity adjustments",
+    "rules": [
+      {
+        "id": "SG-STORAGE-CRIT",
+        "pattern": "localStorage",
+        "new_severity": "MEDIUM",
+        "new_cvss": 5.5,
+        "reason": "localStorage alone is not CRITICAL — XSS is needed to read it"
+      },
+      {
+        "id": "SG-HARDCODED-KEY-INFO",
+        "pattern": "AIza[0-9A-Za-z\\-_]{35}",
+        "condition": "surrounding_contains",
+        "value": "(?:maps|firebase|youtube|gsi)",
+        "new_severity": "INFO",
+        "new_cvss": 0,
+        "reason": "Google API key with known service — likely public-facing, check scope"
+      },
+      {
+        "id": "SG-JWT-LIB",
+        "pattern": "eyJ[A-Za-z0-9_-]{10,}\\.eyJ",
+        "condition": "surrounding_contains",
+        "value": "(?:jwt-decode|jsonwebtoken|test|sample|example)",
+        "new_severity": "INFO",
+        "new_cvss": 0,
+        "reason": "JWT in library code or sample — not a real session token"
+      },
+      {
+        "id": "SG-DEPRECATED-SECRET",
+        "pattern": "sk_live_|sk_test_",
+        "condition": "surrounding_contains",
+        "value": "(?:test|example|sample|deprecated|old)",
+        "new_severity": "LOW",
+        "new_cvss": 2.5,
+        "reason": "Deprecated or test key — still check but lower priority"
+      }
+    ]
+  },
+  "html_misclassified_as_js": {
+    "description": "Files that are actually HTML mislabeled as .js (Cloudflare challenge pages, etc.)",
+    "patterns": [
+      "<!DOCTYPE html",
+      "<html",
+      "Just a moment...",
+      "Cloudflare",
+      "cf-browser-verification",
+      "challenge-platform",
+      "turnstile"
+    ],
+    "action": "REMOVE"
+  },
+  "context_free_false_positives": {
+    "description": "Patterns that are ALWAYS false positives regardless of context",
+    "patterns": [
+      "ES Modules harmony", "esModuleInterop", "__esModule",
+      "use strict", "\"use strict\";", "'use strict';",
+      "harmony symbol", "harmony export",
+      "/* @__PURE__ */", "/*#__PURE__*/",
+      "Object.freeze\\s*\\(\\s*\\{\\s*\\}\\s*\\)",
+      "Array\\.isArray", "instanceof",
+      "typeof window", "typeof document",
+      "toString\\.call\\s*\\(\\s*\\w+\\s*\\)",
+      "\\.call\\s*\\(\\s*this\\s*,\\s*\\w+\\s*\\)"
+    ],
+    "action": "REMOVE"
+  },
+  "correlation_rules": {
+    "description": "Findings that require multiple patterns to confirm",
+    "required_pairs": [
+      {
+        "id": "CR-XSS-CONFIRMED",
+        "primary": "dangerouslySetInnerHTML",
+        "secondary": "(?:comment|message|description|title|input|value|data|content)",
+        "distance_max": 20,
+        "action": "UPGRADE_CRITICAL",
+        "reason": "dangerouslySetInnerHTML with user-content variable name nearby = confirmed XSS"
+      },
+      {
+        "id": "CR-CMD-INJECT",
+        "primary": "exec|spawn|execSync",
+        "secondary": "(?:\\+|`|req\\.|input|param|data|body)",
+        "distance_max": 5,
+        "action": "UPGRADE_CRITICAL",
+        "reason": "Command execution with concatenation = confirmed RCE"
+      },
+      {
+        "id": "CR-IDOR",
+        "primary": "findById|findOne",
+        "secondary": "(?:req\\.params|req\\.query|:id)",
+        "distance_max": 10,
+        "action": "UPGRADE_CRITICAL",
+        "reason": "findById with URL parameter = confirmed IDOR if no auth middleware"
+      }
+    ]
+  }
+}

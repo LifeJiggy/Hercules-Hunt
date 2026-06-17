@@ -1,0 +1,328 @@
+{
+  "patterns": {
+    "xss_sinks": {
+      "category": "Cross-Site Scripting (XSS)",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "dangerouslySetInnerHTML", "regex": "dangerouslySetInnerHTML\\s*:\\s*\\{[^}]*__html", "severity": "CRITICAL", "context": "React XSS sink — if user input reaches __html, arbitrary JS executes", "cvss": 9.1 },
+        { "name": "innerHTML Assignment", "regex": "\\.innerHTML\\s*=", "severity": "CRITICAL", "context": "Direct innerHTML assignment — no sanitization = DOM XSS", "cvss": 8.5 },
+        { "name": "outerHTML Assignment", "regex": "\\.outerHTML\\s*=", "severity": "HIGH", "context": "outerHTML replacement — element replacement XSS vector", "cvss": 8.0 },
+        { "name": "document.write", "regex": "document\\.write\\s*\\(", "severity": "CRITICAL", "context": "document.write — legacy XSS sink, bypasses CSP in some cases", "cvss": 8.5 },
+        { "name": "eval() with User Data", "regex": "eval\\s*\\([^)]*[+].*?(?:req|res|param|input|data|val|str|txt|msg)", "severity": "CRITICAL", "context": "eval() with potential user input — code injection", "cvss": 9.0 },
+        { "name": "Function() Constructor", "regex": "new\\s+Function\\s*\\([^)]*(?:req|res|param|input|data|val|str|txt|msg)", "severity": "HIGH", "context": "Function constructor with dynamic input — arbitrary code execution", "cvss": 8.5 },
+        { "name": "setTimeout String Eval", "regex": "setTimeout\\s*\\(\\s*[\"'`][^\"'`]+", "severity": "MEDIUM", "context": "setTimeout with string instead of function — eval-like behavior", "cvss": 6.5 },
+        { "name": "script.src Assignment", "regex": "\\.src\\s*=\\s*[^\"']*(?:req|res|param|input|data|val)", "severity": "HIGH", "context": "Dynamic script src — script injection if user-controlled", "cvss": 7.5 },
+        { "name": "insertAdjacentHTML", "regex": "\\.insertAdjacentHTML\\s*\\(", "severity": "HIGH", "context": "insertAdjacentHTML — HTML injection sink", "cvss": 7.5 },
+        { "name": "DOMParser ParseFromString", "regex": "parseFromString\\s*\\([^)]*text\\/html", "severity": "MEDIUM", "context": "DOMParser with text/html — XSS if content is user-controlled", "cvss": 6.5 }
+      ]
+    },
+    "dom_xss": {
+      "category": "DOM-Based XSS",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "location.hash Sink", "regex": "(?:location|window\\.location)\\.hash\\s*(?:=|in)", "severity": "HIGH", "context": "Hash-based XSS — attacker controls #fragment", "cvss": 7.5 },
+        { "name": "location.search Sink", "regex": "(?:location|window\\.location)\\.search\\s*(?:=|in)", "severity": "HIGH", "context": "Search parameter directly used — reflected XSS vector", "cvss": 7.5 },
+        { "name": "URLSearchParams.get Sink", "regex": "searchParams\\.get\\s*\\([^)]*\\)\\s*.*?(?:innerHTML|outerHTML|write|eval)", "severity": "CRITICAL", "context": "URL param flows to HTML sink — confirmed XSS chain", "cvss": 8.5 },
+        { "name": "document.cookie Read", "regex": "document\\.cookie", "severity": "MEDIUM", "context": "Cookie read — check if rendered unsafely for XSS", "cvss": 6.5 },
+        { "name": "postMessage No Origin Check", "regex": "addEventListener\\s*\\(\\s*['\"]message['\"]\\s*,", "severity": "HIGH", "context": "postMessage handler without origin validation — cross-origin XSS", "cvss": 7.5 },
+        { "name": "window.name Sink", "regex": "window\\.name\\s*(?:=|in)", "severity": "MEDIUM", "context": "window.name is attacker-controlled cross-origin", "cvss": 6.5 },
+        { "name": "Referer Header Sink", "regex": "document\\.referrer\\s*(?:=|in)", "severity": "MEDIUM", "context": "Referer header used in DOM — attacker controls on some pages", "cvss": 6.0 }
+      ]
+    },
+    "prototype_pollution": {
+      "category": "Prototype Pollution",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "__proto__ Assignment", "regex": "__proto__", "severity": "CRITICAL", "context": "Direct __proto__ access — prototype pollution leading to RCE/XSS", "cvss": 8.5 },
+        { "name": "constructor.prototype Access", "regex": "constructor\\.prototype", "severity": "HIGH", "context": "constructor.prototype manipulation — prototype pollution vector", "cvss": 8.0 },
+        { "name": "Object.assign with User Input", "regex": "Object\\.assign\\s*\\([^,]*,[^)]*[ut]\\w*\\s*\\)", "severity": "HIGH", "context": "Object.assign merging user data — mass assignment / prototype pollution", "cvss": 8.0 },
+        { "name": "Spread Operator Merge", "regex": "=\\s*\\{[^}]*\\.\\.\\.\\w+[^}]*\\}", "severity": "MEDIUM", "context": "Spread operator merge — potential JSON.parse user payload", "cvss": 7.0 },
+        { "name": "Lodash Merge", "regex": "(?:_\\.|lodash\\.)\\s*merge\\s*\\(", "severity": "CRITICAL", "context": "lodash _.merge — known prototype pollution sink (CVE-2018-3721+)", "cvss": 8.5 },
+        { "name": "jQuery extend Deep", "regex": "\\$\\.extend\\s*\\(\\s*true", "severity": "HIGH", "context": "jQuery.extend(true) — deep merge prototype pollution", "cvss": 8.0 },
+        { "name": "Recursive Assign Pattern", "regex": "for\\s*\\([^}]*in\\s+\\w+\\s*\\)[^}]*__proto__", "severity": "CRITICAL", "context": "for...in loop not filtering __proto__ — guaranteed pollution", "cvss": 8.5 },
+        { "name": "Dot Notation Set", "regex": "\\[['\"]__proto__['\"]\\]", "severity": "HIGH", "context": "Bracket notation __proto__ — programmatic property set", "cvss": 8.0 }
+      ]
+    },
+    "mass_assignment": {
+      "category": "Mass Assignment",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "Object.assign API Merge", "regex": "Object\\.assign\\s*\\(\\s*\\{[^}]*\\}\\s*,", "severity": "HIGH", "context": "Object.assign merging API response — privilege escalation if user fields included", "cvss": 8.0 },
+        { "name": "REST API Spread Return", "regex": "return\\s+\\{[^}]*\\.\\.\\.\\w+[^}]*\\}", "severity": "MEDIUM", "context": "Spread return from fn — may blindly include extra fields", "cvss": 7.0 },
+        { "name": "Sequelize/ORM Create", "regex": "\\.create\\s*\\([^)]*(?:req\\.body|body|data)", "severity": "HIGH", "context": "ORM .create() with request body — mass assignment on DB", "cvss": 8.0 },
+        { "name": "Update with Request Body", "regex": "\\.update\\s*\\([^)]*(?:req\\.body|body|data)", "severity": "HIGH", "context": "ORM .update() with request body — mass assignment on DB", "cvss": 8.0 },
+        { "name": "GraphQL Mutation Full Object", "regex": "mutation\\s+\\w+\\s*\\([^)]*input[^)]*\\)[^}]*\\w+\\s*\\(\\s*input", "severity": "HIGH", "context": "GraphQL mutation passing full input object — mass assignment vector", "cvss": 7.5 },
+        { "name": "DTO Auto-Map Pattern", "regex": "(?:AutoMapper|mapper\\.map|class-transformer|plainToClass)", "severity": "MEDIUM", "context": "Auto-mapping DTOs — may include unexpected fields", "cvss": 6.5 }
+      ]
+    },
+    "authentication_tokens": {
+      "category": "Authentication / Token Vulnerabilities",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "JWT Stored in localStorage", "regex": "localStorage\\.(?:getItem|setItem)\\s*\\(\\s*['\"]token['\"]", "severity": "HIGH", "context": "JWT stored in localStorage — vulnerable to XSS theft", "cvss": 7.5 },
+        { "name": "Session in localStorage", "regex": "localStorage\\.(?:getItem|setItem)\\s*\\(\\s*['\"]session['\"]", "severity": "HIGH", "context": "Session token in localStorage — XSS → session hijack", "cvss": 7.5 },
+        { "name": "JWT in URL Parameter", "regex": "[?&]token\\s*=\\s*eyJ[A-Za-z0-9_-]{10,}", "severity": "CRITICAL", "context": "JWT exposed in URL — referer leakage, server logs", "cvss": 9.0 },
+        { "name": "Access Token in URL", "regex": "[?&]access_token\\s*=\\s*[A-Za-z0-9_-]{20,}", "severity": "CRITICAL", "context": "Access token in URL — referer header leaks to third parties", "cvss": 9.0 },
+        { "name": "Auth Header Hardcoded", "regex": "['\"]Authorization['\"]\\s*:\\s*['\"]Bearer\\s+[A-Za-z0-9_-]{20,}", "severity": "CRITICAL", "context": "Hardcoded Bearer token in client-side code — credential leak", "cvss": 9.5 },
+        { "name": "OAuth Redirect URI", "regex": "redirect_uri\\s*=\\s*[^&\\s]+", "severity": "MEDIUM", "context": "OAuth redirect_uri — open redirect leads to token theft", "cvss": 6.5 },
+        { "name": "JWT decode on Client", "regex": "jwt\\.decode|jwtDecode|atob\\([^)]*\\.split\\(['\"]\\.", "severity": "MEDIUM", "context": "JWT decoded client-side — token exposed to XSS", "cvss": 6.0 },
+        { "name": "Password in Request Body", "regex": "['\"]password['\"]\\s*:\\s*[^,}]{2,}", "severity": "MEDIUM", "context": "Password field in client code — check logging/storage", "cvss": 6.5 },
+        { "name": "Credit Card in Client", "regex": "['\"]credit_card['\"]\\s*:", "severity": "MEDIUM", "context": "Credit card field in client bundle — PCI compliance concern", "cvss": 6.5 }
+      ]
+    },
+    "ssrf": {
+      "category": "Server-Side Request Forgery (SSRF)",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "fetch() with User URL", "regex": "fetch\\s*\\([^)]*(?:req\\.query|req\\.params|req\\.body|userInput|user_url)", "severity": "CRITICAL", "context": "fetch() with user-controlled URL — SSRF to internal services", "cvss": 8.5 },
+        { "name": "axios with Dynamic URL", "regex": "axios\\.(?:get|post|put|delete|request)\\s*\\([^)]*(?:\\+|`|query|params)", "severity": "HIGH", "context": "axios request with dynamic URL — potential SSRF", "cvss": 8.0 },
+        { "name": "http.request with User Input", "regex": "http\\.request\\s*\\([^)]*(?:url|options|params)\\s*,", "severity": "CRITICAL", "context": "http.request with dynamic options — SSRF if URL not validated", "cvss": 8.5 },
+        { "name": "Image URL Loader", "regex": "(?:new\\s+Image|image\\.src)\\s*=\\s*[^;]+(?:req|res|param|input|data)", "severity": "MEDIUM", "context": "Image src from user input — SSRF via image load", "cvss": 7.0 },
+        { "name": "Redirect Follower", "regex": "(?:followRedirect|maxRedirects|manualRedirect|handleRedirect)", "severity": "MEDIUM", "context": "Redirect following — SSRF via open redirect to internal", "cvss": 6.5 },
+        { "name": "Webhook URL Config", "regex": "['\"]webhook['\"](?:\\s*[,:]|\\s*})[^}]*['\"](?:https?:|\\w+)['\"]", "severity": "MEDIUM", "context": "Webhook URL config — SSRF if target URL is user-controllable", "cvss": 7.0 },
+        { "name": "Proxy Pass-Through", "regex": "(?:proxy|proxyReq|proxyPass|proxy_pass)\\s*[=:]\\s*[^;]+", "severity": "HIGH", "context": "Proxy pass-through — SSRF to internal network", "cvss": 7.5 }
+      ]
+    },
+    "command_injection": {
+      "category": "Command Injection",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "exec() with User Input", "regex": "(?:child_process\\.)?exec\\s*\\([^)]*(?:\\+|`|sprintf|format)", "severity": "CRITICAL", "context": "exec() with string concatenation — command injection", "cvss": 9.5 },
+        { "name": "execSync() with Input", "regex": "(?:child_process\\.)?execSync\\s*\\([^)]*(?:\\+|`|sprintf)", "severity": "CRITICAL", "context": "execSync() with dynamic input — synchronous command injection", "cvss": 9.0 },
+        { "name": "spawn() Shell Mode", "regex": "spawn\\s*\\([^,]*,\\s*[^,]*,\\s*\\{[^}]*shell:\\s*true", "severity": "HIGH", "context": "spawn() with shell:true — command injection if args user-controlled", "cvss": 8.5 },
+        { "name": "child_process Module", "regex": "require\\(['\"]child_process['\"]\\)", "severity": "HIGH", "context": "child_process module in bundle — server-side code leak / RCE surface", "cvss": 8.0 },
+        { "name": "execSync Shell", "regex": "execSync\\s*\\([^)]*shell", "severity": "HIGH", "context": "execSync with shell — OS command execution", "cvss": 8.5 },
+        { "name": "child_process execFile", "regex": "(?:child_process\\.)?execFile\\s*\\([^)]*(?:\\+|`)", "severity": "HIGH", "context": "execFile with concatenation — potential command injection", "cvss": 8.0 },
+        { "name": "system() Call", "regex": "system\\s*\\([^)]*(?:\\+|`|req|input)", "severity": "CRITICAL", "context": "system() call with dynamic input — OS command execution", "cvss": 9.0 }
+      ]
+    },
+    "path_traversal": {
+      "category": "Path Traversal",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "path.join with User Input", "regex": "path\\.(?:join|resolve)\\s*\\([^)]*(?:req|param|input|data|query|body)", "severity": "HIGH", "context": "path.join/resolve with user input — path traversal if ../ not filtered", "cvss": 7.5 },
+        { "name": "fs.readFile Dynamic Path", "regex": "fs\\.(?:readFile|readFileSync|readdir|readdirSync)\\s*\\([^)]*(?:\\+|`|req|param)", "severity": "CRITICAL", "context": "File read with dynamic path — arbitrary file read", "cvss": 8.0 },
+        { "name": "fs.writeFile Dynamic Path", "regex": "fs\\.(?:writeFile|writeFileSync|appendFile|appendFileSync)\\s*\\([^)]*(?:\\+|`|req|param)", "severity": "CRITICAL", "context": "File write with dynamic path — arbitrary file write/RCE", "cvss": 9.0 },
+        { "name": "require() Dynamic Path", "regex": "require\\s*\\([^)]*(?:\\+|`|req|param|input)", "severity": "HIGH", "context": "require() with dynamic path — path traversal / code inclusion", "cvss": 7.5 },
+        { "name": "sendFile with User Input", "regex": "\\.sendFile\\s*\\([^)]*(?:req|param|input|data)", "severity": "HIGH", "context": "sendFile with user input — arbitrary file download", "cvss": 7.5 },
+        { "name": "res.download with Input", "regex": "res\\.download\\s*\\([^)]*(?:req|param|input|data)", "severity": "HIGH", "context": "Express download with user path — path traversal", "cvss": 7.5 }
+      ]
+    },
+    "idor": {
+      "category": "Insecure Direct Object Reference",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "User ID in API Path", "regex": "/api/(?:user|users|account|accounts)/\\d+", "severity": "MEDIUM", "context": "Sequential numeric user ID in API — predictable IDOR vector", "cvss": 6.5 },
+        { "name": "Order ID in API Path", "regex": "/api/(?:order|orders|invoice|invoices)/\\d+", "severity": "HIGH", "context": "Sequential order ID — order data exposure / manipulation", "cvss": 7.5 },
+        { "name": "ID from URL Params", "regex": "req\\.(?:params|query)\\.(?:id|userId|accountId|orderId)", "severity": "HIGH", "context": "ID directly from URL params — check authorization before use", "cvss": 7.5 },
+        { "name": "findById Without Auth", "regex": "findById\\s*\\([^)]*(?:req\\.params\\.id|req\\.query\\.id)", "severity": "CRITICAL", "context": "findById with URL param — no ownership check = IDOR", "cvss": 8.5 },
+        { "name": "findOne Unfiltered", "regex": "findOne\\s*\\([^)]*(?:where:\\s*\\{[^}]*id\\s*:\\s*req)", "severity": "HIGH", "context": "findOne with user-provided ID — missing user scoping", "cvss": 8.0 },
+        { "name": "SQL WHERE id = User", "regex": "(?:SELECT|UPDATE|DELETE).*WHERE.*id\\s*=\\s*(?:req|param|input)", "severity": "CRITICAL", "context": "Unscoped SQL with id from user — both IDOR + potential SQLi", "cvss": 8.5 }
+      ]
+    },
+    "broken_access_control": {
+      "category": "Broken Access Control",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "Admin Route Check", "regex": "['\"]/admin['\"]|role\\s*===\\s*['\"]admin['\"]|isAdmin", "severity": "MEDIUM", "context": "Admin role check in client — reveals admin endpoints", "cvss": 5.5 },
+        { "name": "Client-Side Auth Gate", "regex": "(?:role|permission|isAdmin|isModerator)\\s*===\\s*(?:true|false|0|1)", "severity": "HIGH", "context": "Client-side auth check — trivially bypassed by JS manipulation", "cvss": 7.5 },
+        { "name": "Route Guard Client-Side", "regex": "PrivateRoute|ProtectedRoute|AuthRoute|requireAuth", "severity": "MEDIUM", "context": "Client-side route guard — backend must also enforce", "cvss": 6.0 },
+        { "name": "Admin API Endpoint", "regex": "/api/admin/|/admin/api/|/internal/api/", "severity": "HIGH", "context": "Admin API endpoint exposed in client bundle — check server auth", "cvss": 7.5 },
+        { "name": "Role in JWT Used Client", "regex": "jwt\\.decode\\([^)]*\\).*(?:role|isAdmin|permission)", "severity": "HIGH", "context": "Role from client-decoded JWT used for UI logic — not security", "cvss": 7.0 },
+        { "name": "Hidden Feature Flag", "regex": "(?:is_beta|beta_access|early_access|internal_user|staff)", "severity": "MEDIUM", "context": "Feature flags in client — internal features may bypass auth", "cvss": 6.0 }
+      ]
+    },
+    "websocket": {
+      "category": "WebSocket Vulnerabilities",
+      "severity_base": "MEDIUM",
+      "entries": [
+        { "name": "WebSocket Connection", "regex": "new\\s+WebSocket\\s*\\(\\s*(?:['\"`]wss?://|process\\.env|config)", "severity": "MEDIUM", "context": "WebSocket connection — real-time attack surface", "cvss": 6.5 },
+        { "name": "WebSocket Without WSS", "regex": "new\\s+WebSocket\\s*\\(\\s*['\"]ws://", "severity": "HIGH", "context": "WebSocket without SSL — cleartext, MITM vulnerable", "cvss": 7.0 },
+        { "name": "WebSocket Message Handler", "regex": "socket\\.on\\s*\\(\\s*['\"]message['\"]\\s*,", "severity": "MEDIUM", "context": "WebSocket message handler — check input validation on messages", "cvss": 6.5 },
+        { "name": "WebSocket Send All", "regex": "\\.send\\s*\\([^)]*(?:msg|message|data|payload)", "severity": "MEDIUM", "context": "WebSocket send with dynamic content — message injection surface", "cvss": 5.5 },
+        { "name": "Socket.IO Connection", "regex": "io\\(\\s*['\"`]https?://", "severity": "MEDIUM", "context": "Socket.IO connection — real-time bidirectional surface", "cvss": 6.0 },
+        { "name": "Phoenix Channel Push", "regex": "\\.channel\\.\\w+\\s*\\([^)]*\\{[^}]*payload", "severity": "MEDIUM", "context": "Phoenix channel push — real-time message injection", "cvss": 6.0 }
+      ]
+    },
+    "business_logic": {
+      "category": "Business Logic Vulnerabilities",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "Price Manipulation", "regex": "['\"]price['\"]\\s*(?::|=>|=)\\s*[^,}]+(?:req|param|body|input)", "severity": "HIGH", "context": "Price from user input — price manipulation / -$ orders", "cvss": 8.0 },
+        { "name": "Quantity Manipulation", "regex": "['\"]quantity['\"]\\s*(?::|=>|=)\\s*[^,}]+(?:req|param|body|input)", "severity": "HIGH", "context": "Quantity from user input — negative quantity fraud", "cvss": 7.5 },
+        { "name": "Coupon Abuse Pattern", "regex": "['\"]coupon['\"]|['\"]discount['\"]|['\"]promo['\"]", "severity": "HIGH", "context": "Coupon/discount field — coupon brute-force / manipulation", "cvss": 7.5 },
+        { "name": "Bid Operation", "regex": "(?:BID|PREBID|AUCTION|BUY_IT_NOW)", "severity": "HIGH", "context": "Bid/auction operation — race condition, bid sniping", "cvss": 8.0 },
+        { "name": "Payment Bypass Pattern", "severity": "HIGH", "regex": "PAYMENT_FAILED|PaymentFailed|PAYMENT_SKIP", "context": "Payment status enum — skip payment if enum not validated", "cvss": 8.5 },
+        { "name": "Refund/Return Logic", "regex": "['\"]refund['\"]|['\"]return['\"]|processRefund", "severity": "MEDIUM", "context": "Refund logic — refund manipulation / double refund", "cvss": 7.0 },
+        { "name": "Multi-Step Workflow", "regex": "(?:step|stage|phase|wizard)\\s*(?::|=>|=)\\s*\\d", "severity": "MEDIUM", "context": "Multi-step workflow state — step skipping, state manipulation", "cvss": 6.5 },
+        { "name": "Balance/Withdrawal", "regex": "['\"]balance['\"]|['\"]withdraw['\"]|['\"]deposit['\"]", "severity": "HIGH", "context": "Balance/withdrawal operation — race condition on withdrawal", "cvss": 8.0 }
+      ]
+    },
+    "race_condition": {
+      "category": "Race Conditions",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "Concurrent Bid Pattern", "regex": "async[^}]*bid[^}]*await", "severity": "HIGH", "context": "Async bid operation without lock — bid sniping", "cvss": 8.5 },
+        { "name": "Concurrent Payment", "regex": "async[^}*](?:payment|checkout|purchase)[^}]*await", "severity": "CRITICAL", "context": "Async payment without transaction lock — double spend", "cvss": 9.0 },
+        { "name": "Balance Update Race", "regex": "(?:balance|credit|coupon)\\s*[+\\-]=\\s*\\w+", "severity": "HIGH", "context": "Non-atomic balance update — race condition on balance", "cvss": 8.5 },
+        { "name": "Promise.all Side Effects", "regex": "Promise\\.all\\s*\\([^)]*(?:update|save|create|write)", "severity": "MEDIUM", "context": "Promise.all with side-effecting operations — concurrent state corruption", "cvss": 7.0 },
+        { "name": "TOCTOU Pattern", "regex": "(?:check|validate|verify)[^}]*if[^}]*\\w+[^}]*await[^}]*(?:update|delete|save)", "severity": "HIGH", "context": "Check-then-act race — TOCTOU time-of-check-time-of-use", "cvss": 8.0 },
+        { "name": "Non-Await Async Fire", "regex": "(?:fire|emit|trigger)\\s*\\([^)]*\\)[;\\s]*$", "severity": "MEDIUM", "context": "Async fire without await — concurrent execution path", "cvss": 6.5 },
+        { "name": "Stock/Inventory Race", "regex": "['\"]stock['\"]|['\"]inventory['\"]\\s*[+\\-]=", "severity": "HIGH", "context": "Non-atomic stock decrement — oversell on concurrent requests", "cvss": 8.0 }
+      ]
+    },
+    "open_redirect": {
+      "category": "Open Redirect",
+      "severity_base": "MEDIUM",
+      "entries": [
+        { "name": "window.location Assignment", "regex": "(?:window|location)\\.(?:href|location)\\s*=\\s*[^;]+(?:redirect|returnUrl|next)", "severity": "HIGH", "context": "redirect param flows to window.location — open redirect + OAuth theft", "cvss": 7.5 },
+        { "name": "window.open with Redirect", "regex": "window\\.open\\s*\\([^)]*(?:redirect|returnUrl|next|url)", "severity": "MEDIUM", "context": "window.open with redirect param — phishing via popup", "cvss": 6.5 },
+        { "name": "History.pushState Redirect", "regex": "(?:pushState|replaceState)\\s*\\([^)]*(?:redirect|returnUrl|next)", "severity": "MEDIUM", "context": "History API with redirect param — SPA redirect manipulation", "cvss": 6.0 },
+        { "name": "Router Navigate Redirect", "regex": "\\.navigate\\s*\\([^)]*(?:redirect|returnUrl)", "severity": "MEDIUM", "context": "Router navigate with redirect — client-side redirect vector", "cvss": 6.0 },
+        { "name": "get() redirect Parameter", "regex": "\\.get\\(\\s*['\"]redirect['\"]\\s*\\)", "severity": "HIGH", "context": "Redirect parameter read from URL — open redirect + OAuth theft chain", "cvss": 7.5 }
+      ]
+    },
+    "xxe": {
+      "category": "XML External Entity (XXE)",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "XML Parser No Options", "regex": "new\\s+DOMParser\\s*\\(\\s*\\)", "severity": "MEDIUM", "context": "DOMParser without disable options — XXE if XML from user", "cvss": 6.5 },
+        { "name": "parseXML Without Config", "regex": "parseXML|xml2js\\.parseString|fast-xml-parser|libxml", "severity": "MEDIUM", "context": "XML parser — check if external entities are disabled", "cvss": 6.5 },
+        { "name": "SAX Parser No Security", "regex": "(?:sax|saxes|node-expat|xml-stream|elementtree)", "severity": "MEDIUM", "context": "SAX-style parser — check XXE config", "cvss": 6.0 },
+        { "name": "XMLHttpRequest Response", "regex": "XMLHttpRequest|ActiveXObject", "severity": "MEDIUM", "context": "XMLHttpRequest — legacy API, check responseType handling", "cvss": 5.5 }
+      ]
+    },
+    "ssti": {
+      "category": "Server-Side Template Injection",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "Template Engine Render", "regex": "\\.render\\s*\\([^)]*(?:template|view|layout)\\s*,", "severity": "HIGH", "context": "Template render with data — SSTI if user data reaches template", "cvss": 7.5 },
+        { "name": "EJS Render with Input", "regex": "ejs\\.(?:render|compile)\\s*\\([^)]*(?:req|param|body|input)", "severity": "CRITICAL", "context": "EJS render with user input — RCE via template injection", "cvss": 9.0 },
+        { "name": "Pug/Handlebars Compile", "regex": "(?:pug|handlebars|hbs|mustache)\\.(?:render|compile)\\s*\\(", "severity": "HIGH", "context": "Template compilation with user data — SSTI to RCE", "cvss": 8.5 },
+        { "name": "Template String in DB", "regex": "['\"](?:\\{\\{|\\{%|\\$\\(\\{|`\\$\\{)", "severity": "MEDIUM", "context": "Template syntax in stored data — SSTI when rendered", "cvss": 6.5 },
+        { "name": "String Replace without Escape", "regex": "\\.replace\\([^)]*\\{[^}]*\\}[^)]*\\)", "severity": "MEDIUM", "context": "String replacement with template-like patterns — SSTI vector", "cvss": 6.0 }
+      ]
+    },
+    "sql_injection": {
+      "category": "SQL Injection",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "String Concatenation in Query", "regex": "(?:SELECT|INSERT|UPDATE|DELETE)\\s+.*?['\"`]\\s*[+:]|(?:SELECT|INSERT|UPDATE|DELETE)\\s+.*?\\$\\{", "severity": "CRITICAL", "context": "SQL query with string concatenation — raw SQL injection", "cvss": 9.0 },
+        { "name": "exec with Raw Query", "regex": "\\.(?:exec|execute|query)\\s*\\([^)]*(?:\\+|`|sprintf|format|replace)", "severity": "CRITICAL", "context": "SQL exec with concatenation — database injection", "cvss": 9.0 },
+        { "name": "Sequelize Raw Query", "regex": "sequelize\\.query\\s*\\([^)]*(?:\\+|`|req|param|input)", "severity": "CRITICAL", "context": "Sequelize raw query with interpolation — SQLi bypasses ORM", "cvss": 9.0 },
+        { "name": "NoSQL Injection", "regex": "\\$where|\\$ne|\\$gt|\\$regex|\\$exists", "severity": "HIGH", "context": "MongoDB operator in query — NoSQL injection vector", "cvss": 8.0 },
+        { "name": "TypeORM Raw Query", "regex": "createQueryBuilder\\s*\\([^)]*\\)\\.\\w+\\s*\\([^)]*\\+|createQueryBuilder\\s*\\([^)]*\\)\\.where\\([^)]*\\+", "severity": "CRITICAL", "context": "TypeORM raw query with + operator — SQLi", "cvss": 8.5 },
+        { "name": "pg/client.query Concatenated", "regex": "(?:pg|client|pool)\\.query\\s*\\([^)]*(?:\\+|`|req|param|input)", "severity": "CRITICAL", "context": "PostgreSQL query with string concatenation — SQLi", "cvss": 9.0 }
+      ]
+    },
+    "file_upload": {
+      "category": "File Upload Vulnerabilities",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "File Upload Endpoint", "regex": "['\"]/upload['\"]|multer|formidable|busboy|fileUpload", "severity": "MEDIUM", "context": "File upload endpoint — check extension validation", "cvss": 6.5 },
+        { "name": "No Extension Check", "regex": "\\.originalname|req\\.file|req\\.files", "severity": "HIGH", "context": "File upload without extension validation — webshell upload", "cvss": 7.5 },
+        { "name": "File in Mutation", "regex": "mutation[^}]*upload[^}]*\\([^)]*file", "severity": "HIGH", "context": "GraphQL file upload mutation — check server-side validation", "cvss": 7.0 },
+        { "name": "File Read from Upload", "regex": "fs\\.(?:readFile|writeFile)\\s*\\([^)]*(?:upload|file|buffer|path)", "severity": "HIGH", "context": "File operation with upload content — path traversal in filename", "cvss": 8.0 },
+        { "name": "Image Processing Library", "regex": "(?:sharp|gm|imagemagick|jimp|canvas)\\.", "severity": "MEDIUM", "context": "Image processing — image-triggered RCE (sharp/ImageMagick CVEs)", "cvss": 6.5 },
+        { "name": "Data URI Upload", "regex": "data:\\s*image\\/\\w+;base64,[A-Za-z0-9+/]{50,}", "severity": "MEDIUM", "context": "Base64 data URI in code — potential inline file upload", "cvss": 5.5 }
+      ]
+    },
+    "csrf": {
+      "category": "Cross-Site Request Forgery",
+      "severity_base": "MEDIUM",
+      "entries": [
+        { "name": "No CSRF Token Check", "regex": "(?:fetch|axios|request)\\s*\\([^)]*\\{[^}]*method:\\s*['\"]POST['\"]", "severity": "MEDIUM", "context": "POST request — check if CSRF token/XSRF header is sent", "cvss": 6.0 },
+        { "name": "Cookie Without SameSite", "regex": "SameSite\\s*=\\s*None|SameSite=None", "severity": "MEDIUM", "context": "SameSite=None cookie — CSRF in modern browsers blocked", "cvss": 5.5 },
+        { "name": "CORS with Credentials", "regex": "credentials:\\s*['\"]include['\"]|withCredentials:\\s*true", "severity": "MEDIUM", "context": "Credentials included cross-origin — CSRF if CORS permissive", "cvss": 6.5 },
+        { "name": "REST API Without CSRF", "regex": "\\{.*['\"](?:POST|PUT|DELETE|PATCH)['\"].*\\}.*['\"](?:url|path|endpoint)", "severity": "MEDIUM", "context": "API call without CSRF token — if cookie-based auth, vulnerable", "cvss": 6.0 }
+      ]
+    },
+    "information_disclosure": {
+      "category": "Information Disclosure",
+      "severity_base": "MEDIUM",
+      "entries": [
+        { "name": "console.log Sensitive", "regex": "console\\.(?:log|info|warn|error|debug)\\s*\\([^)]*(?:token|auth|credential|password|secret|key|jwt)", "severity": "HIGH", "context": "Sensitive data logged to console — browser DevTools leak", "cvss": 7.0 },
+        { "name": "Stack Trace in Client", "regex": "(?:stack|stackTrace|Error\\.stack|trace)\\s*\\+", "severity": "MEDIUM", "context": "Stack trace exposed — internal architecture leakage", "cvss": 5.5 },
+        { "name": "Debug Info in Production", "regex": "__DEV__|__DEBUG__|process\\.env\\.NODE_ENV", "severity": "LOW", "context": "Debug/Dev mode flag — may reveal debug endpoints", "cvss": 4.0 },
+        { "name": "Source Map URL", "regex": "sourceMappingURL|sourceURL", "severity": "MEDIUM", "context": "Source map reference — may expose full source code", "cvss": 5.5 },
+        { "name": "Environment Variable Leak", "regex": "process\\.env\\.(?:API_KEY|SECRET|PASSWORD|TOKEN|AUTH|DB_)", "severity": "HIGH", "context": "Env var referenced in client — server-side secret value may leak", "cvss": 7.5 },
+        { "name": "Hardcoded API Key", "regex": "['\"](?:AIza[0-9A-Za-z_-]{35}|sk-[A-Za-z0-9]{20,}|gh[psoubr]_[A-Za-z0-9_]{36,})['\"]", "severity": "CRITICAL", "context": "Hardcoded API key in client-side code", "cvss": 9.0 },
+        { "name": "Internal Hostname in Code", "regex": "['\"](?:http://10\\.|http://172\\.1[6-9]\\.|http://192\\.168\\.|http://localhost)", "severity": "HIGH", "context": "Internal IP/hostname leaked in client bundle — network mapping", "cvss": 6.5 }
+      ]
+    },
+    "cors": {
+      "category": "CORS Misconfiguration",
+      "severity_base": "MEDIUM",
+      "entries": [
+        { "name": "Wildcard CORS with Credentials", "regex": "Access-Control-Allow-Origin\\s*:\\s*\\*", "severity": "HIGH", "context": "CORS wildcard origin — if response has cookies, full bypass", "cvss": 7.5 },
+        { "name": "Null Origin Allowed", "regex": "Access-Control-Allow-Origin\\s*:\\s*null", "severity": "HIGH", "context": "Null origin allowed — iframe/data URI can access", "cvss": 7.0 },
+        { "name": "CORS with Credentials True", "regex": "Access-Control-Allow-Credentials\\s*:\\s*true", "severity": "MEDIUM", "context": "Credentials allowed — confirm origin is properly validated", "cvss": 6.5 },
+        { "name": "Dynamic Origin Reflected", "regex": "Access-Control-Allow-Origin\\s*:\\s*req\\.headers\\.origin", "severity": "HIGH", "context": "Origin reflected without validation — any site can make authenticated requests", "cvss": 8.0 }
+      ]
+    },
+    "nextjs_specific": {
+      "category": "Next.js Specific",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "getServerSideProps Leak", "regex": "getServerSideProps|getInitialProps", "severity": "MEDIUM", "context": "Server-side props — check if sensitive data leaks to client", "cvss": 6.5 },
+        { "name": "_next/data URL", "regex": "/_next/data/", "severity": "LOW", "context": "Next.js data endpoint — may expose API endpoints", "cvss": 4.0 },
+        { "name": "next/config Exposed", "regex": "next/config|__NEXT_DATA__", "severity": "MEDIUM", "context": "Next.js config in page source — may leak server config", "cvss": 5.5 },
+        { "name": "Next Script Loader XSS", "regex": "dangerouslySetInnerHTML.*__next_s|__next_s.*dangerouslySetInnerHTML", "severity": "CRITICAL", "context": "Next.js script loader with dangerous HTML — confirmed XSS pattern", "cvss": 9.1 }
+      ]
+    },
+    "cloud_secrets": {
+      "category": "Cloud Infrastructure Secrets",
+      "severity_base": "CRITICAL",
+      "entries": [
+        { "name": "AWS Access Key ID", "regex": "AKIA[A-Z0-9]{16}|ASIA[A-Z0-9]{16}", "severity": "CRITICAL", "context": "AWS Access Key — full AWS account access", "cvss": 10.0 },
+        { "name": "AWS Secret Access Key", "regex": "['\"`]secretAccessKey['\"`]\\s*[:=]\\s*['\"`]([A-Za-z0-9\\/+]{40})['\"`]", "severity": "CRITICAL", "context": "AWS Secret Key — programmatic AWS access", "cvss": 10.0 },
+        { "name": "GCP API Key", "regex": "AIza[0-9A-Za-z\\-_]{35}", "severity": "CRITICAL", "context": "GCP API Key — Google Cloud billing-enabled access", "cvss": 9.5 },
+        { "name": "GCP Service Account JSON", "regex": "\"type\":\\s*\"service_account\"", "severity": "CRITICAL", "context": "GCP service account key JSON — full GCP project access", "cvss": 10.0 },
+        { "name": "Stripe Live Secret Key", "regex": "sk_live_[A-Za-z0-9]{24,}", "severity": "CRITICAL", "context": "Stripe live secret — charge/refund customers, full financial access", "cvss": 10.0 },
+        { "name": "Stripe Live Publishable", "regex": "pk_live_[A-Za-z0-9]{24,}", "severity": "HIGH", "context": "Stripe live publishable key — limited, but enables card testing", "cvss": 7.5 },
+        { "name": "GitHub PAT", "regex": "gh[psoubr]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{36,}", "severity": "CRITICAL", "context": "GitHub token — full repository access, CI/CD manipulation", "cvss": 9.5 },
+        { "name": "GitHub OAuth Token", "regex": "gho_[A-Za-z0-9_]{36,}", "severity": "CRITICAL", "context": "GitHub OAuth token — repository access", "cvss": 9.0 },
+        { "name": "OpenAI API Key", "regex": "sk-[A-Za-z0-9]{20,}|sk-proj-[A-Za-z0-9]{20,}", "severity": "CRITICAL", "context": "OpenAI API key — expensive LLM calls on your account", "cvss": 9.5 },
+        { "name": "JWT Token", "regex": "eyJ[A-Za-z0-9_-]{10,}\\.eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}", "severity": "MEDIUM", "context": "JWT in code — may be test token or leaked session", "cvss": 7.5 },
+        { "name": "Firebase URL", "regex": "[a-z0-9-]+\\.firebaseio\\.com", "severity": "MEDIUM", "context": "Firebase database URL — check for public read/write", "cvss": 7.0 },
+        { "name": "Firebase API Key", "regex": "AIza[0-9A-Za-z_-]{35,}", "severity": "HIGH", "context": "Firebase API key — often allows public DB access", "cvss": 8.0 },
+        { "name": "Auth0 Domain", "regex": "[a-zA-Z0-9-]+\\.auth0\\.com", "severity": "MEDIUM", "context": "Auth0 tenant domain — tenant-level attacks", "cvss": 6.5 },
+        { "name": "Auth0 Client ID", "regex": "[A-Za-z0-9]{32,64}\\.apps\\.googleusercontent\\.com", "severity": "HIGH", "context": "OAuth client ID — callback URL manipulation", "cvss": 7.0 },
+        { "name": "SendGrid Key", "regex": "SG\\.[A-Za-z0-9_-]{22}\\.[A-Za-z0-9_-]{43}", "severity": "HIGH", "context": "SendGrid key — send phishing emails on behalf", "cvss": 8.5 },
+        { "name": "Twilio SID", "regex": "AC[A-Z0-9a-z]{32}", "severity": "HIGH", "context": "Twilio Account SID — SMS/call abuse", "cvss": 8.0 },
+        { "name": "Twilio Auth Token", "regex": "['\"]TWILIO_AUTH_TOKEN['\"]\\s*[:=]|SK[A-Z0-9a-z]{32}", "severity": "CRITICAL", "context": "Twilio auth token — full SMS/call account control", "cvss": 9.0 },
+        { "name": "Slack API Token", "regex": "xox[baprs]-[A-Za-z0-9]{10,}", "severity": "HIGH", "context": "Slack token — workspace access, data exfil", "cvss": 8.5 },
+        { "name": "Slack Webhook URL", "regex": "hooks\\.slack\\.com/services/[A-Z0-9]+/[A-Z0-9]+/[A-Za-z0-9]+", "severity": "MEDIUM", "context": "Slack webhook — message injection into channels", "cvss": 6.5 },
+        { "name": "Discord Webhook URL", "regex": "discord(?:app)?\\.com/api/webhooks/\\d+/[A-Za-z0-9_-]+", "severity": "MEDIUM", "context": "Discord webhook — message injection, possible token leak", "cvss": 6.5 },
+        { "name": "Telegram Bot Token", "regex": "\\d+:AA[A-Za-z0-9_-]{33}", "severity": "HIGH", "context": "Telegram bot token — chatbot control, message read abuse", "cvss": 8.0 },
+        { "name": "Mapbox Token", "regex": "pk\\.eyJ[A-Za-z0-9_-]{60,}|sk\\.eyJ[A-Za-z0-9_-]{60,}", "severity": "MEDIUM", "context": "Mapbox token — map usage on your account", "cvss": 6.0 },
+        { "name": "Google API Key", "regex": "AIza[0-9A-Za-z\\-_]{35}", "severity": "HIGH", "context": "Google API key — Maps, YouTube, etc. on your account", "cvss": 8.0 },
+        { "name": "Datadog API Key", "regex": "['\"]DD_API_KEY['\"]\\s*[:=]|[A-Za-z0-9]{32,40}(?:\"|')\\s*(?:,|}|\n)", "severity": "HIGH", "context": "Datadog API key — monitoring data access", "cvss": 8.0 },
+        { "name": "Sentry DSN", "regex": "https://[A-Za-z0-9]+@[A-Za-z0-9]+\\.ingest\\.sentry\\.io/\\d+", "severity": "MEDIUM", "context": "Sentry DSN — error data exposure, rate-limit abuse", "cvss": 6.0 },
+        { "name": "Database Connection String", "regex": "(?:mongodb(?:\\+srv)?|postgres(?:ql)?|mysql|redis|sqlserver)://[^\"'\\s,;]+", "severity": "CRITICAL", "context": "Database connection string — full database access", "cvss": 10.0 }
+      ]
+    },
+    "crypto_weakness": {
+      "category": "Cryptographic Weakness",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "Math.random for Security", "regex": "Math\\.random\\(\\)", "severity": "MEDIUM", "context": "Math.random() — not crypto-safe, predictable", "cvss": 6.5 },
+        { "name": "Weak Hashing", "regex": "md5|sha1", "severity": "MEDIUM", "context": "Weak hash algorithm — MD5/SHA1 collision feasible", "cvss": 6.0 },
+        { "name": "Hardcoded IV/Key", "regex": "['\"]iv['\"]\\s*[:=]\\s*['\"]|['\"]salt['\"]\\s*[:=]\\s*['\"]", "severity": "HIGH", "context": "Hardcoded IV or salt — encryption key recovery", "cvss": 7.5 },
+        { "name": "Insecure Randomness", "regex": "randomBytes|pseudoRandom|rand\\(\\)", "severity": "MEDIUM", "context": "Pseudo-random — if used for crypto, insecure", "cvss": 6.5 },
+        { "name": "Weak JWT Algorithm", "regex": "alg:\\s*['\"]none['\"]|algorithms:\\s*\\[.*['\"](?:none|HS256)['\"]", "severity": "HIGH", "context": "Weak JWT algorithm — alg:none or HS256 bypass", "cvss": 8.0 }
+      ]
+    },
+    "graphql": {
+      "category": "GraphQL Vulnerabilities",
+      "severity_base": "HIGH",
+      "entries": [
+        { "name": "GraphQL Endpoint", "regex": "/graphql|/v1/graphql|/api/graphql", "severity": "HIGH", "context": "GraphQL endpoint — potential introspection, batching, IDOR", "cvss": 7.5 },
+        { "name": "Introspection Enabled", "regex": "__schema|introspection|__type\\{", "severity": "MEDIUM", "context": "GraphQL introspection — full schema may be exposed", "cvss": 6.5 },
+        { "name": "Alias-Based Batching", "regex": "__alias|__typename|query\\s*\\{[^}]*__typename", "severity": "MEDIUM", "context": "GraphQL aliases — potential batching attack bypass", "cvss": 6.0 },
+        { "name": "Deeply Nested Query", "regex": "\\{[^}]*\\{[^}]*\\{[^}]*\\{[^}]*\\}", "severity": "MEDIUM", "context": "Deeply nested GraphQL query — depth-based DoS", "cvss": 5.5 },
+        { "name": "GraphQL Mutation IDs", "regex": "mutation[^}]*\\([^)]*\\$[^)]*id[^)]*\\)", "severity": "MEDIUM", "context": "Mutation accepting ID parameter — IDOR via GraphQL", "cvss": 7.0 }
+      ]
+    }
+  }
+}
