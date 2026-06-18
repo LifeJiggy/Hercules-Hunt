@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
 function extractChunkManifest(code) {
   const results = [];
@@ -326,12 +327,17 @@ function analyzeBundleBudget(code) {
 }
 
 function analyze(inputFile) {
-  if (!fs.existsSync(inputFile)) {
-    console.error(`File not found: ${inputFile}`);
-    process.exit(1);
+  const loaded = harden.safeLoadFile(inputFile);
+  if (!loaded.ok) {
+    console.error(`Error reading ${inputFile}: ${loaded.error}`);
+    return;
+  }
+  if (loaded.content.length === 0) {
+    console.log(`\n  ${path.basename(inputFile)}: empty file, skipping`);
+    return;
   }
 
-  const code = fs.readFileSync(inputFile, 'utf-8');
+  const code = loaded.content;
   const filename = path.basename(inputFile);
 
   console.log(`\n${'='.repeat(70)}`);
@@ -508,9 +514,13 @@ if (args.length === 0) {
 }
 
 const inputPath = args[0];
+if (!fs.existsSync(inputPath)) { console.error(`Path not found: ${inputPath}`); process.exit(1); }
 if (fs.statSync(inputPath).isDirectory()) {
-  const files = fs.readdirSync(inputPath).filter(f => f.endsWith('.js'));
-  files.forEach(f => analyze(path.join(inputPath, f)));
+  const loaded = harden.safeLoadFiles(inputPath, ['.js', '.mjs', '.cjs']);
+  if (loaded.ok) {
+    loaded.files.filter(f => !f.note?.includes('skipped')).forEach(f => analyze(f.filePath));
+  }
+  if (loaded.errors.length > 0) { loaded.errors.forEach(e => console.error(`  Warn: ${e}`)); }
 } else {
   analyze(inputPath);
 }

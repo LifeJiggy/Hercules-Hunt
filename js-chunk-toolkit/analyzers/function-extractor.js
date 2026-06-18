@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
 const args = process.argv.slice(2);
 if (args.length === 0) {
@@ -16,20 +17,19 @@ function loadFiles(p) {
   if (!fs.existsSync(p)) { console.error(`Path not found: ${p}`); process.exit(1); }
   if (fs.statSync(p).isDirectory()) {
     const result = [];
-    function walk(dir) {
-      fs.readdirSync(dir).forEach(f => {
-        const fp = path.join(dir, f);
-        if (fs.statSync(fp).isDirectory()) walk(fp);
-        else if (/\.(js|mjs|cjs|jsx|ts|tsx)$/i.test(f)) {
-          try { result.push({ name: path.relative(inputPath, fp), filePath: fp, content: fs.readFileSync(fp, 'utf-8') }); }
-          catch (e) { console.error(`  [!] Skipping ${fp}: ${e.message}`); }
-        }
-      });
+    const loaded = harden.safeLoadFiles(p, ['.js', '.mjs', '.cjs', '.jsx', '.ts', '.tsx']);
+    if (loaded.ok) {
+      for (const f of loaded.files) {
+        if (f.note?.includes('skipped')) { console.error(`  [!] Skipping ${f.name}: ${f.note}`); continue; }
+        result.push({ name: f.name, filePath: f.filePath, content: f.content });
+      }
     }
-    walk(p);
+    for (const err of loaded.errors) console.error(`  [!] ${err}`);
     return result;
   }
-  return [{ name: path.basename(p), filePath: p, content: fs.readFileSync(p, 'utf-8') }];
+  const loaded = harden.safeLoadFile(p);
+  if (!loaded.ok) { console.error(`  [!] ${p}: ${loaded.error}`); process.exit(1); }
+  return [{ name: path.basename(p), filePath: p, content: loaded.content }];
 }
 
 function extractBracketBlock(content, startIdx) {
@@ -231,6 +231,122 @@ function getFunctions(content) {
   return functions;
 }
 
+// Feature: Extract IIFEs
+function findIIFEs(content) {
+  const iifeRe = /(?:^|[\s;({,=!&|?:+])(?:async\s+)?function\s*(?:\w+\s*)?\(([^)]*)\)\s*\{\s*(?:[^}]*)\}\s*\)\s*\(/g;
+  const results = [];
+  let m;
+  while ((m = iifeRe.exec(content)) !== null) {
+    const before = content.substring(Math.max(0, m.index - 40), m.index).trim();
+    const type = before.endsWith('!') ? 'IIFE (immediately)' : 'IIFE';
+    results.push({ type, params: m[1], line: getLineNumber(content, m.index) });
+    if (results.length > 200) break;
+  }
+  return results;
+}
+
+// Feature: Extract exported functions (ESM style)
+function findESMExports(content) {
+  const results = [];
+  const expRe = /export\s+(?:default\s+)?(?:async\s+)?function\s+(\w+)\s*\(/g;
+  let m;
+  while ((m = expRe.exec(content)) !== null) {
+    results.push({ name: m[1], line: getLineNumber(content, m.index), type: 'ESM export' });
+  }
+  const arrExpRe = /export\s+(?:default\s+)?(?:const|let|var)\s+(\w+)\s*=\s*(?:async\s+)?\(/g;
+  while ((m = arrExpRe.exec(content)) !== null) {
+    results.push({ name: m[1], line: getLineNumber(content, m.index), type: 'ESM arrow export' });
+  }
+  return results;
+}
+
+// Feature: Callback pattern analysis
+function findCallbackPatterns(content) {
+  const results = {};
+  const patterns = [
+    { name: 'Promise .then()', re: /\.then\s*\(\s*(?:function\s*\(|\([^)]*\)\s*=>)/g },
+    { name: 'Promise .catch()', re: /\.catch\s*\(\s*(?:function\s*\(|\([^)]*\)\s*=>)/g },
+    { name: 'Promise .finally()', re: /\.finally\s*\(\s*(?:function\s*\(|\([^)]*\)\s*=>)/g },
+    { name: 'setTimeout callback', re: /setTimeout\s*\(\s*(?:function\s*\(|\([^)]*\)\s*=>)/g },
+    { name: 'setInterval callback', re: /setInterval\s*\(\s*(?:function\s*\(|\([^)]*\)\s*=>)/g },
+    { name: 'addEventListener', re: /addEventListener\s*\(\s*['"][^'"]+['"]\s*,\s*(?:function|\([^)]*\)\s*=>)/g },
+    { name: 'Array callback (.map/.filter/.reduce)', re: /\.(?:map|filter|reduce|forEach|find|some|every)\s*\(\s*(?:function|\([^)]*\)\s*=>)/g },
+    { name: 'RxJS observable', re: /\.(?:subscribe|pipe|switchMap|mergeMap|concatMap)\s*\(\s*(?:function|\([^)]*\)\s*=>)/g },
+  ];
+  for (const p of patterns) {
+    const matches = content.match(p.re);
+    if (matches) results[p.name] = matches.length;
+  }
+  return results;
+}
+
+// Feature: Async/await analysis
+function analyzeAsyncPatterns(content) {
+  const totalAsync = (content.match(/\basync\b/g) || []).length;
+  const totalAwait = (content.match(/\bawait\b/g) || []).length;
+  const promiseAll = (content.match(/Promise\.all\s*\(/g) || []).length;
+  const promiseRace = (content.match(/Promise\.race\s*\(/g) || []).length;
+  const promiseAllSettled = (content.match(/Promise\.allSettled\s*\(/g) || []).length;
+  const promiseAny = (content.match(/Promise\.any\s*\(/g) || []).length;
+  return { totalAsync, totalAwait, promiseAll, promiseRace, promiseAllSettled, promiseAny };
+}
+
+// Feature: Function depth analysis
+function estimateDepth(content) {
+  let maxDepth = 0;
+  let depth = 0;
+  let inString = false;
+  let strChar = null;
+  const re = /[{}]/g;
+  let m;
+  while ((m = re.exec(content)) !== null) {
+    if (inString) { continue; }
+    const ch = m[0];
+    if (ch === '{') depth++;
+    else if (ch === '}') depth--;
+    if (depth > maxDepth) maxDepth = depth;
+    if (maxDepth > 50) break;
+  }
+  return maxDepth;
+}
+
+// Feature: Unique function name analysis
+function analyzeFunctionNames(functions) {
+  const nameCounts = {};
+  for (const f of functions) {
+    const base = f.name.includes(':') ? f.name.split(':')[1] : f.name;
+    if (base && !['anon', 'constructor'].includes(base) && base.length < 60) {
+      nameCounts[base] = (nameCounts[base] || 0) + 1;
+    }
+  }
+  const dupes = Object.entries(nameCounts).filter(([, c]) => c > 1).sort((a, b) => b[1] - a[1]);
+  return { totalUnique: Object.keys(nameCounts).length, duplicateNames: dupes.slice(0, 20) };
+}
+
+// Feature: Argument count distribution
+function calcArgDistribution(functions) {
+  const dist = {};
+  for (const f of functions) {
+    const count = f.params.length;
+    const key = count > 5 ? '6+' : String(count);
+    dist[key] = (dist[key] || 0) + 1;
+  }
+  return dist;
+}
+
+// Feature: Function size buckets
+function calcSizeBuckets(functions) {
+  const buckets = { '0-10': 0, '11-30': 0, '31-100': 0, '101-300': 0, '301+': 0 };
+  for (const f of functions) {
+    if (f.linesOfCode <= 10) buckets['0-10']++;
+    else if (f.linesOfCode <= 30) buckets['11-30']++;
+    else if (f.linesOfCode <= 100) buckets['31-100']++;
+    else if (f.linesOfCode <= 300) buckets['101-300']++;
+    else buckets['301+']++;
+  }
+  return buckets;
+}
+
 const files = loadFiles(inputPath);
 const allFunctions = {};
 const stats = { totalFiles: files.length, totalFunctions: 0, byType: {}, byComplexity: { simple: 0, medium: 0, high: 0, very_high: 0 }, totalLines: 0 };
@@ -280,7 +396,67 @@ Object.entries(stats.byComplexity).sort((a, b) => b[1] - a[1]).forEach(([range, 
   console.log(`    ${range.padEnd(15)}: ${count.toString().padStart(5)} (${pct}%)`);
 });
 
+const allFuncs = sorted.map(s => ({ name: s.name, type: s.type, params: s.params, complexity: s.complexity, linesOfCode: s.linesOfCode, file: s.file, line: s.line, signature: s.signature }));
+
 console.log('');
+console.log('  Argument count distribution:');
+const argDist = calcArgDistribution(sorted);
+Object.entries(argDist).sort((a, b) => a[0] === '0' ? -1 : parseInt(a[0]) - parseInt(b[0])).forEach(([count, n]) => {
+  console.log(`    ${count.padEnd(6)} args: ${n} functions`);
+});
+
+console.log('');
+console.log('  Function size (LOC) distribution:');
+const sizeBuckets = calcSizeBuckets(sorted);
+Object.entries(sizeBuckets).forEach(([range, n]) => {
+  const pct = n > 0 ? Math.round(n / sorted.length * 100) : 0;
+  console.log(`    ${range.padEnd(8)} lines: ${n.toString().padStart(5)} (${pct}%)`);
+});
+
+console.log('');
+console.log('  Unique function names:');
+const nameAnalysis = analyzeFunctionNames(sorted);
+console.log(`    Total unique: ${nameAnalysis.totalUnique}`);
+if (nameAnalysis.duplicateNames.length > 0) {
+  console.log(`    Most duplicated:`);
+  nameAnalysis.duplicateNames.slice(0, 10).forEach(([name, count]) => {
+    console.log(`      "${name}" appears ${count} times`);
+  });
+}
+
+const totalContent = files.map(f => f.content).join('\n');
+const iifes = findIIFEs(totalContent);
+const esmExports = findESMExports(totalContent);
+const asyncPat = analyzeAsyncPatterns(totalContent);
+const callbackPat = findCallbackPatterns(totalContent);
+const maxDepth = estimateDepth(totalContent);
+
+console.log('');
+console.log('  IIFE count:');
+console.log(`    ${iifes.length} IIFE(s) found`);
+console.log('');
+console.log('  ESM export count:');
+console.log(`    ${esmExports.length} ESM export(s)`);
+console.log('');
+console.log('  Async/await patterns:');
+console.log(`    async keywords:     ${asyncPat.totalAsync}`);
+console.log(`    await keywords:     ${asyncPat.totalAwait}`);
+console.log(`    Promise.all:        ${asyncPat.promiseAll}`);
+console.log(`    Promise.race:       ${asyncPat.promiseRace}`);
+console.log(`    Promise.allSettled: ${asyncPat.promiseAllSettled}`);
+console.log(`    Promise.any:        ${asyncPat.promiseAny}`);
+console.log('');
+console.log('  Callback patterns:');
+if (Object.keys(callbackPat).length > 0) {
+  Object.entries(callbackPat).sort((a, b) => b[1] - a[1]).forEach(([name, count]) => {
+    console.log(`    ${name.padEnd(35)}: ${count}`);
+  });
+} else { console.log(`    None detected`); }
+console.log('');
+console.log('  Max nesting depth:');
+console.log(`    ${maxDepth} levels`);
+console.log('');
+
 console.log('  Top 10 most complex functions:');
 sorted.slice(0, 10).forEach((f, i) => {
   const shortName = f.name.length > 42 ? f.name.substring(0, 39) + '...' : f.name;
@@ -289,13 +465,20 @@ sorted.slice(0, 10).forEach((f, i) => {
 
 if (outputPath) {
   const outData = {
-    metadata: { date: new Date().toISOString(), ...stats },
-    topComplex: sorted.slice(0, 50).map(f => ({
-      name: f.name, type: f.type, params: f.params,
-      file: f.file, line: f.line, endLine: f.endLine,
-      linesOfCode: f.linesOfCode, complexity: f.complexity,
-      signature: f.signature
-    })),
+    metadata: { date: new Date().toISOString(), ...stats,
+      iifesFound: iifes.length,
+      esmExports: esmExports.length,
+      maxNestingDepth: maxDepth,
+      asyncPatterns: asyncPat,
+      callbackPatterns: callbackPat,
+      argDistribution: argDist,
+      sizeBuckets,
+      uniqueNames: nameAnalysis.totalUnique,
+      duplicateNames: nameAnalysis.duplicateNames.slice(0, 20)
+    },
+    topComplex: allFuncs.slice(0, 50),
+    iifes: iifes.slice(0, 100),
+    esmExports: esmExports.slice(0, 100),
     byFile: {}
   };
   Object.entries(allFunctions).forEach(([file, funcs]) => {

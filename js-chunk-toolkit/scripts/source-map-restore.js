@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
 function downloadMap(jsUrl, outputDir) {
   const mapUrl = jsUrl + '.map';
@@ -283,7 +284,12 @@ function analyzeDependencies(data) {
 
 // -- Enhanced parseSourceMap with new features --
 function parseSourceMap(mapFile, outputDir) {
-  const data = JSON.parse(fs.readFileSync(mapFile, 'utf-8'));
+  const loaded = harden.safeLoadFile(mapFile);
+  if (!loaded.ok) { console.error(`Error reading ${mapFile}: ${loaded.error}`); return null; }
+  if (loaded.content.length === 0) { console.error(`Empty map file: ${mapFile}`); return null; }
+  let data;
+  try { data = JSON.parse(loaded.content); }
+  catch (e) { console.error(`Invalid JSON in map ${mapFile}: ${e.message}`); return null; }
   const results = {
     version: data.version,
     file: data.file,

@@ -1,6 +1,7 @@
 ﻿const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
+const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
 const PACKER_DETECTORS = [
   { name: 'Minified Only', test: (c) => /^!?function\(\w,\w,\w\)\{/.test(c.trim().substring(0, 200)) },
@@ -427,18 +428,238 @@ function autoDeobfuscate(code) {
   return results;
 }
 
-function scan(inputFile) {
-  if (!fs.existsSync(inputFile)) {
-    console.error(`File not found: ${inputFile}`);
-    process.exit(1);
+// -- Feature 20: Template Literal String Extraction --
+function extractTemplateLiterals(code) {
+  const results = [];
+  const re = /`([^`$]*(?:\$\{[^}]*\}[^`$]*)*)`/g;
+  let m;
+  while ((m = re.exec(code)) !== null) {
+    const val = m[1].substring(0, 200);
+    if (val.length >= 20) results.push(val);
+    if (results.length > 500) break;
+  }
+  return results;
+}
+
+// -- Feature 21: Dead Code Injector Detection --
+function detectDeadCodeInjectors(code) {
+  const results = [];
+  const patterns = [
+    { name: 'Redundant if/else', re: /if\s*\(\s*(?:true|1|!!\[\])\s*\)\s*\{[^}]*\}\s*else\s*\{[^}]*\}/g },
+    { name: 'NOP switch-case', re: /switch\s*\(\s*\w+\s*\)\s*\{[^}]*case\s+\d+:[^}]*break;[^}]*\}/g },
+    { name: 'Constant loop injection', re: /for\s*\(\s*var\s+\w+\s*=\s*\d+\s*;\s*\w+\s*<\s*\d+\s*;\s*\w+\+\+\s*\)\s*\{[^}]{0,200}\}/g },
+    { name: 'Noop function call', re: /!function\s*\(\)\s*\{[^}]{0,500}\}\s*\(\);/g },
+    { name: 'Dead ternary chain', re: /(?:true|1)\s*\?\s*'[^']+'\s*:\s*'[^']+'/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length });
+  }
+  return results;
+}
+
+// -- Feature 22: String Array Shift Detection (Rotated Indexes) --
+function detectStringArrayShifting(code) {
+  const results = [];
+  const re = /function\s+\w+\s*\([\w,]+\)\s*\{[^}]*?(?:shift|pop|splice|reverse|sort)[^}]*\}/g;
+  let m;
+  while ((m = re.exec(code)) !== null) {
+    results.push(m[0].substring(0, 100));
+    if (results.length > 10) break;
+  }
+  if (results.length > 0) return results;
+  const shiftRe = /var\s+\w+\s*=\s*(?:\w+\s*=\s*\w+\.\w+)\s*\(/g;
+  let m2;
+  while ((m2 = shiftRe.exec(code)) !== null) {
+    results.push(m2[0].substring(0, 80));
+    if (results.length > 5) break;
+  }
+  return results;
+}
+
+// -- Feature 23: VM / Sandbox Escape Detection --
+function detectVMSandbox(code) {
+  const results = [];
+  const patterns = [
+    { name: 'vm.runInThisContext', re: /vm\.runInThisContext\s*\(/g },
+    { name: 'vm.Script', re: /new\s+vm\.Script\s*\(/g },
+    { name: 'vm.createContext', re: /vm\.createContext\s*\(/g },
+    { name: 'eval with code injection', re: /eval\s*\([^)]*(?:code|src|script|payload|cmd)[^)]*\)/gi },
+    { name: 'Function constructor sandbox', re: /new\s+Function\s*\([^)]*(?:return|this|window|global)[^)]*\)/g },
+    { name: 'WebWorker sandbox', re: /new\s+Worker\s*\(/g },
+    { name: 'Sandbox escape via prototype', re: /constructor\.constructor\s*\(/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length, sample: matches[0].substring(0, 80) });
+  }
+  return results;
+}
+
+// -- Feature 24: Self-Modifying Code Detection --
+function detectSelfModifyingCode(code) {
+  const results = [];
+  const patterns = [
+    { name: 'document.write injection', re: /document\.write\s*\(/g },
+    { name: 'innerHTML assignment', re: /\.innerHTML\s*=/g },
+    { name: 'outerHTML assignment', re: /\.outerHTML\s*=/g },
+    { name: 'insertAdjacentHTML', re: /\.insertAdjacentHTML\s*\(/g },
+    { name: 'script tag creation', re: /createElement\s*\(\s*['"]script['"]\s*\)/g },
+    { name: 'dynamic import', re: /import\s*\([^)]+\)/g },
+    { name: 'Function overwrite', re: /\.prototype\.[a-zA-Z]+\s*=\s*function/g },
+    { name: 'self-eval via setTimeout', re: /setTimeout\s*\([^)]*['"]eval/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length });
+  }
+  return results;
+}
+
+// -- Feature 25: Proxy / Reflection API Abuse Detection --
+function detectProxyReflection(code) {
+  const results = [];
+  const patterns = [
+    { name: 'Proxy handler', re: /new\s+Proxy\s*\(/g },
+    { name: 'Reflect.set', re: /Reflect\.set\s*\(/g },
+    { name: 'Reflect.get', re: /Reflect\.get\s*\(/g },
+    { name: 'Reflect.construct', re: /Reflect\.construct\s*\(/g },
+    { name: 'Object.defineProperty trap', re: /Object\.defineProperty\s*\([^)]*set\s*:/g },
+    { name: '__noSuchMethod__', re: /__noSuchMethod__/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length });
+  }
+  return results;
+}
+
+// -- Feature 26: XOR / RC4 Encoded String Detection --
+function extractXorEncodedStrings(code) {
+  const results = [];
+  const xorRe = /(?:for|while)\s*\(.{0,40}(?:\^|XOR|xor).{0,40}\)/g;
+  let m;
+  while ((m = xorRe.exec(code)) !== null) {
+    results.push(m[0].substring(0, 150));
+    if (results.length > 10) break;
+  }
+  const arrayXorRe = /\[[\d,]{20,}\]\s*\[\s*\w+\s*%\s*\d+\s*\]\s*\^\s*\d+/g;
+  while ((m = arrayXorRe.exec(code)) !== null) {
+    results.push(m[0].substring(0, 80));
+    if (results.length > 10) break;
+  }
+  return results;
+}
+
+// -- Feature 27: Domain Fronting / CDN Proxy Detection --
+function detectDomainFronting(code) {
+  const results = [];
+  const patterns = [
+    { name: 'CDN domain variable', re: /(?:cdn|cloudfront|cloudflare|fastly|akamai)\s*[:=]\s*['"][a-z0-9.-]+['"]/gi },
+    { name: 'SNI override', re: /servername|sni|host\s*override/i },
+    { name: 'X-Forwarded-Host injection', re: /x-forwarded-host/i },
+    { name: 'Dynamic host resolution', re: /(?:resolve|lookup|dns)\s*\([^)]*custom/i },
+    { name: 'IP rotator patterns', re: /(?:fallback|backup|rotate)\s*(?:url|host|domain|proxy)/gi },
+    { name: 'Custom header injection', re: /headers\s*:\s*\{[^}]*host:?\s*\w+/gi },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length, samples: matches.slice(0, 5) });
+  }
+  return results;
+}
+
+// -- Feature 28: RC4 / Custom Encryption Function Detection --
+function detectCustomCrypto(code) {
+  const results = [];
+  const patterns = [
+    { name: 'RC4 sbox init', re: /for\s*\([^)]*i\s*=\s*0\s*;[^;]*i\s*<\s*256\s*;[^)]*\)\s*\{/g },
+    { name: 'Base64 alphabet custom', re: /ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789/ig },
+    { name: 'XOR decryption loop', re: /\.charCodeAt\s*\([^)]*\)\s*\^/g },
+    { name: 'Custom hash function', re: /(?:function\s+\w+\s*\([^)]*\)\s*\{[^}]{0,500}%\s*\d+)/g },
+    { name: 'Char code loop', re: /for\s*\([^;]*;\s*[^;]*;\s*i\+\+\)\s*\{[^}]*charCodeAt/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length });
+  }
+  return results;
+}
+
+// -- Feature 29: Noop / Redundant Pattern Extraction --
+function extractNoopPatterns(code) {
+  const results = [];
+  const patterns = [
+    { name: 'Noop function', re: /function\s*\w*\s*\(\)\s*\{\s*\}/g },
+    { name: 'Noop IIFE', re: /!?\s*function\s*\(\)\s*\{\s*\}\s*\(\)/g },
+    { name: 'Boolean cast', re: /!!\s*\[\s*\]/g },
+    { name: 'Useless length check', re: /\w+\.length\s*>=\s*0/g },
+    { name: 'Empty catch', re: /catch\s*\([^)]*\)\s*\{\s*\}/g },
+    { name: 'Noop ternary', re: /\?\s*'[^']{0,5}'\s*:\s*'[^']{0,5}'/g },
+    { name: 'Self-assignment', re: /\w+\s*=\s*\w+/g },
+  ];
+  for (const p of patterns) {
+    const matches = code.match(p.re);
+    if (matches) results.push({ type: p.name, count: matches.length });
+  }
+  return results;
+}
+
+// -- Feature 30: JavaScript Obfuscation Health Score --
+function scoreHealth(code) {
+  let score = 100;
+  const deductions = [];
+
+  if (code.length > 500000) { score -= 10; deductions.push('Large file size (-10)'); }
+  if (code.length > 1000000) { score -= 10; deductions.push('Very large file size (-10)'); }
+
+  const varScore = analyzeVariableNames(code);
+  for (const v of varScore) {
+    if (v.type === 'Obfuscated (short/dot patterns)' && v.count > 50) {
+      score -= 15; deductions.push(`Obfuscated vars (${v.count}) (-15)`);
+    }
   }
 
-  const code = fs.readFileSync(inputFile, 'utf-8');
+  const dbg = detectAntiDebug(code);
+  if (dbg.length > 0) { score -= 10; deductions.push(`Anti-debug (${dbg.length} patterns) (-10)`); }
+
+  const sd = detectSelfDefending(code);
+  if (sd.length > 0) { score -= 10; deductions.push(`Self-defending (${sd.length} patterns) (-10)`); }
+
+  const avgLineLen = code.length > 0 ? Math.round(code.length / Math.max(1, code.split('\n').length)) : 0;
+  if (avgLineLen > 500) { score -= 10; deductions.push(`Long avg line (${avgLineLen}) (-10)`); }
+
+  const cff = detectControlFlowFlattening(code);
+  if (cff.length > 0) { score -= 10; deductions.push(`Control flow flattening (${cff.length}) (-10)`); }
+
+  if (harden.estimateEntropy(code.substring(0, 5000)) > 5.5) { score -= 5; deductions.push('High entropy (-5)'); }
+
+  const packed = detectObfuscation(code);
+  const packerCount = packed.filter(p => p !== 'Minified Only').length;
+  if (packerCount > 1) { score -= Math.min(20, packerCount * 5); deductions.push(`Multiple packers (${packerCount}) (-${Math.min(20, packerCount * 5)})`); }
+
+  return { score: Math.max(0, score), deductions, level: score >= 80 ? 'CLEAN' : score >= 60 ? 'SUSPICIOUS' : score >= 40 ? 'OBFUSCATED' : 'HEAVILY_OBFUSCATED' };
+}
+
+function scan(inputFile) {
+  const loaded = harden.safeLoadFile(inputFile);
+  if (!loaded.ok) {
+    console.error(`Error reading ${inputFile}: ${loaded.error}`);
+    return;
+  }
+
+  const code = loaded.content;
+  if (code.length === 0) {
+    console.log(`\n  ${path.basename(inputFile)}: empty file, skipping`);
+    return;
+  }
+
   const filename = path.basename(inputFile);
-  const sizeKB = (code.length / 1024).toFixed(1);
+  const sizeKB = (loaded.size / 1024).toFixed(1);
+  const encoding = harden.detectEncoding(code);
 
   console.log(`\n${'='.repeat(70)}`);
-  console.log(`  File: ${filename} (${sizeKB} KB)`);
+  console.log(`  File: ${filename} (${sizeKB} KB, encoding: ${encoding})`);
   console.log(`${'='.repeat(70)}`);
 
   console.log(`\n[1] Obfuscation Detection`);
@@ -626,6 +847,74 @@ function scan(inputFile) {
     }
   } else { console.log(`  No automatic deobfuscation needed (no encoded strings)`); }
 
+  console.log(`\n[20] Template Literal Strings`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const tpl = extractTemplateLiterals(code);
+  const interestingTpl = tpl.filter(s => /http|api|\/|secret|token|key|admin|firebase|graphql|auth/.test(s));
+  interestingTpl.slice(0, 20).forEach(s => console.log(`  ${s.substring(0, 150)}`));
+  if (tpl.length === 0) console.log(`  None found`);
+  else if (interestingTpl.length > 20) console.log(`  ... and ${interestingTpl.length - 20} more interesting`);
+
+  console.log(`\n[21] Dead Code / NOP Injector Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const dci = detectDeadCodeInjectors(code);
+  if (dci.length > 0) { dci.forEach(d => console.log(`  ${d.type}: ${d.count}`)); }
+  else { console.log(`  No dead code injectors detected`); }
+
+  console.log(`\n[22] String Array Shifting (Rotated Indexes)`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const sas = detectStringArrayShifting(code);
+  if (sas.length > 0) { sas.slice(0, 5).forEach(s => console.log(`  ${s.substring(0, 100)}`)); }
+  else { console.log(`  No string array shift patterns detected`); }
+
+  console.log(`\n[23] VM / Sandbox Escape Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const vmDet = detectVMSandbox(code);
+  if (vmDet.length > 0) { vmDet.forEach(v => console.log(`  [!] ${v.type}: ${v.count} (e.g. ${v.sample.substring(0, 80)})`)); }
+  else { console.log(`  No VM/sandbox escape patterns detected`); }
+
+  console.log(`\n[24] Self-Modifying Code Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const smc = detectSelfModifyingCode(code);
+  if (smc.length > 0) { smc.forEach(s => console.log(`  ${s.type}: ${s.count}`)); }
+  else { console.log(`  No self-modifying code detected`); }
+
+  console.log(`\n[25] Proxy / Reflection API Abuse`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const prx = detectProxyReflection(code);
+  if (prx.length > 0) { prx.forEach(p => console.log(`  ${p.type}: ${p.count}`)); }
+  else { console.log(`  No proxy/reflection patterns detected`); }
+
+  console.log(`\n[26] XOR / Encoded String Operations`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const xorDet = extractXorEncodedStrings(code);
+  if (xorDet.length > 0) { xorDet.slice(0, 10).forEach(x => console.log(`  ${x.substring(0, 120)}`)); }
+  else { console.log(`  No XOR encryption patterns detected`); }
+
+  console.log(`\n[27] Domain Fronting / CDN Proxy Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const df = detectDomainFronting(code);
+  if (df.length > 0) { df.forEach(d => console.log(`  ${d.type}: ${d.count} (e.g. ${(d.samples || [''])[0]})`)); }
+  else { console.log(`  No domain fronting patterns detected`); }
+
+  console.log(`\n[28] Custom Crypto / RC4 Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const cc = detectCustomCrypto(code);
+  if (cc.length > 0) { cc.forEach(c => console.log(`  ${c.type}: ${c.count}`)); }
+  else { console.log(`  No custom crypto patterns detected`); }
+
+  console.log(`\n[29] Noop / Redundant Pattern Extraction`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const noop = extractNoopPatterns(code);
+  if (noop.length > 0) { noop.forEach(n => console.log(`  ${n.type}: ${n.count}`)); }
+  else { console.log(`  No redundant patterns detected`); }
+
+  console.log(`\n[30] Code Health Score`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const h = scoreHealth(code);
+  console.log(`  Score: ${h.score}/100 [${h.level}]`);
+  if (h.deductions.length > 0) { h.deductions.forEach(d => console.log(`    - ${d}`)); }
+
   console.log(`\n${'='.repeat(70)}`);
   console.log(`  Scan complete: ${filename}`);
   console.log(`${'='.repeat(70)}\n`);
@@ -639,9 +928,14 @@ if (args.length === 0) {
 }
 
 const inputPath = args[0];
-if (fs.statSync(inputPath).isDirectory()) {
-  const files = fs.readdirSync(inputPath).filter(f => f.endsWith('.js'));
-  files.forEach(f => scan(path.join(inputPath, f)));
+if (!fs.existsSync(inputPath)) { console.error(`Path not found: ${inputPath}`); process.exit(1); }
+const stat = fs.statSync(inputPath);
+if (stat.isDirectory()) {
+  const loaded = harden.safeLoadFiles(inputPath, ['.js', '.mjs', '.cjs', '.jsx']);
+  if (!loaded.ok) { console.error(`Error reading directory: ${loaded.error}`); process.exit(1); }
+  const toScan = loaded.files.filter(f => !f.note?.includes('skipped'));
+  toScan.forEach(f => scan(f.filePath));
+  if (loaded.errors.length > 0) { loaded.errors.forEach(e => console.error(`  Warn: ${e}`)); }
 } else {
   scan(inputPath);
 }
