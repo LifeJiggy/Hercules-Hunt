@@ -915,6 +915,23 @@ function scan(inputFile) {
   console.log(`  Score: ${h.score}/100 [${h.level}]`);
   if (h.deductions.length > 0) { h.deductions.forEach(d => console.log(`    - ${d}`)); }
 
+  console.log(`\n[31] Entropy-Based Secret Detection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const entropyScorer = require(path.join(__dirname, '..', 'utils', 'entropy-scorer.js'));
+  const entropyFindings = entropyScorer.scanSecretsByEntropy(code);
+  if (entropyFindings.total > 0) {
+    console.log(`  High entropy strings: ${entropyFindings.byLevel.HIGH}`);
+    console.log(`  Suspicious entropy:   ${entropyFindings.byLevel.SUSPICIOUS}`);
+    console.log(`  Medium entropy:       ${entropyFindings.byLevel.MEDIUM}`);
+    if (entropyFindings.topHigh.length > 0) {
+      console.log(`  Top high-entropy candidates:`);
+      entropyFindings.topHigh.slice(0, 10).forEach(s => {
+        const label = s.value.length > 60 ? s.value.substring(0, 57) + '...' : s.value;
+        console.log(`    [${s.entropy.toFixed(1)}] Ln ${s.line}: ${label}`);
+      });
+    }
+  } else { console.log(`  No high-entropy strings found`); }
+
   console.log(`\n${'='.repeat(70)}`);
   console.log(`  Scan complete: ${filename}`);
   console.log(`${'='.repeat(70)}\n`);
