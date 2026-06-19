@@ -2,7 +2,7 @@
 
 **An operating system for AI-augmented bug bounty hunting.**
 
-Not a tool. Not a scanner. A **hunter's operating system** — 370+ files across 23 modules, with Python, JavaScript, PowerShell, Bash, MCP, and 2,500+ pages of markdown methodology. Deploys to 18 agentic coding CLIs (OpenCode, Claude Code, Codex CLI, Cursor, Windsurf, Aider, and more) via a single installer.
+Not a tool. Not a scanner. A **hunter's operating system** — 460+ files across 25 modules, with Python, JavaScript, PowerShell, Bash, MCP, and 2,500+ pages of markdown methodology. Deploys to 18 agentic coding CLIs (OpenCode, Claude Code, Codex CLI, Cursor, Windsurf, Aider, and more) via a single installer.
 
 ---
 
@@ -66,9 +66,9 @@ Rules are the AI's guardrails — always-active constraints loaded at session st
 
 `rules/hunting.md` · `rules/reporting.md` · `rules/scope.md` · `rules/recon.md` · `rules/chain-rules.md` · `rules/evidence.md` · `rules/mindset.md` · `rules/js-analysis.md` · `rules/js-deobfuscation.md` · `rules/auth-testing.md` · `rules/api-testing.md` · `rules/mobile-testing.md` · `rules/windows-workflow.md`
 
-### 89 Executable Tools (4 Languages × 10 Standard + Legacy)
+### 100+ Executable Tools (4 Languages × 10 Standard + JS Chunk Toolkit + Legacy)
 
-10 standardized tools across all 4 runtimes plus legacy toolkit scripts:
+10 standardized tools across all 4 runtimes, plus the JS Chunk Analysis Toolkit (10 analyzers/scripts, 3 PS1 pipeline tools, 5 config/json files), plus legacy scripts:
 
 **Standard Tools (10 × 4 = 40 files):**
 
@@ -87,7 +87,31 @@ Rules are the AI's guardrails — always-active constraints loaded at session st
 
 **Legacy Tools:** `curl-hunter`, `recon-toolkit`, `fuzzer-toolkit`, `js-analyzer`, `evidence-toolkit`, `powershell-lib`, `jiggy` (PS + Bash), `python-hunter.py`
 
+**JS Chunk Toolkit (20+ executable modules):** `scripts/deobfuscate.js` · `scripts/webpack-chunk-extractor.js` · `scripts/source-map-restore.js` · `analyzers/vulnerability-analyzer.js` · `analyzers/function-extractor.js` · `analyzers/deep-analyzer.js` · `analyzers/jwt-decoder.js` · `analyzers/cloud-enum.js` · `analyzers/graphql-finder.js` · `scanners/secret-scanner.ps1` · `utils/false-positive-filter.js` · `utils/deduplicator.js` · `utils/severity-matcher.js` · `utils/post-processor.js` · `utils/harden-base.js` · `scripts/run-all.ps1`
+
 **Index/loaders:** `tools/bash/index.sh`, `tools/powershell/index.ps1`, `tools/javascript/index.js`, `tools/python/__init__.py`
+
+### JS Chunk Analysis Toolkit (40+ files)
+
+Production-grade JS bundle analysis pipeline for bug bounty — deobfuscates, extracts secrets, detects vulnerabilities, and produces initial-analysis.md reports. Runs on Node.js (zero npm deps) + PowerShell 5.1+.
+
+| Component | File | Capabilities |
+|-----------|------|-------------|
+| **Deobfuscation Engine** | `scripts/deobfuscate.js` | 30 features — 13 packer detectors, string array/base64/hex/unicode extraction, anti-debug, self-defending, eval strings, nested obfuscation, variable analysis, CFF detection, hidden payloads, unicode attacks, health score |
+| **Webpack Chunk Extractor** | `scripts/webpack-chunk-extractor.js` | 18 features — module map, entry points, dep graph, circular deps, vendor fingerprint, code splitting, async boundaries, plugin fingerprint, scope hoisting, budget analysis, runtime chunk names |
+| **Source Map Restorer** | `scripts/source-map-restore.js` | 11+ features — version validation, minifier fingerprint, VLQ analysis, V3 extensions, variable recovery, source estimation, dependency analysis, auto-download |
+| **Vulnerability Analyzer** | `analyzers/vulnerability-analyzer.js` | 22+ vulnerability classes, 150+ regex patterns, CVSS 3.1 scoring, confidence/risk scoring, data classification, CVE hints, attack vectors, remediation priority, initial-analysis.md reports |
+| **Function Extractor** | `analyzers/function-extractor.js` | 12 function types from minified JS (webpack modules, arrow funcs, class methods, generators, exported funcs), cyclomatic complexity, IIFE/ESM export detection, callback/async analysis, arg distribution, nesting depth |
+| **Deep Analyzer** | `analyzers/deep-analyzer.js` | 20 features — anti-debug bypass, CFF recovery, cloud enumeration, JWT decode, GraphQL introspection, prototype pollution |
+| **Secret Scanner** | `scanners/secret-scanner.ps1` | 45+ secret patterns, context extraction, FP filtering, severity scoring, pattern hit rates |
+| **False Positive Filter** | `utils/false-positive-filter.js` | 48 FP rules across 8 categories — minified libs (40+ libs), HTML impostors, webpack runtime, contextual regex, file patterns, correlation rules, severity downgrade |
+| **Deduplicator** | `utils/deduplicator.js` | Two-pass exact + near-match dedup, MD5 fingerprinting, highest-severity merging, reduction stats |
+| **Severity Matcher** | `utils/severity-matcher.js` | CVSS 3.1 full vector (AV/AC/PR/UI/S/C/I/A), context-aware modifiers from severity-matrix.json |
+| **Post-Processor** | `utils/post-processor.js` | Chains FP filter -> dedup -> severity matcher into single pipeline, intermediate steps preserved |
+| **Hardened Utilities** | `utils/harden-base.js` | ReDoS-safe regex, binary detection, 50MB file limits, circular ref JSON, progress tracking, encoding detection, batch processing |
+| **Pipeline Orchestrator** | `scripts/run-all.ps1` | 8-step pipeline: download -> beautify -> secret scan -> deobfuscate -> chunk extract -> vulnerability scan -> function extract -> post-process |
+
+**Config:** `config/patterns.json` (22+ vuln classes, 150+ regex), `config/patterns_cli.json` (CLI keywords), `config/false-positive-rules.json` (48 rules), `config/severity-matrix.json` (CVSS calculator)
 
 ### 20 MCP Servers
 
@@ -292,6 +316,14 @@ Hercules-Hunt/
 ├── config/                  (8)       # JSON runtime configs
 ├── hooks/                   (7)       # Session lifecycle hooks
 ├── doc/                    (14)      # Methodology documents
+├── js-chunk-toolkit/        (45 files) # JS bundle analysis pipeline
+│   ├── scripts/             (4)       # deobfuscate (30 feat), webpack, source-map, run-all.ps1
+│   ├── analyzers/           (6)       # vulnerability, function-extractor, deep, JWT, cloud, GraphQL
+│   ├── scanners/            (1)       # secret-scanner.ps1
+│   ├── config/              (4)       # patterns, FP rules, severity matrix
+│   ├── utils/               (5)       # FP filter, dedup, severity, post-process, harden-base
+│   └── samples/             (85)      # real Whatnot production bundles
+│
 ├── scripts/                 (6)       # Installers + adapters
 │   ├── install.ps1                     # Windows installer
 │   ├── install.sh                      # Linux/macOS installer
