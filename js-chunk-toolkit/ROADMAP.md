@@ -10,7 +10,7 @@
 |---|---------|-------------|
 | 1 | **AST-based Deobfuscation** | Parse JS with acorn/walk, apply AST transforms (constant folding, bracket removal, dead branch elimination) instead of regex. Handles nested obfuscation patterns regex can't touch. |
 | 2 | **String Array Decoder** | Extract string array + decoder function, emulate via vm.Script to decode all references at once. Covers shift/rotate/reverse/sort-based indices. |
-| 3 | **Dead Code Elimination** | Identify and strip unreachable branches (constant conditions, opaque predicates like `!![]`, `![]`), noop functions, empty catch blocks. Reduces noise. |
+| 3 | **Dead Code Elimination** | ✅ `analyzers/dead-code-eliminator.js` — strips empty catches, noop functions, boolean casts, constant if branches, useless ternaries, self-assignment. |
 | 4 | **Control Flow Flattening Recovery** | Convert switch-dispatch CFF back to if/else chains using basic block reconnection. Unlocks readable decompilation of jscrambler/obfuscator.io protected code. |
 | 5 | **Opaque Predicate Removal** | Detect and simplify math-based always-true/always-false predicates (`a * 2 === a + a`, `typeof x === 'undefined'` in non-browser contexts). |
 | 6 | **Self-Modifying Code Emulation** | Run small code snippets in a sandboxed vm.Script context to resolve dynamically constructed strings, eval calls, and Function() bodies. |
@@ -23,11 +23,11 @@
 | # | Feature | Description |
 |---|---------|-------------|
 | 8 | **Taint Tracking (Data Flow)** | Trace user-controlled input from entry point (URL param, form field, cookie) to sink (innerHTML, fetch, eval). Report only reachable vulnerabilities with path. |
-| 9 | **Sink-Source Mapping Database** | Build a configurable map of 100+ sources (window.location, document.referrer, postMessage) to 50+ sinks (dangerouslySetInnerHTML, exec, SQL query). Score by reachability. |
-| 10 | **DOM Clobbering Detection** | Find patterns where attacker-controlled HTML IDs shadow global JS variables (e.g., `<form name="x"><input name="y">` clobbering `window.x.y`). |
-| 11 | **Prototype Pollution Gadget Finder** | Beyond `__proto__` detection — find libraries and code paths where polluted properties lead to RCE (e.g., lodash _.merge + template compilation). |
-| 12 | **CSP Bypass Analysis** | Scan for known CSP bypass gadgets (JSONP endpoints, CDN script inclusion, Angular expressions, nonce/ hash reuse). |
-| 13 | **DOM-based XSS Sink Prioritization** | Rank DOM XSS sinks by exploitability: `eval()` > `setTimeout(string)` > `innerHTML` > `document.write` > `dangerouslySetInnerHTML`. Weight by proximity to user input. |
+| 9 | **Sink-Source Mapping Database** | ✅ `config/sink-source-map.json` + `utils/sink-source-analyzer.js` — 25 sources, 32 sinks, 9 pre-built attack chains. Scores by source proximity. |
+| 10 | **DOM Clobbering Detection** | ✅ `analyzers/dom-clobbering-detector.js` — form child clobbering, ID global shadowing, bare global access patterns. Found 3 clobberable globals on real bundle. |
+| 11 | **Prototype Pollution Gadget Finder** | ✅ `analyzers/prototype-pollution-finder.js` — 12 PP patterns, 6 post-PP sink chains. Found real __proto__ assignment + child_process chain on webpack runtime. |
+| 12 | **CSP Bypass Analysis** | ✅ `analyzers/csp-bypass-analyzer.js` — 15 bypass gadgets, CSP extraction from meta/headers. Found `unsafe-eval` + inline handler bypass on production bundle. |
+| 13 | **DOM-based XSS Sink Prioritization** | ✅ `analyzers/xss-prioritizer.js` — 22 sink patterns, 16 proximity sources, exploitability scoring, CVSS weighting. Found CRITICAL chain on real bundle. |
 | 14 | **Indirect Injection Detection** | Find second-order injections where payload is stored and later rendered (localStorage -> innerHTML, cookie -> fetch URL, URL hash -> eval). |
 
 ---
@@ -48,9 +48,9 @@
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 20 | **Entropy-Based Secret Scoring** | Beyond regex matching — calculate Shannon entropy of matched strings. High-entropy strings (>4.5 bits/char) flagged even if no regex hit. Catches custom API keys, random tokens. |
-| 21 | **Context-Aware Secret Validation** | Check surrounding code before reporting: `if (isProduction) { key = "..." }` vs `const key = "test_..."`. Downrank test/sample/mock context, uprank production-branch code. |
-| 22 | **Secret Expiry/Pattern Evolution** | Compare secrets across multiple scans of the same target. Detect rotated keys, new key formats, deprecated patterns. Track version history per secret. |
+| 20 | **Entropy-Based Secret Scoring** | ✅ `utils/entropy-scorer.js` — Shannon entropy, 3 thresholds (4.5/3.5/2.5), 8 pattern types, integrated into deobfuscate.js feature #31. Catches JWT, GitHub tokens, OpenAI keys. |
+| 21 | **Context-Aware Secret Validation** | ✅ `utils/secret-validator.js` — 12 downrank, 8 uprank patterns, context radius scoring, entropy blending. Integrated into vulnerability-analyzer findings. |
+| 22 | **Secret Expiry/Pattern Evolution** | ✅ `utils/secret-evolution.js` — JSONL-based scan history, fingerprinting, rotation detection, type classification. Tracks new/rotated/stable secrets across scans. |
 | 23 | **False Positive Learning** | User marks a finding as FP once → auto-learn the context pattern (file name, surrounding code, variable name) and suppress similar findings in future scans. |
 | 24 | **Credential Correlation Engine** | Cross-reference leaked secrets with known breach data (via haveibeenpwned API, dehashed). If a found API key pattern matches an exposed credential, elevate severity. |
 
@@ -72,7 +72,7 @@
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 30 | **Interactive HTML Report** | Generate a self-contained HTML report with collapsible sections, severity heatmap, search/filter, and embedded code snippets with line highlighting. No server needed. |
+| 30 | **Interactive HTML Report** | ✅ `analyzers/html-report-generator.js` — dark-theme HTML, severity cards, real-time search/filter, collapsible detail rows, code highlighting. Self-contained 7KB output. |
 | 31 | **SARIF Output** | Export findings in SARIF (Static Analysis Results Interchange Format) — enables importing into GitHub Code Scanning, VS Code Problems panel, Azure DevOps. |
 | 32 | **HackerOne/Bugcrowd Draft Submission** | Auto-generate a draft submission from top findings: title, severity, CVSS vector, vulnerable code, impact, PoC. Pre-filled for manual review before submit. |
 | 33 | **Webhook Alerting** | POST findings JSON to a configurable webhook (Slack, Discord, Teams) on scan completion. Configurable severity threshold (e.g., only CRITICAL+HIGH). |
