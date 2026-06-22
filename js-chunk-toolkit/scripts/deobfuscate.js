@@ -3,6 +3,13 @@ const path = require('path');
 const vm = require('vm');
 const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
+function loadModule(modulePath) {
+  try {
+    if (fs.existsSync(modulePath)) return require(modulePath);
+    return null;
+  } catch (e) { return null; }
+}
+
 const PACKER_DETECTORS = [
   { name: 'Minified Only', test: (c) => /^!?function\(\w,\w,\w\)\{/.test(c.trim().substring(0, 200)) },
   { name: 'Webpack', test: (c) => /__webpack_require__/.test(c) },
@@ -931,6 +938,66 @@ function scan(inputFile) {
       });
     }
   } else { console.log(`  No high-entropy strings found`); }
+
+  console.log(`\n[32] AST-Based Deobfuscation`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const astDeob = loadModule(path.join(__dirname, '..', 'analyzers', 'ast-deobfuscator.js'));
+  if (astDeob && astDeob.deobfuscateAST) {
+    const astRes = astDeob.deobfuscateAST(code, { iterations: 5 });
+    if (astRes.total > 0) {
+      console.log(`  Transforms applied:  ${astRes.total}`);
+      console.log(`  Size reduction:      ${astRes.inputSize} -> ${astRes.outputSize} chars (${((1 - astRes.outputSize / astRes.inputSize) * 100).toFixed(2)}%)`);
+      const byType = {};
+      for (const t of astRes.transforms) byType[t.type] = (byType[t.type] || 0) + 1;
+      Object.entries(byType).slice(0, 10).forEach(([k, v]) => console.log(`    ${k}: ${v}`));
+    } else { console.log(`  No AST transforms applied (code is already clean)`); }
+  } else { console.log(`  AST deobfuscator module not available`); }
+
+  console.log(`\n[33] String Array Decoder`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const saDec = loadModule(path.join(__dirname, '..', 'analyzers', 'string-array-decoder.js'));
+  if (saDec && saDec.decodeStringArrays) {
+    const saRes = saDec.decodeStringArrays(code);
+    console.log(`  String arrays found: ${saRes.arrays || 0}`);
+    console.log(`  Decoder functions:   ${saRes.decoders || 0}`);
+    console.log(`  References decoded:  ${saRes.decoded || 0}`);
+  } else { console.log(`  String array decoder module not available`); }
+
+  console.log(`\n[34] Control Flow Flattening Recovery`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const cffMod = loadModule(path.join(__dirname, '..', 'analyzers', 'cff-recovery.js'));
+  if (cffMod && cffMod.analyzeCFF) {
+    const cffRes = cffMod.analyzeCFF(code);
+    console.log(`  CFF dispatchers:     ${cffRes.dispatchers || 0}`);
+    console.log(`  Switch statements:   ${cffRes.switchCount || 0}`);
+    console.log(`  Complexity score:    ${cffRes.score || 0}${cffRes.level ? ' [' + cffRes.level + ']' : ''}`);
+  } else { console.log(`  CFF recovery module not available`); }
+
+  console.log(`\n[35] Taint Analysis & Indirect Injection`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const taintMod = loadModule(path.join(__dirname, '..', 'analyzers', 'taint-analyzer.js'));
+  if (taintMod && taintMod.SOURCES) {
+    console.log(`  Taint sources defined:       ${taintMod.SOURCES.length}`);
+    console.log(`  Taint sinks defined:         ${taintMod.SINKS.length}`);
+    console.log(`  Indirect injection patterns: ${taintMod.INDIRECT_INJECTION_PATTERNS.length}`);
+    let srcCount = 0; let snkCount = 0;
+    for (const src of taintMod.SOURCES) { src.re.lastIndex = 0; if (src.re.test(code)) srcCount++; }
+    for (const snk of taintMod.SINKS) { snk.re.lastIndex = 0; if (snk.re.test(code)) snkCount++; }
+    console.log(`  Sources present in file:    ${srcCount}`);
+    console.log(`  Sinks present in file:       ${snkCount}`);
+  } else { console.log(`  Taint analyzer module not available`); }
+
+  console.log(`\n[36] Opaque Predicate Removal`);
+  console.log(`  ${'-'.repeat(50)}`);
+  const opqMod = loadModule(path.join(__dirname, '..', 'analyzers', 'opaque-predicate-remover.js'));
+  if (opqMod && opqMod.removeOpaquePredicates) {
+    const opqRes = opqMod.removeOpaquePredicates(code);
+    console.log(`  Opaque predicates removed: ${opqRes.total}`);
+    if (opqRes.total > 0) {
+      const reduction = ((1 - opqRes.code.length / code.length) * 100).toFixed(2);
+      console.log(`  Size reduction:            ${opqRes.code.length} chars (${reduction}%)`);
+    }
+  } else { console.log(`  Opaque predicate remover module not available`); }
 
   console.log(`\n${'='.repeat(70)}`);
   console.log(`  Scan complete: ${filename}`);

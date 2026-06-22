@@ -4,10 +4,14 @@ const harden = require(path.join(__dirname, '..', 'utils', 'harden-base.js'));
 
 const args = process.argv.slice(2);
 if (args.length === 0) {
-  console.log('Usage: node function-extractor.js <file_or_dir> [--output report.json]');
+  console.log('Usage: node function-extractor.js <file_or_dir> [--output report.json] [--webpack-stats]');
   console.log('  Extracts functions/modules from JS bundles (minified & readable).');
+  console.log('  --webpack-stats  Output in webpack stats JSON format (compatible with webpack-bundle-analyzer)');
   process.exit(1);
 }
+
+const webpackStatsFlag = args.includes('--webpack-stats');
+if (webpackStatsFlag) { args.splice(args.indexOf('--webpack-stats'), 1); }
 
 const inputPath = args[0];
 const outputFlag = args.indexOf('--output');
@@ -489,7 +493,29 @@ if (outputPath) {
       signature: f.signature
     }));
   });
-  fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-  fs.writeFileSync(outputPath, JSON.stringify(outData, null, 2));
-  console.log(`\n[OK] Function extraction written to ${outputPath}`);
+  if (webpackStatsFlag) {
+    const wpStats = {
+      version: '5.0.0',
+      hash: require('crypto').createHash('md5').update(JSON.stringify(outData)).digest('hex').substring(0, 20),
+      modules: []
+    };
+    for (const [file, funcs] of Object.entries(allFunctions)) {
+      for (const f of funcs) {
+        wpStats.modules.push({
+          id: `${file}/${f.name}`,
+          name: `${file}#${f.name}`,
+          size: f.linesOfCode * 40,
+          chunks: ['main'],
+          moduleType: f.type === 'arrow' ? 'esm' : 'cjs',
+          identifier: f.signature
+        });
+      }
+    }
+    wpStats.modules.sort((a, b) => b.size - a.size);
+    fs.writeFileSync(outputPath, JSON.stringify(wpStats, null, 2));
+    console.log(`\n[OK] Webpack stats written to ${outputPath} (${wpStats.modules.length} modules)`);
+  } else {
+    fs.writeFileSync(outputPath, JSON.stringify(outData, null, 2));
+    console.log(`\n[OK] Function extraction written to ${outputPath}`);
+  }
 }

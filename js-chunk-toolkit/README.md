@@ -19,6 +19,21 @@ This toolkit is purpose-built for bug bounty hunters and security researchers wh
 | Restore source maps | `source-map-restore.js` | Original variable names, comments, source code |
 | Beautify minified JS | `batch-beautify.ps1` | Prettier output with framework detection |
 | Scan for 45 secret patterns | `secret-scanner.ps1` | AWS keys, Stripe, JWT, GitHub tokens, OpenAI, endpoints |
+| Deep vulnerability analysis | `analyzers/vulnerability-analyzer.js` | 22+ vuln classes, confidence scoring, risk scoring, data classification |
+| AST-level deobfuscation | `analyzers/ast-deobfuscator.js` | Constant folding, boolean folding, array access eval, dead branch elimination |
+| String array decoding | `analyzers/string-array-decoder.js` | vm.Script decoder emulation for shift/rotate/sort-based arrays |
+| CFF recovery | `analyzers/cff-recovery.js` | Control flow flattening dispatcher detection and recovery feasibility |
+| XSS prioritization | `analyzers/xss-prioritizer.js` | 22 sinks, 16 sources, proximity scoring — found CRITICAL chain on real bundle |
+| Prototype pollution hunting | `analyzers/prototype-pollution-finder.js` | 12 PP patterns, 6 sink chains — found PP→RCE in webpack runtime |
+| DOM clobbering detection | `analyzers/dom-clobbering-detector.js` | Form/ID shadowing, bare global access patterns |
+| CSP bypass analysis | `analyzers/csp-bypass-analyzer.js` | 15 bypass gadgets, CSP header/meta extraction |
+| Taint + indirect injection | `analyzers/taint-analyzer.js` | 19 sources, 13 sinks, 15 second-order injection patterns, DOT graph |
+| Opaque predicate removal | `analyzers/opaque-predicate-remover.js` | 27 always-true/false patterns, if/else branch elimination |
+| Dead code elimination | `analyzers/dead-code-eliminator.js` | 8 patterns, iterative passes |
+| HTML report generation | `analyzers/html-report-generator.js` | Dark-theme HTML, search, collapsible severity cards |
+| Entropy-based secret scoring | `utils/entropy-scorer.js` | Shannon entropy, 3 thresholds, JWT/GitHub/OpenAI detection |
+| Context-aware validation | `utils/secret-validator.js` | 12 downrank/8 uprank patterns, context radius scoring |
+| Secret evolution tracking | `utils/secret-evolution.js` | Cross-scan fingerprinting, rotation detection |
 | Full automation | `run-all.ps1` | One-command pipeline: detect → extract → beautify → scan |
 | Download bundles from any URL | `download-js.ps1` | HTML extraction + framework path fallback + source maps |
 
@@ -29,20 +44,60 @@ This toolkit is purpose-built for bug bounty hunters and security researchers wh
 ```
 js-chunk-toolkit/
   scripts/
-    deobfuscate.js          Static analysis: strings, arrays, packers, webpack modules
+    deobfuscate.js          Static analysis: strings, arrays, packers, webpack modules (30+ features)
     webpack-chunk-extractor.js  Webpack chunk manifest, dynamic imports, module map
     source-map-restore.js   Download .map files, restore original source, extract secrets
     batch-beautify.ps1      Batch prettier beautifier with framework detection
     run-all.ps1             Full pipeline orchestrator
+    watch-mode.js           fs.watch-based live monitoring for new/changed JS
+    diff-analyzer.js        Before/after scan comparison (added/removed/changed)
+    scan-history.js         JSONL-based trend database with summary generation
+    multi-repo-orchestrator.js  Batch processing multiple targets with per-target output
+    sarif-output.js         SARIF 2.1.0 export (GitHub Code Scanning compatible)
+    draft-generator.js      HackerOne/Bugcrowd draft submission pre-filler
+    webhook-alerter.js      Slack block-kit webhook alerts with severity filter
+    github-issue-creator.js Auto-create GitHub Issues for CRITICAL/HIGH findings
+    worker-pool.js          Parallel file scanning via worker_threads
+    streaming-processor.js  Transform stream pipeline for 50MB+ files
   scanners/
     secret-scanner.ps1      45 regex patterns — cloud keys, tokens, routes, credentials
+  analyzers/
+    vulnerability-analyzer.js   22+ vuln classes with confidence scoring + secret validation
+    function-extractor.js       12 function types with IIFE/ESM/callback/async analysis
+    dead-code-eliminator.js     8 dead code patterns, iterative removal passes
+    xss-prioritizer.js          22 sinks, 16 sources, exploitability scoring, CRITICAL chain detection
+    dom-clobbering-detector.js  Form/ID global shadowing, bare global access patterns
+    prototype-pollution-finder.js  12 PP patterns + 6 post-PP sink chains
+    csp-bypass-analyzer.js      15 bypass gadgets, CSP meta/header extraction
+    ast-deobfuscator.js         vm.Script sandbox: 8 transform types (folding, eval, dead branch)
+    string-array-decoder.js     Decoder function emulation via vm.Script for indexed string arrays
+    cff-recovery.js             Control flow flattening: 3 dispatcher patterns, recovery feasibility
+    taint-analyzer.js           19 sources, 13 sinks, indirect injection detection, DOT graph
+    side-effect-analyzer.js     13 pure/impure pattern matcher, function tagging
+    opaque-predicate-remover.js 27 always-true/false patterns, if/else branch elimination
+    html-report-generator.js    Self-contained dark-theme HTML report with severity cards + search
+    self-modifying-emulator.js  vm.Script sandbox: resolves eval/Function/setTimeout strings
+    multi-packer-resolver.js    8 packer detectors, iterative unpacking (up to 20 layers)
+    call-graph-builder.js       Function call graph with entry points, leaf nodes, DOT export
+    closure-resolver.js         Closure variable capture detection across function boundaries
+    name-recovery.js            N-gram frequency map for minified name suggestions
   utils/
+    harden-base.js              Shared: ReDoS-safe regex, binary detection, 50MB limit, circular JSON
+    entropy-scorer.js           Shannon entropy secret detection (3 thresholds, 8 pattern types)
+    secret-validator.js         Context-aware validation (12 downrank, 8 uprank patterns)
+    sink-source-analyzer.js     25 sources, 32 sinks, 9 attack chain mapping
+    secret-evolution.js         Cross-scan fingerprinting, rotation detection, type classification
+    fp-learner.js           JSONL-based false positive learning with --learn/--check/--confirm
+    credential-correlator.js  23-pattern secret type detection with context scoring
+    incremental-cache.js    MD5-based file caching for 10-50x faster re-scans
+    memory-budget.js        MemoryBudgetTracker with auto-flush to prevent OOM
     download-js.ps1         Fetch JS bundles from any URL
   config/
-    .prettierrc             Prettier config for deobfuscation
-    patterns.json           All regex patterns in structured JSON
-  output/                   All generated reports land here
-  samples/                  Test files to verify the toolkit
+    .prettierrc                 Prettier config for deobfuscation
+    patterns.json               All regex patterns in structured JSON
+    sink-source-map.json        Source/sink/chain configuration for data flow mapping
+  output/                       All generated reports land here
+  samples/                      Test files to verify the toolkit
 ```
 
 ---
@@ -67,7 +122,7 @@ Extracts all `<script src>`, `<link preload>`, and `<link modulepreload>` URLs f
 .\scripts\run-all.ps1 -Target "https://target.com" -DownloadBundles
 ```
 
-The pipeline runs 6 steps automatically:
+The pipeline runs 8 steps automatically:
 
 | Step | What It Does |
 |---|---|
@@ -77,6 +132,8 @@ The pipeline runs 6 steps automatically:
 | 4. Beautification | Prettier reformatting of all minified files |
 | 5. Source Map Discovery | Finds sourceMappingURL refs and downloads .map files |
 | 6. Secret Scanning | 45 patterns across cloud creds, API keys, tokens, internal routes |
+| 7. AST Deobfuscation | Constant folding, string array decoding, CFF recovery, opaque predicates |
+| 8. Vulnerability Analysis | 22+ vuln classes, XSS prioritization, PP hunting, CSP bypass, taint analysis |
 
 All reports land in `output/<timestamp>/reports/` and `output/<timestamp>/scanner_reports/`.
 
